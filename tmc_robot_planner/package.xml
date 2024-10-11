@@ -1,0 +1,31 @@
+<package format="3">
+  <name>tmc_robot_planner</name>
+  <version>2.0.0</version>
+  <description>robot planner library.</description>
+  <maintainer email="xr-hsr-support@mail.toyota.co.jp">HSR Support</maintainer>
+
+  <license>BSD 3-clause Clear License</license>
+
+  <url type="website">None</url>
+
+  <author>Keisuke Takeshita</author>
+  <author>Koji Terada</author>
+
+  <buildtool_depend>ament_cmake</buildtool_depend>
+
+  <depend>tmc_eigen_utils</depend>
+  <depend>tmc_manipulation_types</depend>
+  <depend>tmc_manipulation_types_bridge</depend>
+  <depend>tmc_robot_kinematics_model</depend>
+  <depend>tmc_robot_collision_detector</depend>
+  <depend>tmc_rplanner</depend>
+
+  <build_depend>eigen</build_depend>
+
+  <test_depend>ament_cmake_gtest</test_depend>
+  <test_depend>tmc_manipulation_tests</test_depend>
+
+  <export>
+    <build_type>ament_cmake</build_type>
+  </export>
+</package>

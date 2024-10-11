@@ -1,0 +1,24 @@
+<package format="3">
+  <name>tmc_rplanner</name>
+  <version>2.0.0</version>
+  <description>Motion planning library</description>
+  <maintainer email="xr-hsr-support@mail.toyota.co.jp">HSR Support</maintainer>
+
+  <license>BSD 3-clause Clear License</license>
+
+  <url type="website">None</url>
+
+  <author>Koji Terada</author>
+
+  <buildtool_depend>ament_cmake</buildtool_depend>
+
+  <depend>boost</depend>
+
+  <build_depend>eigen</build_depend>
+
+  <test_depend>ament_cmake_gtest</test_depend>
+
+  <export>
+    <build_type>ament_cmake</build_type>
+  </export>
+</package>

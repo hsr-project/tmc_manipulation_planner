@@ -1,0 +1,30 @@
+<package format="3">
+  <name>tmc_timeopt_ros</name>
+  <version>2.0.0</version>
+  <description> Ros node of time optimal trajectory parametarization </description>
+  <maintainer email="xr-hsr-support@mail.toyota.co.jp">HSR Support</maintainer>
+
+  <license>BSD 3-clause Clear License</license>
+
+  <author>Keisuke Takeshita</author>
+  <author>Koji Terada</author>
+
+  <exec_depend>python3-numpy</exec_depend>
+  <exec_depend>rcl_interfaces</exec_depend>
+  <exec_depend>rclpy</exec_depend>
+  <exec_depend>tmc_manipulation_msgs</exec_depend>
+  <exec_depend>tmc_timeopt</exec_depend>
+  <exec_depend>trajectory_msgs</exec_depend>
+
+  <test_depend>launch</test_depend>
+  <test_depend>launch_ros</test_depend>
+  <test_depend>launch_testing</test_depend>
+  <test_depend>moveit_msgs</test_depend>
+  <test_depend>python3-nose</test_depend>
+  <test_depend>python3-pytest</test_depend>
+  <test_depend>sensor_msgs</test_depend>
+
+  <export>
+    <build_type>ament_python</build_type>
+  </export>
+</package>

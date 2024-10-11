@@ -1,0 +1,35 @@
+<package format="3">
+  <name>tmc_robot_rrt_planner_node</name>
+  <version>2.0.0</version>
+  <description>プランニングのサービスを提供するノード</description>
+  <maintainer email="xr-hsr-support@mail.toyota.co.jp">HSR Support</maintainer>
+
+  <license>BSD 3-clause Clear License</license>
+
+  <url type="website">None</url>
+
+  <author>Keisuke Takeshita</author>
+  <author>Koji Terada</author>
+
+  <buildtool_depend>ament_cmake</buildtool_depend>
+
+  <depend>boost</depend>
+  <depend>pluginlib</depend>
+  <depend>rclcpp</depend>
+  <depend>tf2_eigen</depend>
+  <depend>tf2_ros</depend>
+  <depend>tmc_manipulation_types_bridge</depend>
+  <depend>tmc_planning_msgs</depend>
+  <depend>tmc_robot_planner</depend>
+  <depend>tmc_utils</depend>
+
+  <test_depend>ament_cmake_gtest</test_depend>
+  <test_depend>geometric_shapes</test_depend>
+  <test_depend>tmc_manipulation_tests</test_depend>
+
+  <build_depend>eigen</build_depend>
+
+  <export>
+    <build_type>ament_cmake</build_type>
+  </export>
+</package>

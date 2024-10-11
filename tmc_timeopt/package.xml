@@ -1,0 +1,28 @@
+<package format="3">
+  <name>tmc_timeopt</name>
+  <version>2.0.0</version>
+  <description>Libraries to solve Time optimal trajectory parametarization.</description>
+  <maintainer email="xr-hsr-support@mail.toyota.co.jp">HSR Support</maintainer>]
+
+  <author>Keisuke Takeshita</author>
+  <author>Koji Terada</author>
+
+  <license>BSD 3-clause Clear License</license>
+
+  <buildtool_depend>ament_cmake</buildtool_depend>
+  <buildtool_depend>ament_cmake_python</buildtool_depend>
+
+  <depend>eigen</depend>
+  <depend>libconsole-bridge-dev</depend>
+
+  <exec_depend>python3-matplotlib</exec_depend>
+  <exec_depend>python3-scipy</exec_depend>
+
+  <test_depend>ament_cmake_gtest</test_depend>
+  <test_depend>ament_cmake_pytest</test_depend>
+  <test_depend>python3-nose</test_depend>
+
+  <export>
+    <build_type>ament_cmake</build_type>
+  </export>
+</package>
