@@ -92,7 +92,7 @@ TrajectoryFilterViaStopState::TrajectoryFilterViaStopState(const Eigen::VectorXd
     if (!IsSameWayPoints(stop_positions, valid_way_points.front())) {
       way_points_impl.push_back(stop_positions);
     } else if (valid_way_points.size() == 1) {
-      // One point that is substantially stopped and once stops, is unnecessary if the voting points are used.
+      // When there is one substantial waypoint, and the point where we make a temporary stop is that waypoint, optimization is unnecessary
       is_valid_ = true;
       return;
     }
@@ -122,6 +122,9 @@ Eigen::VectorXd TrajectoryFilterViaStopState::GetPosition(
   }
 }
 
+// Obtain the joint velocity at the time time_from_start
+// @param[in] time_from_start The time [sec] at which we want to obtain the joint velocity
+// @return Eigen::VectorXd Joint velocity
 Eigen::VectorXd TrajectoryFilterViaStopState::GetVelocity(
     double time_from_start) const {
   if (IsValid()) {
@@ -137,6 +140,8 @@ Eigen::VectorXd TrajectoryFilterViaStopState::GetVelocity(
   }
 }
 
+// Get the playback time of the trajectory
+// @return double Trajectory playback time [sec]
 double TrajectoryFilterViaStopState::GetDuration() const {
   if (IsValid()) {
     if (trajectory_ == nullptr) {

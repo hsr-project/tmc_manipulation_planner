@@ -25,7 +25,12 @@ LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT
 OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH
 DAMAGE.
 */
-/// @brief    RRT_planner test
+/// @file     test_rrt_planner.cpp
+/// @brief    Test of rrt_planner
+/// @author   Koji Terada
+/// @version  1.0.0
+/// @date     2011.12.01
+/// @note     [1.0.0] 2011.12.01 Newly created
 
 #include <stdlib.h>
 #include <gtest/gtest.h>
@@ -41,11 +46,11 @@ using tmc_rplanner::Path;
 using tmc_rplanner::RrtPlanner;
 
 namespace {
-// State space used in the test
+// Dimension of the state space used in the test
 int32_t kDim = 2;
-// Exploration
+// Exploration width
 double kDelta = 0.2;
-// Identity tolerance value of floating point
+// Tolerance for floating-point equivalence
 double kDoubleEps = 1e-5;
 
 
@@ -63,12 +68,12 @@ Config RandomConfig() {
 
 
 bool CheckFeasibility(const Config& config) {
-  // [0.5 3.5], [0.5 1.0].
+  // Rectangular prism of [0.5 3.5] , [0.5 1.0]
   if (((config(0) > 0.5) && (config(0) < 3.5))
       && ((config(1) > 0.5) && (config(1) < 1.0))) {
     return false;
   }
-  // [1.5 2.5], [1.0 4.0] locking body
+  // Rectangular prism of [1.5 2.5] , [1.0 4.0]
   if (((config(0) > 1.5) && (config(0) < 2.5))
       && ((config(1) > 1.0) && (config(1) < 4.0))) {
     return false;
@@ -76,7 +81,7 @@ bool CheckFeasibility(const Config& config) {
     return true;
 }
 
-// Appropriately on the right and left
+// Right and left appropriately
 bool GenerateGoal(Config& v) {
   v.resize(2);
   if (Randd() < 0.5) {
@@ -90,12 +95,12 @@ bool GenerateGoal(Config& v) {
 }
 
 bool IsGoal(const Config& config) {
-  // (0.9 1.1), (3.4 3.6), (3.4 3.6)
+  // Rectangular prism of (0.9 1.1) , (3.4 3.6)
   if (((config(0) > 0.9) && (config(0) < 1.1)) &&
       ((config(1) > 3.4) && (config(1) < 3.6))) {
     return true;
   }
-  // (2.9 3.1), (3.4 3.6), (3.4 3.6)
+  // Rectangular prism of (2.9 3.1) , (3.4 3.6)
   if (((config(0) > 2.9) && (config(0) < 3.1)) &&
       ((config(1) > 3.4) && (config(1) < 3.6))) {
     return true;
@@ -135,14 +140,14 @@ TEST_F(RrtPlannerTest, plan) {
   Path path;
   ASSERT_EQ(kSuccess, planner_->PlanPath(init, path));
 
-  // Check of PATH
-  // The initial value is init
+  // Check of path
+  // Initial value is init
   ASSERT_DOUBLE_EQ(init(0), path.front()(0));
   ASSERT_DOUBLE_EQ(init(1), path.front()(1));
 
-  // Goal is under conditions
+  // Goal is included in the conditions
   ASSERT_TRUE(IsGoal(path.back()));
-  // Distance is always below Kdelta
+  // Distance is always less than or equal to kDelta
   Config old_config = init;
   for (Path::iterator config = ++(path.begin()); config != path.end(); ++config) {
     EXPECT_TRUE((*config - old_config).norm() <= kDelta + kDoubleEps);
@@ -151,7 +156,7 @@ TEST_F(RrtPlannerTest, plan) {
   }
 }
 
-// Ends with maximum number of repetitions
+// End with maximum number of iterations
 TEST(RrtPlanner, max_itr) {
   ConfigurationSpace::Ptr cspace(new ConfigurationSpace(kDim));
   cspace->set_random_config(RandomConfig);
@@ -168,7 +173,7 @@ TEST(RrtPlanner, max_itr) {
   EXPECT_EQ(kMaxItr, planner->PlanPath(init, path));
 }
 
-// End with the end condition function
+// End by termination condition function
 TEST(RrtPlanner, terminate) {
   ConfigurationSpace::Ptr cspace(new ConfigurationSpace(kDim));
   cspace->set_random_config(RandomConfig);

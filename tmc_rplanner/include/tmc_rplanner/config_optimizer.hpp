@@ -25,7 +25,12 @@ LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT
 OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH
 DAMAGE.
 */
-/// @brief    Configuration optimization interface
+/// @file     config_optimizer.hpp
+/// @brief    Interface for configuration optimization
+/// @author   Koji Terada
+/// @version  1.0.0
+/// @date     2011.10.25
+/// @note     [1.0.0] 2011.10.19 Newly created
 
 #ifndef TMC_MANIPULATION_TMC_RPLANNER_CONFIG_OPTIMIZER_HPP_
 #define TMC_MANIPULATION_TMC_RPLANNER_CONFIG_OPTIMIZER_HPP_
@@ -45,8 +50,8 @@ class  IConfigOptimizer {
   virtual ~IConfigOptimizer() {}
   /// Configuration optimization
   /// @param config_out Optimal configuration
-  /// @param value_out Evaluation value
-  /// @return true: Successful False: Failure
+  /// @param value_out Evaluation value of optimal configuration
+  /// @return true: success false: failure
   virtual bool Optimize(Config& config_out, double& value_out) = 0;
 };
 }  // namespace tmc_rplanner

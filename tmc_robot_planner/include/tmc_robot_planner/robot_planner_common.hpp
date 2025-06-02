@@ -25,7 +25,9 @@ LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT
 OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH
 DAMAGE.
 */
-/// @brief    Common definition of robot planner
+/// @file     robot_rplanner_common.hpp
+/// @brief Common definitions for robot planners
+/// @author   Koji Terada
 
 #ifndef TMC_ROBOT_RPLANNER_ROBOT_RPLANNER_COMMON_HPP_
 #define TMC_ROBOT_RPLANNER_ROBOT_RPLANNER_COMMON_HPP_
@@ -49,7 +51,7 @@ using NameSeq = std::vector<std::string>;
 
 using Config = Eigen::VectorXd;
 
-// In cases where the meaning overlaps with Moveit_msgs/Msg/MoveiterRorcodes, the numbers are aligned.
+// The numbers are aligned in cases where the meaning overlaps with moveit_msgs/msg/MoveItErrorCodes
 enum ErrorCode {
   kSuccess = 1,
   kPlanningFailed = -1,

@@ -25,7 +25,12 @@ LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT
 OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH
 DAMAGE.
 */
+/// @file     test_random_optimizer.cpp
 /// @brief    random_optimizer
+/// @author   Koji Terada
+/// @version  1.0.0
+/// @date     2011.12.01
+/// @note     [1.0.0] 2011.12.01 Newly created
 
 #include <stdlib.h>
 #include <gtest/gtest.h>
@@ -38,7 +43,7 @@ using tmc_rplanner::IConfigOptimizer;
 using tmc_rplanner::RandomOptimizer;
 
 namespace {
-// State space used in the test
+// Dimension of the state space used in testing
 int32_t kDim = 2;
 // Tolerance for optimization
 double kOptimThreshold = 1.0e-2;
@@ -61,7 +66,7 @@ bool CheckConfig(const Config& config) {
   return true;
 }
 
-// Maximum functions in test configuration evaluation (2.0, 2.0)
+// Configuration evaluation for testing; a function that peaks at (2.0,2.0)
 double EvalConfig(const Config& config) {
   Config center(kDim);
   center(0) = 2.0;
@@ -71,7 +76,7 @@ double EvalConfig(const Config& config) {
 
 }  // anonymous namespace
 
-// I don't know how to test it, but I hope the value is close to CENTER
+// Not sure how to properly test, but consider it good if values close to the center are obtained
 TEST(RandomOptimizerCheck, optim_check) {
   ConfigurationSpace::Ptr cspace(new ConfigurationSpace(kDim));
   cspace->set_random_config(RandomConfig);

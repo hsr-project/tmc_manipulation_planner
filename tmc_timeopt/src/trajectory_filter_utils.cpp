@@ -37,12 +37,12 @@ constexpr double kMinPointsDistance = 1e-6;
 
 namespace tmc_timeopt {
 
-// Judge whether or not the same point
+// Determine whether they are the same point
 bool IsSameWayPoints(const Eigen::VectorXd& frist, const Eigen::VectorXd& second) {
   return (frist - second).norm() <= kMinPointsDistance;
 }
 
-// In the algorithm, if the same point is continuous, it will be unstable, so take out only valid points.
+// Extract only valid points as consecutive identical points may cause instability in the algorithm
 bool ExtractValidWayPoints(const Eigen::VectorXd& initial_positions,
                            const std::vector<Eigen::VectorXd>& way_points_in,
                            std::vector<Eigen::VectorXd>& way_points_out) {
@@ -56,7 +56,7 @@ bool ExtractValidWayPoints(const Eigen::VectorXd& initial_positions,
   return !way_points_out.empty();
 }
 
-// Validation for input
+// Input validation
 bool ValidateInput(const Eigen::VectorXd& initial_positions,
                    const Eigen::VectorXd& initial_velocities,
                    const std::vector<Eigen::VectorXd>& way_points,

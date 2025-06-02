@@ -1,35 +1,33 @@
 #!/usr/bin/env python
-'''
-Copyright (c) 2024 TOYOTA MOTOR CORPORATION
-All rights reserved.
-Redistribution and use in source and binary forms, with or without
-modification, are permitted (subject to the limitations in the disclaimer
-below) provided that the following conditions are met:
-* Redistributions of source code must retain the above copyright notice, this
-  list of conditions and the following disclaimer.
-* Redistributions in binary form must reproduce the above copyright notice,
-  this list of conditions and the following disclaimer in the documentation
-  and/or other materials provided with the distribution.
-* Neither the name of the copyright holder nor the names of its contributors may be used
-  to endorse or promote products derived from this software without specific
-  prior written permission.
-NO EXPRESS OR IMPLIED LICENSES TO ANY PARTY'S PATENT RIGHTS ARE GRANTED BY THIS
-LICENSE. THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
-"AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO,
-THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
-ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE
-LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR
-CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE
-GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION)
-HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT
-LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT
-OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH
-DAMAGE.
-'''
+# Copyright (c) 2024 TOYOTA MOTOR CORPORATION
+# All rights reserved.
+# Redistribution and use in source and binary forms, with or without
+# modification, are permitted (subject to the limitations in the disclaimer
+# below) provided that the following conditions are met:
+# * Redistributions of source code must retain the above copyright notice, this
+#   list of conditions and the following disclaimer.
+# * Redistributions in binary form must reproduce the above copyright notice,
+#   this list of conditions and the following disclaimer in the documentation
+#   and/or other materials provided with the distribution.
+# * Neither the name of the copyright holder nor the names of its contributors may be used
+#   to endorse or promote products derived from this software without specific
+#   prior written permission.
+# NO EXPRESS OR IMPLIED LICENSES TO ANY PARTY'S PATENT RIGHTS ARE GRANTED BY THIS
+# LICENSE. THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
+# "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO,
+# THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
+# ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE
+# LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR
+# CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE
+# GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION)
+# HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT
+# LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT
+# OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH
+# DAMAGE.
 # -*- coding: utf-8 -*-
 u"""Overall operation test.
 
-Increased random and can be diverted to tests during development
+Increase randomness for use during development testing.
 """
 
 import unittest
@@ -43,7 +41,7 @@ from tmc_timeopt.timeopt import Timeopt
 from tmc_timeopt.trajectory import NaturalCubicSplineTrajectory
 from tmc_timeopt.trajectory import TrajectoryDict
 
-# SEED is fixed in the automatic test
+# Fix seed for automated testing.
 np.random.seed(10)
 
 
@@ -57,21 +55,21 @@ class MyTarget(Target):
         self.point = {}
 
     def update_kinematics(self, point):
-        u"""Update TARGET athletic.
+        u"""Update the kinematics of the target.
 
         Args:
-            Point: DICT of state amount
+            point: dict of state quantities.
         """
         self.point = point
 
     def update_dynamics(self):
-        u"""I don't do anything because it is an acceleration level restraint."""
+        u"""Do nothing due to acceleration level constraints."""
         pass
 
     def get_dynamics(self):
-        u"""Return the dynamic spalameter (A, B, C, D).
+        u"""Return dynamics parameters (a,b,c,d).
 
-        Each (a, b, c, d) is a key ('variable name', 'restriction type'), respectively, and the value is Value.
+        (a,b,c,d) each become a dict, with ('variable name', 'constraint type') as the key and the value as the value.
         """
         (a, b, c, d) = ({}, {}, {}, {})
         for name in self.names:
@@ -104,12 +102,12 @@ class TotalTestCase(unittest.TestCase):
                                   self.VEL_LIMIT[joint]))
 
     def count_score(self, opt_traj):
-        u"""How much optimization score is given for testing.
+        u"""Determine to what extent the optimization score is issued for testing.
 
-        Conditions are in speed or acceleration limit
-        The ratio of all hours is the time when there is a joint that has reached 90%
+        Condition is on the limit of either speed or acceleration.
+        The time when there is a joint reaching 90% is the percentage of the total time.
         Args:
-           Opt_traj: Optimized orbit
+           opt_traj: optimized trajectory.
         Returns:
            Score(double)
         """
@@ -123,9 +121,9 @@ class TotalTestCase(unittest.TestCase):
         return float(satification.count(True)) / float(len(satification))
 
     def test_normal_case1(self):
-        u"""Test using simple orbitals.
+        u"""Test using simple trajectory.
 
-        Passed if Score exceeded 0.9
+        Pass if the score exceeds 0.9.
         """
         _POINTS = 30
 
@@ -146,9 +144,9 @@ class TotalTestCase(unittest.TestCase):
         assert_greater_equal(score, 0.9)
 
     def test_normal_case2(self):
-        u"""Test using short orbit.
+        u"""Test using short trajectory.
 
-        Passed if Score exceeded 0.9
+        Pass if the score exceeds 0.9.
         """
         _POINTS = 2
 
@@ -169,9 +167,9 @@ class TotalTestCase(unittest.TestCase):
         assert_greater_equal(score, 0.9)
 
     def test_normal_case3(self):
-        u"""Tests using long orbit.
+        u"""Test using long trajectory.
 
-        Passed if Score exceeded 0.9
+        Pass if the score exceeds 0.9.
         """
         _POINTS = 500
 

@@ -25,7 +25,12 @@ LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT
 OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH
 DAMAGE.
 */
-/// @brief    Interface of multiple planners with initial and terminal values
+/// @file     multi_planner.hpp
+/// @brief    Interface for multiple planners with initial and terminal values
+/// @author   Koji Terada
+/// @version  1.0.0
+/// @date     2012.03.28
+/// @note     [1.0.0] 2012.03.28 Newly created
 
 #ifndef TMC_MANIPULATION_TMC_RPLANNER_MULTI_PLANNER_HPP_
 #define TMC_MANIPULATION_TMC_RPLANNER_MULTI_PLANNER_HPP_
@@ -39,14 +44,14 @@ DAMAGE.
 namespace tmc_rplanner {
 
 /// @class IMultiPlanner
-/// @brief Interface of multiple planners with initial and terminal values
+/// @brief Interface for multiple planners with initial and terminal values
 class IMultiPlanner {
  public:
   using Ptr = std::shared_ptr<IMultiPlanner>;
   using ConstPtr = std::shared_ptr<const IMultiPlanner>;
 
   virtual ~IMultiPlanner() {}
-  /// Creating paths
+  /// Path creation
   virtual PlanRet PlanPath(const std::vector<Config>& start_configs,
                            const std::vector<Config>& goal_configs,
                            Path& path_out) = 0;

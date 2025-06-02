@@ -25,7 +25,8 @@ LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT
 OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH
 DAMAGE.
 */
-///  Planner library test
+/// Test of planner library
+///  @author Koji Terada
 
 #include <stdlib.h>
 
@@ -81,26 +82,26 @@ using tmc_rplanner::Config;
 namespace {
 // Margin for floating point comparison
 const double kDoubleEps = 1.0e-3;
-// Hand name
+// Name of the hand
 const char* const kHandName = "CARM/BASE_HAND";
-// Numerical IK maximum number of repetitions
+// Numerical IK maximum iteration count
 const int32_t kMaxItrIK = 1000;
-// Numerical IK tolerance error
+// Numerical IK tolerance
 const double kIKDelta = 1.0e-3;
-// Numerical IK tolerance fluctuation
+// Numerical IK allowable fluctuation
 const double kIKConvergeThreshold = 1.0e-10;
-// Timeout [S]
+// Timeout [s]
 const double kTimeOutPlanning = 120.0;
-// Timeout [S]
+// Timeout [s]
 const double kTimeOutPlanningVeryShort = 0.0001;
-// Exploration
+// Search width
 const double kDelta = 0.1;
 // Interference check width
 const double kSubDelta = 0.01;
-// Maximum number of repetitions
+// Maximum iteration count
 const int32_t kMaxItrPlanning = 1000;
 
-// Contribution of the neck axis to the shoulder axis
+// Constraint for neck axis to be reversal of shoulder axis
 class NeckShoulderConstraint : public IConfigurationConstraint {
  public:
   NeckShoulderConstraint() {}
@@ -143,12 +144,12 @@ void PrintCheckFeasibility(const Eigen::VectorXd& config, bool feasible,
   }
 }
 
-// Node additional callback
+// Node addition callback
 void PrintAddNode(const Eigen::VectorXd& src, const Eigen::VectorXd& dst) {
 }
 
 
-// Callback at restraint
+// Callback during constraint
 void PrintConstrain(const Eigen::VectorXd& src,
                     const Eigen::VectorXd& dst,
                     bool success) {
@@ -193,14 +194,14 @@ class RobotCBiRrtPlannerTest :  public ::testing::Test {
     robot_collision_detector_->SetRobotNamedAngle(initial_config_);
   }
 
-  // Check if the orbit is correct
-  // *Continuous (width between Config is Delta or less)
-  // *Not interfered
-  // *If you have a Constraint_tsr, meet it
-  // *The initial value is one of the following:
-  //   1. What was set in Start_configs 2.Start_tsrs
-  // *The terminal value is one of the following:
-  //   1. Those set in Goal_configs 2.Goal_tsrs generated
+  // Check whether the trajectory is correct by the following points
+  // * Continuity (width between configs is less than delta)
+  // * No interference
+  // * If there is constraint_tsr, it is satisfied
+  // * Initial value is one of the following.
+  //   1. Set with start_configs 2. Generated from start_tsrs
+  // * Terminal value is one of the following.
+  //   1. Set with goal_configs 2. Generated from goal_tsrs
   void CheckResultTrajectory(const JointTrajectory& trajectory,
                              const CBiRrtRequest& req,
                              const CBiRrtParameters& params);
@@ -216,7 +217,7 @@ void RobotCBiRrtPlannerTest::CheckResultTrajectory(
     const JointTrajectory& trajectory,
     const CBiRrtRequest& req,
     const CBiRrtParameters& params) {
-  // Check if the track interval is beyond the delta
+  // Check if the spacing of the trajectory exceeds delta
   for (uint32_t i = 0; i < trajectory.path.size(); ++i) {
     if (i != 0) {
       EXPECT_GE(params.delta + kDoubleEps,
@@ -234,29 +235,29 @@ void RobotCBiRrtPlannerTest::CheckResultTrajectory(
         true, contact_pair));
     EXPECT_TRUE(feasible);
 
-    // Constraint_tsr Check
+    // Check of constraint_tsr
     if (!req.constraint_tsrs.empty()) {
       JointState joint_state;
       joint_state.name = req.use_joints;
       joint_state.position = trajectory.path[i];
-      // Set joint_angle, solve Kinematics in order, and check if it is within the range.
+      // Set joint_angle, solve Kinematics sequentially, and check if within range
       robot_collision_detector_->SetRobotTransform(req.origin_to_basejoint);
       robot_collision_detector_->SetRobotNamedAngle(joint_state);
       Eigen::Affine3d origin_to_end = robot_collision_detector_->
           GetObjectTransform(req.constraint_tsrs[0].end_frame_id);
 
-      // Confirm that it is fitted in TSR restraint
+      // Confirm it is within TSR constraint
       double distance = (CalcDistanceToTsr(req.constraint_tsrs[0],
                                            origin_to_end)).norm();
-      // IK is Angleaxis, TSR is an RPY expression, so it is acceptable because there can be up to 6 times an error.
-      // Thinking about 3D positive and negative of rotation
+      // Since IK is AngleAxis and TSR is rpy, errors of up to 6 times may occur so it is tolerated
+      // Consider the positive and negative of the three dimensions of rotation
       EXPECT_GE(kIKDelta * 6.0, distance);
     }
   }
 
   // Initial value check
   bool valid_start = false;
-  // Global angle initial value
+  // Initial joint angle
   for (std::vector<Config>::const_iterator config = req.start_configs.begin();
        config != req.start_configs.end();
        ++config) {
@@ -284,9 +285,9 @@ void RobotCBiRrtPlannerTest::CheckResultTrajectory(
   }
   EXPECT_TRUE(valid_start);
 
-  // End value check
+  // Terminal value check
   bool valid_goal = false;
-  // Global angle initial value
+  // Initial joint angle
   for (std::vector<Config>::const_iterator config = req.goal_configs.begin();
        config != req.goal_configs.end();
        ++config) {
@@ -315,7 +316,7 @@ void RobotCBiRrtPlannerTest::CheckResultTrajectory(
 }
 
 
-// Testing as a simple BIRRT
+// Test as a simple Birrt
 TEST_F(RobotCBiRrtPlannerTest, plan_as_birrt) {
   NameSeq use_name(8);
   use_name[0] = ("CARM/LINEAR");
@@ -345,11 +346,11 @@ TEST_F(RobotCBiRrtPlannerTest, plan_as_birrt) {
   req.start_configs.push_back(start_config);
   req.goal_configs.push_back(goal_config);
   req.initial_config = initial_config_;
-  // Joint weight
+  // Joint weights
   req.weight_config.resize(8);
   req.weight_config << 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0;
 
-  // Joint weight
+  // Joint weights
   req.weight_config_ik.resize(8);
   req.weight_config_ik << 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0;
 
@@ -368,18 +369,18 @@ TEST_F(RobotCBiRrtPlannerTest, plan_as_birrt) {
     CheckResultTrajectory(trajectory.joint_trajectory, req, params);
   }
 
-  // The initial joint angle works slightly outside
+  // Initial joint angle operates slightly outside
   req.start_configs[0][0] = -1.0e-2 + 1.0e-3;
   EXPECT_EQ(tmc_robot_planner::kSuccess, planner_->PlanPath(req, params, trajectory));
 
-  // If you exceed "slightly", the initial value error
+  // Initial value error when exceeding "slightly"
   req.start_configs[0][0] = -1.0e-2 - 1.0e-3;
   EXPECT_EQ(tmc_robot_planner::kStartStateInCollision, planner_->PlanPath(req, params, trajectory));
 }
 
 
-// If Start and Goal have exactly the same posture
-// Confirm that Path size is 2
+// When start and goal have the exactly same posture
+// Confirm that the size of the path is 2
 TEST_F(RobotCBiRrtPlannerTest, plan_as_birrt_same) {
   NameSeq use_name(8);
   use_name[0] = ("CARM/LINEAR");
@@ -398,7 +399,7 @@ TEST_F(RobotCBiRrtPlannerTest, plan_as_birrt_same) {
   start_config.resize(8);
   start_config << 0.0, 0.0, 0.0, 0.1, 3.0, 1.57, 0.0, -1.5;
 
-  // Completely matched end angle
+  // Perfect match terminal joint angle
   Config goal_config;
   goal_config.resize(8);
   goal_config << 0.0, 0.0, 0.0, 0.1, 3.0, 1.57, 0.0, -1.5;
@@ -409,11 +410,11 @@ TEST_F(RobotCBiRrtPlannerTest, plan_as_birrt_same) {
   req.start_configs.push_back(start_config);
   req.goal_configs.push_back(goal_config);
   req.initial_config = initial_config_;
-  // Joint weight
+  // Joint weights
   req.weight_config.resize(8);
   req.weight_config << 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0;
 
-  // Joint weight
+  // Joint weights
   req.weight_config_ik.resize(8);
   req.weight_config_ik << 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0;
 
@@ -465,11 +466,11 @@ TEST_F(RobotCBiRrtPlannerTest, plan_as_birrt_without_shortcut) {
   req.start_configs.push_back(start_config);
   req.goal_configs.push_back(goal_config);
   req.initial_config = initial_config_;
-  // Joint weight
+  // Joint weights
   req.weight_config.resize(8);
   req.weight_config << 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0;
 
-  // Joint weight
+  // Joint weights
   req.weight_config_ik.resize(8);
   req.weight_config_ik << 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0;
 
@@ -486,7 +487,7 @@ TEST_F(RobotCBiRrtPlannerTest, plan_as_birrt_without_shortcut) {
     ASSERT_EQ(tmc_robot_planner::kSuccess, planner_->PlanPath(req, params, trajectory));
     max_size = std::max<uint32_t>(max_size, trajectory.joint_trajectory.path.size());
   }
-  // If you have a shortcut, you will always get 3 points
+  // If there is a shortcut, it will definitely be 3 points
   EXPECT_LT(3, max_size);
 }
 
@@ -508,7 +509,7 @@ TEST_F(RobotCBiRrtPlannerTest, plan_as_birrt_near) {
   start_config.resize(8);
   start_config << 0.0, 0.0, 0.0, 0.1, 3.0, 1.57, 0.0, -1.5;
 
-  // Completely matched end angle
+  // Perfect match terminal joint angle
   Config goal_config;
   goal_config.resize(8);
   goal_config << 0.0, 0.0, 0.0, 0.1, 3.0, 1.57, 0.0, -1.5;
@@ -520,11 +521,11 @@ TEST_F(RobotCBiRrtPlannerTest, plan_as_birrt_near) {
   req.start_configs.push_back(start_config);
   req.goal_configs.push_back(goal_config);
   req.initial_config = initial_config_;
-  // Joint weight
+  // Joint weights
   req.weight_config.resize(8);
   req.weight_config << 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0;
 
-  // Joint weight
+  // Joint weights
   req.weight_config_ik.resize(8);
   req.weight_config_ik << 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0;
 
@@ -546,7 +547,7 @@ TEST_F(RobotCBiRrtPlannerTest, plan_as_birrt_near) {
   }
 }
 
-// Test with restraint TSR
+// Test with constraint TSR
 TEST_F(RobotCBiRrtPlannerTest, plan_with_constraint_tsr) {
   NameSeq use_name(8);
   use_name[0] = ("CARM/LINEAR");
@@ -569,8 +570,8 @@ TEST_F(RobotCBiRrtPlannerTest, plan_with_constraint_tsr) {
   start_state.name = use_name;
   start_state.position = start_config;
 
-  // The target value is the result of 0.05 [m] in the straight direction of X
-  // Joint_angle set and solve Kinematics
+  // Set the objective value to the result of advancing 0.05[m] in the positive direction of x
+  // Set joint_angle, solve Kinematics sequentially
   robot_collision_detector_->SetRobotTransform(unit);
   robot_collision_detector_->SetRobotNamedAngle(start_state);
   Eigen::Affine3d origin_to_hand_start = robot_collision_detector_->
@@ -593,7 +594,7 @@ TEST_F(RobotCBiRrtPlannerTest, plan_with_constraint_tsr) {
   ASSERT_EQ(tmc_robot_kinematics_model::kSuccess,
             ik_solver_->Solve(ikreq, goal_state, origin_to_hand_solved));
 
-  // Restraint in the straight line of X
+  // Constraint in linear direction of x
   RegionValues min;
   RegionValues max;
   min << -1.0, 0.0, 0.0, 0.0, 0.0, 0.0;
@@ -614,11 +615,11 @@ TEST_F(RobotCBiRrtPlannerTest, plan_with_constraint_tsr) {
   req.start_configs.push_back(start_config);
   req.goal_configs.push_back(goal_state.position);
   req.constraint_tsrs.push_back(constraint_tsr);
-  // Joint weight
+  // Joint weights
   req.weight_config.resize(8);
   req.weight_config << 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0;
 
-  // Joint weight
+  // Joint weights
   req.weight_config_ik.resize(8);
   req.weight_config_ik << 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0;
 
@@ -639,7 +640,7 @@ TEST_F(RobotCBiRrtPlannerTest, plan_with_constraint_tsr) {
 }
 
 
-// Test with restraint TSR
+// Test with constraint TSR
 TEST_F(RobotCBiRrtPlannerTest, plan_with_abnormal_constraint_tsr) {
   NameSeq use_name(8);
   use_name[0] = ("CARM/LINEAR");
@@ -662,8 +663,8 @@ TEST_F(RobotCBiRrtPlannerTest, plan_with_abnormal_constraint_tsr) {
   start_state.name = use_name;
   start_state.position = start_config;
 
-  // The target value is the result of 0.05 [m] in the straight direction of X
-  // Joint_angle set and solve Kinematics
+  // Set the objective value to the result of advancing 0.05[m] in the positive direction of x
+  // Set joint_angle, solve Kinematics sequentially
   robot_collision_detector_->SetRobotTransform(unit);
   robot_collision_detector_->SetRobotNamedAngle(start_state);
   Eigen::Affine3d origin_to_hand_start = robot_collision_detector_->
@@ -686,7 +687,7 @@ TEST_F(RobotCBiRrtPlannerTest, plan_with_abnormal_constraint_tsr) {
   ASSERT_EQ(tmc_robot_kinematics_model::kSuccess,
             ik_solver_->Solve(ikreq, goal_state, origin_to_hand_solved));
 
-  // Restraint with +0.01 [m] to -0.01 [m] in the straight direction of X
+  // Constraint from +0.01[m] to -0.01[m] in the linear direction of x
   RegionValues min;
   RegionValues max;
   min << -0.01, 0.0, 0.0, 0.0, 0.0, 0.0;
@@ -707,11 +708,11 @@ TEST_F(RobotCBiRrtPlannerTest, plan_with_abnormal_constraint_tsr) {
   req.start_configs.push_back(start_config);
   req.goal_configs.push_back(goal_state.position);
   req.constraint_tsrs.push_back(constraint_tsr);
-  // Joint weight
+  // Joint weights
   req.weight_config.resize(8);
   req.weight_config << 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0;
 
-  // Joint weight
+  // Joint weights
   req.weight_config_ik.resize(8);
   req.weight_config_ik << 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0;
 
@@ -727,7 +728,7 @@ TEST_F(RobotCBiRrtPlannerTest, plan_with_abnormal_constraint_tsr) {
 
   EXPECT_EQ(tmc_robot_planner::kGoalStateInCollision, result);
 
-  // Restraint with +0.04 [m] to 0.06 [m] in the straight direction of X
+  // Constraint from +0.04[m] to 0.06[m] in the linear direction of x
   req.constraint_tsrs[0].min_bounds[0] = 0.04;
   req.constraint_tsrs[0].max_bounds[0] = 0.06;
 
@@ -752,7 +753,7 @@ TEST_F(RobotCBiRrtPlannerTest, plan_with_goal_start_tsr) {
   Eigen::Affine3d origin_to_hand_start =
       robot_collision_detector_->GetObjectTransform(kHandName);
 
-  // OK to move on the pitch
+  // Okay to move in pitch
   RegionValues start_min;
   RegionValues start_max;
   start_min << 0.0, 0.0, 0.0, -M_PI, 0.0, 0.0;
@@ -799,11 +800,11 @@ TEST_F(RobotCBiRrtPlannerTest, plan_with_goal_start_tsr) {
   req.constraint_tsrs.push_back(constraint_tsr);
   req.start_tsrs.push_back(start_tsr);
   req.goal_tsrs.push_back(goal_tsr);
-  // Joint weight
+  // Joint weights
   req.weight_config.resize(8);
   req.weight_config << 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0;
 
-  // Joint weight
+  // Joint weights
   req.weight_config_ik.resize(8);
   req.weight_config_ik << 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0;
 
@@ -840,7 +841,7 @@ TEST_F(RobotCBiRrtPlannerTest, plan_with_goal_start_tsr_init_sampling) {
 
   Eigen::Affine3d unit(Eigen::Affine3d::Identity());
 
-  // OK to move on the pitch
+  // Okay to move in pitch
   RegionValues start_min;
   RegionValues start_max;
   start_min << 0.0, 0.0, 0.0, -M_PI, 0.0, 0.0;
@@ -890,11 +891,11 @@ TEST_F(RobotCBiRrtPlannerTest, plan_with_goal_start_tsr_init_sampling) {
   req.constraint_tsrs.push_back(constraint_tsr);
   req.start_tsrs.push_back(start_tsr);
   req.goal_tsrs.push_back(goal_tsr);
-  // Joint weight
+  // Joint weights
   req.weight_config.resize(8);
   req.weight_config << 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0;
 
-  // Joint weight
+  // Joint weights
   req.weight_config_ik.resize(8);
   req.weight_config_ik << 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0;
 
@@ -918,7 +919,7 @@ TEST_F(RobotCBiRrtPlannerTest, plan_with_goal_start_tsr_init_sampling) {
   }
 }
 
-// Check if the IK exclusion joint angle works correctly
+// Confirm that excluded joint angles in IK work correctly
 TEST_F(RobotCBiRrtPlannerTest, plan_with_no_ik_joint) {
   NameSeq use_name(9);
   use_name[0] = ("CARM/LINEAR");
@@ -929,7 +930,7 @@ TEST_F(RobotCBiRrtPlannerTest, plan_with_no_ik_joint) {
   use_name[5] = ("CARM/WRIST_Y");
   use_name[6] = ("CARM/WRIST_R");
   use_name[7] = ("CARM/WRIST_P");
-  // Joints that are not related to IK
+  // Joints unrelated to IK
   use_name[8] = ("CARM/HEAD/NECK_Y");
 
   Eigen::Affine3d unit(Eigen::Affine3d::Identity());
@@ -973,11 +974,11 @@ TEST_F(RobotCBiRrtPlannerTest, plan_with_no_ik_joint) {
   req.goal_tsrs.push_back(goal_tsr);
   req.goal_no_ik_joint_state = goal_no_ik_joint_state;
 
-  // Joint weight
+  // Joint weights
   req.weight_config.resize(9);
   req.weight_config << 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0;
 
-  // Joint weight
+  // Joint weights
   req.weight_config_ik.resize(9);
   req.weight_config_ik << 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0;
 
@@ -999,11 +1000,11 @@ TEST_F(RobotCBiRrtPlannerTest, plan_with_no_ik_joint) {
   if (result == tmc_robot_planner::kSuccess) {
     CheckResultTrajectory(trajectory.joint_trajectory, req, params);
   }
-  // Confirm that the terminal value of Neck_y is 0.5
+  // Confirm that the terminal value of NECK_Y is 0.5
   EXPECT_NEAR(trajectory.joint_trajectory.path.back()(8), 0.5, 1e-5);
 }
 
-// Check if EXTRA restraint works properly
+// Check if extra constraints work properly
 TEST_F(RobotCBiRrtPlannerTest, plan_with_extra_constraint) {
   NameSeq use_name(9);
   use_name[0] = ("CARM/LINEAR");
@@ -1014,7 +1015,7 @@ TEST_F(RobotCBiRrtPlannerTest, plan_with_extra_constraint) {
   use_name[5] = ("CARM/WRIST_Y");
   use_name[6] = ("CARM/WRIST_R");
   use_name[7] = ("CARM/WRIST_P");
-  // EXTEND joint
+  // Extend joint
   use_name[8] = ("CARM/HEAD/NECK_Y");
 
   Eigen::Affine3d unit(Eigen::Affine3d::Identity());
@@ -1059,11 +1060,11 @@ TEST_F(RobotCBiRrtPlannerTest, plan_with_extra_constraint) {
   req.extra_goal_constraints.push_back(simple_const);
   req.extra_constraints.push_back(simple_const);
 
-  // Joint weight
+  // Joint weights
   req.weight_config.resize(9);
   req.weight_config << 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0;
 
-  // Joint weight
+  // Joint weights
   req.weight_config_ik.resize(9);
   req.weight_config_ik << 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0;
 
@@ -1087,14 +1088,14 @@ TEST_F(RobotCBiRrtPlannerTest, plan_with_extra_constraint) {
   }
 
   for (size_t i = 0; i < trajectory.joint_trajectory.path.size(); ++i) {
-    // Confirm that Neck_y is inverted in Shoulder_y
+    // Confirm that NECK_Y is a reversal of SHOULDER_Y
     EXPECT_NEAR(trajectory.joint_trajectory.path[i](8),
                 -trajectory.joint_trajectory.path[i](1), 1e-5);
   }
 }
 
 
-// Simple BIRRT timeout
+// Simple Birrt timeout
 TEST_F(RobotCBiRrtPlannerTest, plan_as_birrt_timeout) {
   NameSeq use_name(8);
   use_name[0] = ("CARM/LINEAR");
@@ -1124,7 +1125,7 @@ TEST_F(RobotCBiRrtPlannerTest, plan_as_birrt_timeout) {
   req.start_configs.push_back(start_config);
   req.goal_configs.push_back(goal_config);
   req.initial_config = initial_config_;
-  // Joint weight
+  // Joint weights
   req.weight_config.resize(8);
   req.weight_config << 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0;
   req.weight_config_ik.resize(8);
@@ -1144,7 +1145,7 @@ TEST_F(RobotCBiRrtPlannerTest, plan_as_birrt_timeout) {
 }
 
 
-// Test with restraint TSR
+// Test with constraint TSR
 TEST_F(RobotCBiRrtPlannerTest, plan_with_constraint_tsr_timeout) {
   NameSeq use_name(8);
   use_name[0] = ("CARM/LINEAR");
@@ -1167,8 +1168,8 @@ TEST_F(RobotCBiRrtPlannerTest, plan_with_constraint_tsr_timeout) {
   start_state.name = use_name;
   start_state.position = start_config;
 
-  // The target value is the result of 0.05 [m] in the straight direction of X
-  // Joint_angle set and solve Kinematics
+  // Set the objective value to the result of advancing 0.05[m] in the positive direction of x
+  // Set joint_angle, solve Kinematics sequentially
   robot_collision_detector_->SetRobotTransform(unit);
   robot_collision_detector_->SetRobotNamedAngle(start_state);
 
@@ -1192,7 +1193,7 @@ TEST_F(RobotCBiRrtPlannerTest, plan_with_constraint_tsr_timeout) {
   ASSERT_EQ(tmc_robot_kinematics_model::kSuccess,
             ik_solver_->Solve(ikreq, goal_state, origin_to_hand_solved));
 
-  // Restraint in the straight line of X
+  // Constraint in linear direction of x
   RegionValues min;
   RegionValues max;
   min << -1.0, 0.0, 0.0, 0.0, 0.0, 0.0;
@@ -1213,11 +1214,11 @@ TEST_F(RobotCBiRrtPlannerTest, plan_with_constraint_tsr_timeout) {
   req.start_configs.push_back(start_config);
   req.goal_configs.push_back(goal_state.position);
   req.constraint_tsrs.push_back(constraint_tsr);
-  // Joint weight
+  // Joint weights
   req.weight_config.resize(8);
   req.weight_config << 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0;
 
-  // Joint weight
+  // Joint weights
   req.weight_config_ik.resize(8);
   req.weight_config_ik << 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0;
 
@@ -1235,7 +1236,7 @@ TEST_F(RobotCBiRrtPlannerTest, plan_with_constraint_tsr_timeout) {
 }
 
 
-// Confirm that time out in a reasonable time
+// Confirm timeout occurs in reasonable time
 TEST_F(RobotCBiRrtPlannerTest, plan_timeout_normal) {
   NameSeq use_name(8);
   use_name[0] = ("CARM/LINEAR");
@@ -1273,7 +1274,7 @@ TEST_F(RobotCBiRrtPlannerTest, plan_timeout_normal) {
 
   CBiRrtParameters params;
   params.timeout = kTimeOutPlanningVeryShort;
-  // Timeout with small Delta
+  // Timeout with small delta
   params.delta = kDelta * 1.0e-10;
   params.sub_delta = kSubDelta * 1.0e-10;
   params.max_itr = kMaxItrPlanning;
@@ -1283,11 +1284,11 @@ TEST_F(RobotCBiRrtPlannerTest, plan_timeout_normal) {
   ErrorCode result = planner_->PlanPath(req, params, trajectory);
   auto t2 = std::chrono::system_clock::now();
   EXPECT_TRUE((result == tmc_robot_planner::kTimedOut) || (result == tmc_robot_planner::kShortcutTimedOut));
-  // Timeout error within 0.5 [s]
+  // Timeout error within 0.5[s]
   EXPECT_NEAR(std::chrono::duration_cast<std::chrono::milliseconds>(t2 - t1).count(), 500, 500);
 }
 
-// Check if the joints there is small enough when weighted
+// Check if the joint with weights has sufficiently small changes
 TEST_F(RobotCBiRrtPlannerTest, weight_check) {
   NameSeq use_name(8);
   use_name[0] = ("CARM/LINEAR");
@@ -1317,11 +1318,11 @@ TEST_F(RobotCBiRrtPlannerTest, weight_check) {
   req.start_configs.push_back(start_config);
   req.goal_configs.push_back(goal_config);
   req.initial_config = initial_config_;
-  // Joint weight
+  // Joint weights
   req.weight_config.resize(8);
   req.weight_config << 10.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0;
 
-  // Joint weight
+  // Joint weights
   req.weight_config_ik.resize(8);
   req.weight_config_ik << 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0;
 
@@ -1340,7 +1341,7 @@ TEST_F(RobotCBiRrtPlannerTest, weight_check) {
     CheckResultTrajectory(trajectory.joint_trajectory, req, params);
   }
 
-  // In search of the average DELTA of joint 0
+  // Find average delta of joint 0
   double sum_delta1 = 0.0;
   for (uint32_t i = 0; i < trajectory.joint_trajectory.path.size()-1; ++i) {
     double delta = (trajectory.joint_trajectory.path[i+1](0) -
@@ -1349,11 +1350,11 @@ TEST_F(RobotCBiRrtPlannerTest, weight_check) {
   }
   double mean_delta1 = sum_delta1 / (trajectory.joint_trajectory.path.size()-1.0);
 
-  // Joint weight
+  // Joint weights
   req.weight_config.resize(8);
   req.weight_config << 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0;
 
-  // Joint weight
+  // Joint weights
   req.weight_config_ik.resize(8);
   req.weight_config_ik << 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0;
 
@@ -1364,7 +1365,7 @@ TEST_F(RobotCBiRrtPlannerTest, weight_check) {
     CheckResultTrajectory(trajectory.joint_trajectory, req, params);
   }
 
-  // In search of the average DELTA of joint 0
+  // Find average delta of joint 0
   double sum_delta2 = 0.0;
   for (uint32_t i = 0; i < trajectory.joint_trajectory.path.size()-1; ++i) {
     double delta = (trajectory.joint_trajectory.path[i+1](0) -
@@ -1376,7 +1377,7 @@ TEST_F(RobotCBiRrtPlannerTest, weight_check) {
 }
 
 
-// Test with restraint TSR
+// Test with constraint TSR and weights
 TEST_F(RobotCBiRrtPlannerTest, plan_with_constraint_tsr_weighted_ik) {
   NameSeq use_name(8);
   use_name[0] = ("CARM/LINEAR");
@@ -1400,8 +1401,8 @@ TEST_F(RobotCBiRrtPlannerTest, plan_with_constraint_tsr_weighted_ik) {
   start_state.position = start_config;
 
 
-  // The target value is the result of 0.1 [m] in the straight direction of x and z
-  // Joint_angle set and solve Kinematics
+  // Set the objective value to the result of advancing 0.1[m] in the positive direction of x,z
+  // Set joint_angle, solve Kinematics sequentially
   robot_collision_detector_->SetRobotTransform(unit);
   robot_collision_detector_->SetRobotNamedAngle(start_state);
   Eigen::Affine3d origin_to_hand_start

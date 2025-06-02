@@ -25,7 +25,12 @@ LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT
 OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH
 DAMAGE.
 */
-/// @brief    Implementation of Pointopointplanner with Birrt_planner
+/// @file     birrt_planner.hpp
+/// @brief    Implementation of PointToPointPlanner using birrt_planner
+/// @author   Koji Terada
+/// @version  1.0.0
+/// @date     2011.10.25
+/// @note     [1.0.0] 2011.10.19 Newly created
 
 #ifndef TMC_MANIPULATION_TMC_RPLANNER_BIRRT_PLANNER_HPP_
 #define TMC_MANIPULATION_TMC_RPLANNER_BIRRT_PLANNER_HPP_
@@ -36,41 +41,40 @@ DAMAGE.
 namespace tmc_rplanner {
 
 /// @class Birrt_Planner
-/// @brief 2 -point planna implemented with BIRRT_PLANNER
+/// @brief A point-to-point planner implementing BIRRT_PLANNER
 /// @note See J.J. Kuffner and S.M. LaValle. RRT-Connect:
 ///       An efficient approach to single-query path planning.
 ///       In Proc. IEEE Int’l Conf. on Robotics and Automation (ICRA‘2000
 ///       pages 995-1001, San Francisco, CA, April 2000.
 class BiRrtPlanner : public IPointToPointPlanner {
  public:
-  /// @brief Pass the planner space and the termination conditions
-  /// @param space Configuration space
-  /// @param delta Search width of Birrt
-  /// @param max_itr Maximum number of repetitions
-  /// @param is_terminate forced termination conditions
+  /// @brief Pass planner space and termination conditions
+  /// @param space Pointer to the planner space
+  /// @param delta Search width for BiRRT. This width also becomes the width of the output trajectory.
+  /// @param max_itr Maximum number of iterations
+  /// @param is_terminate Forced termination condition
   BiRrtPlanner(ConfigurationSpace::Ptr space,
                double delta,
                int32_t max_itr,
                TerminateConditionFunc is_terminate) :
       space_(space), delta_(delta), max_itr_(max_itr),
       is_terminate_(is_terminate) {}
-  /// @brief Pass the planner space and the termination conditions
-  /// @param space Configuration space
-  /// @param delta Search width of Birrt
-  /// @param max_itr Maximum number of repetitions
+  /// @brief Pass planner space and termination conditions
+  /// @param space Pointer to the planner space
+  /// @param max_itr Maximum number of iterations
   BiRrtPlanner(ConfigurationSpace::Ptr space,
                double delta,
                int32_t max_itr) :
       space_(space), delta_(delta), max_itr_(max_itr) {}
 
   virtual ~BiRrtPlanner() {}
-  /// Creating paths
+  /// Path creation
   virtual PlanRet PlanPath(const Config& init_config,
                            const Config& goal_config,
                            Path& path_out);
 
  private:
-  // Copy prohibition
+  // Prohibit copying
   BiRrtPlanner(const BiRrtPlanner&);
   BiRrtPlanner& operator=(const BiRrtPlanner&);
   const ConfigurationSpace::Ptr space_;

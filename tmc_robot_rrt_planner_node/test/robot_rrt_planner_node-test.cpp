@@ -35,7 +35,7 @@ DAMAGE.
 
 #include "../src/robot_rrt_planner_node.hpp"
 
-// Because Pinocchio makes an error "You Should Include Pinocchio Before The Boost Headers"
+// pinocchio outputs an error "You should include pinocchio before the Boost headers"
 #include <geometric_shapes/shape_operations.h>  // NOLINT
 
 namespace {
@@ -86,7 +86,7 @@ sensor_msgs::msg::JointState CreateInitialJointState() {
 }
 
 /*
-/// @param[out] Map: Collision inspection map
+/// @param[out] map : Map for collision detection
 void CreateCollisionMap(
     tmc_mapping_msgs::CollisionMap& collision_map_out) {
   for (int32_t i = 0; i < 10; ++i) {
@@ -106,6 +106,7 @@ void CreateCollisionMap(
 }
 */
 
+/// @param[out] environment_out : Environment for collision detection
 void CreateKnownObjects(
     moveit_msgs::msg::PlanningSceneWorld& environment_out) {
   environment_out.collision_objects.resize(2);
@@ -135,8 +136,8 @@ void CreateKnownObjects(
   environment_out.collision_objects[1].primitives[0].type
       = shape_msgs::msg::SolidPrimitive::CYLINDER;
   environment_out.collision_objects[1].primitives[0].dimensions.resize(2);
-  environment_out.collision_objects[1].primitives[0].dimensions[0] = 0.05;
-  environment_out.collision_objects[1].primitives[0].dimensions[1] = 0.2;
+  environment_out.collision_objects[1].primitives[0].dimensions[0] = 0.2;
+  environment_out.collision_objects[1].primitives[0].dimensions[1] = 0.05;
   environment_out.collision_objects[1].primitive_poses.resize(1);
   environment_out.collision_objects[1].primitive_poses[0].position.x = 0.0;
   environment_out.collision_objects[1].primitive_poses[0].position.y = 0.0;

@@ -25,7 +25,12 @@ LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT
 OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH
 DAMAGE.
 */
-/// @brief    ConfigurationSpace test
+/// @file     test_configuration_space.cpp
+/// @brief    Test of ConfigurationSpace
+/// @author   Koji Terada
+/// @version  1.0.0
+/// @date     2011.11.30
+/// @note     [1.0.0] 2011.11.30 Newly created
 
 #include <stdlib.h>
 #include <gtest/gtest.h>
@@ -43,9 +48,9 @@ using tmc_rplanner::TreeLoop;
 using tmc_rplanner::Path;
 
 namespace {
-// State space used in the test
+// Dimension of state space used in test
 int32_t kDim = 2;
-// A threshold that is regarded as the value of DOUBLE is near
+// Threshold for considering double values as close
 double kDoubleEps = 1.0e-5;
 
 static double Randd() {
@@ -53,7 +58,7 @@ static double Randd() {
   return static_cast<double>(rand_r(&seed)) / RAND_MAX;
 }
 
-// Random function for testing
+// Test random function
 Config RandomConfig() {
   Config v(kDim);
   v(0) = Randd()*4.0;
@@ -61,7 +66,7 @@ Config RandomConfig() {
   return v;
 }
 
-// Configuration check for testing
+// Test configuration check
 bool CheckConfig(const Config& config) {
   if (((config(0) < 3.5) && (config(0) > 0)) &&
       ((config(1) < 1.5) && (config(1) > 1.0))) return false;
@@ -70,31 +75,31 @@ bool CheckConfig(const Config& config) {
   return true;
 }
 
-// Test configuration interpretation transition
+// Test configuration transition
 bool CheckTrans(const Config& src_config, const Config& dst_config) {
   return CheckTransferabilityByDividing(
       src_config, dst_config, CheckConfig, DistanceFunc(), 0.01);
 }
 
-// Check function for checktransferabilitybydivingTest
-// (0,0), (1,1), (1,1), (0.4-0.6], [0.4-0.6])
+// Check function for CheckTransferabilityByDividingTest
+// Function returns true for (0,0), (1,1) and false within ([0.4-0.6],[0.4-0.6])
 bool TestDividingFunc(const Config& config) {
   return !(((config(0) > 0.4) && (config(0) < 0.6))
            && ((config(1) > 0.4) && (config(1) < 0.6)));
 }
 
-// Distance of distance weight between test configurations
+// Distance between test configurations weighted distance
 double CalcDistance(const Config& src_config, const Config& dst_config) {
   return sqrt(1.0 * pow(src_config(0) - dst_config(0), 2.0) +
               1.0 * pow(src_config(1) - dst_config(1), 2.0));
 }
 
-// Functions that are the maximum in test configuration evaluation (0,0)
+// Test configuration evaluation function that maximizes at (0,0)
 double EvalConfig(const Config& config) {
   return exp(-pow((config).norm(), 2));
 }
 
-// Test restraint condition function
+// Test constraint condition function
 bool ConstraintConfig(const Config& config_in, Config& config_out) {
   config_out = config_in;
   config_out(0) = 0.0;
@@ -102,28 +107,28 @@ bool ConstraintConfig(const Config& config_in, Config& config_out) {
 }
 
 
-// Start for testing for testing
+// Test Start constraint condition function
 bool ConstraintStartConfig(const Config& config_in, Config& config_out) {
   config_out = config_in;
   config_out(0) = 1.0;
   return true;
 }
 
-// Test goal restraint condition function
+// Test goal constraint condition function
 bool ConstraintGoalConfig(const Config& config_in, Config& config_out) {
   config_out = config_in;
   config_out(0) = 2.0;
   return true;
 }
 
-// Test goal judgment function
+// Test goal determination function
 bool IsGoal(const Config& config) {
-  // (0.9 1.1), (3.4 3.6), (3.4 3.6)
+  // Rectangular prism (0.9 1.1), (3.4 3.6)
   if (((config(0) > 0.9) && (config(0) < 1.1)) &&
       ((config(1) > 3.4) && (config(1) < 3.6))) {
     return true;
   }
-  // (2.9 3.1), (3.4 3.6), (3.4 3.6)
+  // Rectangular prism (2.9 3.1), (3.4 3.6)
   if (((config(0) > 2.9) && (config(0) < 3.1)) &&
       ((config(1) > 3.4) && (config(1) < 3.6))) {
     return true;
@@ -131,7 +136,7 @@ bool IsGoal(const Config& config) {
     return false;
 }
 
-// Testing goal creation function
+// Test temporary goal creation function
 bool GenerateGoal(Config& v) {
   v.resize(2);
   if (Randd() < 0.5) {
@@ -144,7 +149,7 @@ bool GenerateGoal(Config& v) {
   return true;
 }
 
-// Testing start creation function
+// Test temporary start creation function
 bool GenerateStart(Config& v) {
   v.resize(2);
   if (Randd() < 0.5) {
@@ -159,11 +164,11 @@ bool GenerateStart(Config& v) {
 }  // anonymous namespace
 
 ///////////////////////////////////////////
-/// CHECKTRANSFERABITYBYDIDIDING test
+/// Test of CheckTransferabilityByDividing
 ///////////////////////////////////////////
 
 
-// Test to be finely divided and checked properly
+// Test whether fine division is correctly checked
 TEST(CheckTransferabilityByDividingTest, normal_test) {
   int32_t dim = kDim;
   Config src_config(dim);
@@ -176,7 +181,7 @@ TEST(CheckTransferabilityByDividingTest, normal_test) {
       DistanceFunc(), sub_delta));
 }
 
-// If the dimension of SRC_CONFIG and DST_CONFIG is different, tmc_rplanner :: dimensionMatch
+// If dimensions of src_config and dst_config differ, tmc_rplanner::DimensionMismatch
 TEST(CheckTransferabilityByDividingTest, dim_mismatch) {
   int32_t dim_src = kDim;
   int32_t dim_dst = kDim + 1;
@@ -195,7 +200,7 @@ TEST(CheckTransferabilityByDividingTest, dim_mismatch) {
       DimensionMismatch);
 }
 
-// If sub_delta is negative Std :: Invalid_argument
+// If sub_delta is negative, std::invalid_argument
 TEST(CheckTransferabilityByDividingTest, negative_subdelta) {
   int32_t dim_src = kDim;
   int32_t dim_dst = kDim;
@@ -211,7 +216,7 @@ TEST(CheckTransferabilityByDividingTest, negative_subdelta) {
 }
 
 ///////////////////////////////////
-/// TreeTopath test
+/// Test of TreeToPath
 //////////////////////////////////
 
 class TreeToPathTest : public ::testing::Test {
@@ -226,7 +231,7 @@ class TreeToPathTest : public ::testing::Test {
     config3_ << 0.2, 0.2;
     config4_ << 0.3, 0.3;
 
-    // Make Tree
+    // Create a tree
     // 1->2->3
     //     ->4
     tree_.push_back(Node::Ptr(new Node(config1_)));
@@ -241,10 +246,10 @@ class TreeToPathTest : public ::testing::Test {
   Config config4_;
 };
 
-// Check if you can convert correctly with TreeTopath
+// Check conversion correctness with TreeToPath
 TEST_F(TreeToPathTest, translate_path_last) {
   Path path;
-  // The goal is the final element of the tree
+  // Goal is the final element of the tree
   TreeToPath(tree_, path);
   ASSERT_EQ(3, path.size());
   EXPECT_EQ(config1_, path[0]);
@@ -252,10 +257,10 @@ TEST_F(TreeToPathTest, translate_path_last) {
   EXPECT_EQ(config4_, path[2]);
 }
 
-// Check if you can convert correctly with TreeTopath
+// Check conversion correctness with TreeToPath
 TEST_F(TreeToPathTest, translate_path_mid) {
   Path path;
-  // The goal is the intermediate element of the tree
+  // Goal is a middle element of the tree
   TreeToPath(tree_, 2, path);
   ASSERT_EQ(3, path.size());
   EXPECT_EQ(config1_, path[0]);
@@ -263,25 +268,25 @@ TEST_F(TreeToPathTest, translate_path_mid) {
   EXPECT_EQ(config3_, path[2]);
 }
 
-// Check the loop on TreeTopath
+// Loop check with TreeToPath
 TEST_F(TreeToPathTest, translate_path_loop) {
   Path path;
   tree_[1]->parent = tree_[3];
-  // The goal is the final element of the tree
+  // Goal is the final element of the tree
   EXPECT_THROW(TreeToPath(tree_, path), TreeLoop);
 }
 
-// Checking the wrong Goal_index in TreeTopath
+// Check incorrect goal_index with TreeToPath
 TEST_F(TreeToPathTest, translate_path_invalid_goal) {
   Path path;
-  // The goal is the final element of the tree
+  // Goal is the final element of the tree
   EXPECT_THROW(TreeToPath(tree_, 5, path),
                std::invalid_argument);
 }
 
 
 ///////////////////////////////////
-/// Changetreeroot test
+/// Test of ChangeTreeRoot
 //////////////////////////////////
 
 class ChangeTreeRootTest : public ::testing::Test {
@@ -296,7 +301,7 @@ class ChangeTreeRootTest : public ::testing::Test {
     config2_ << 0.2, 0.2;
     config3_ << 0.3, 0.3;
 
-    // Make Tree
+    // Create a tree
     // 0->1->2
     //     ->3
     tree_.push_back(Node::Ptr(new Node(config0_)));
@@ -311,7 +316,7 @@ class ChangeTreeRootTest : public ::testing::Test {
   Config config3_;
 };
 
-// Try Changetreeroot
+// Try changing tree root
 TEST_F(ChangeTreeRootTest, change_tree_root3) {
   ChangeTreeRoot(tree_, tree_[3]);
   EXPECT_TRUE(tree_[3]->parent.expired());
@@ -320,7 +325,7 @@ TEST_F(ChangeTreeRootTest, change_tree_root3) {
   EXPECT_TRUE(tree_[0]->parent.lock() == tree_[1]);
 }
 
-// Try Changetreeroot
+// Try changing tree root
 TEST_F(ChangeTreeRootTest, change_tree_root2) {
   ChangeTreeRoot(tree_, tree_[2]);
   EXPECT_TRUE(tree_[3]->parent.lock() == tree_[1]);
@@ -329,7 +334,7 @@ TEST_F(ChangeTreeRootTest, change_tree_root2) {
   EXPECT_TRUE(tree_[0]->parent.lock() == tree_[1]);
 }
 
-// Try Changetreeroot
+// Try changing tree root
 TEST_F(ChangeTreeRootTest, change_tree_root1) {
   ChangeTreeRoot(tree_, tree_[1]);
   EXPECT_TRUE(tree_[3]->parent.lock() == tree_[1]);
@@ -338,7 +343,7 @@ TEST_F(ChangeTreeRootTest, change_tree_root1) {
   EXPECT_TRUE(tree_[0]->parent.lock() == tree_[1]);
 }
 
-// Try Changetreeroot
+// Try changing tree root
 TEST_F(ChangeTreeRootTest, change_tree_root0) {
   ChangeTreeRoot(tree_, tree_[0]);
   EXPECT_TRUE(tree_[3]->parent.lock() == tree_[1]);
@@ -351,10 +356,10 @@ TEST_F(ChangeTreeRootTest, change_tree_root0) {
 
 
 ///////////////////////////////////
-/// Configuration_space test
+/// Test of configuration_space
 //////////////////////////////////
 
-// Is the set function called normal?
+// Check if the function is called correctly
 class ConfigurationSpaceTest : public ::testing::Test {
  protected:
   ConfigurationSpaceTest() : space_(kDim) {}
@@ -374,7 +379,7 @@ class ConfigurationSpaceTest : public ::testing::Test {
   ConfigurationSpace space_;
 };
 
-// Is the set function called normal?
+// Check if the function is called correctly
 class ConfigurationSpaceTestNoConstrain : public ::testing::Test {
  protected:
   ConfigurationSpaceTestNoConstrain() : space_(kDim) {}
@@ -392,14 +397,14 @@ class ConfigurationSpaceTestNoConstrain : public ::testing::Test {
 };
 
 
-// For testing with the function is not set
+// Test for unconfigured function state
 class ConfigurationSpaceTestNoFunctions : public ::testing::Test {
  protected:
   ConfigurationSpaceTestNoFunctions() : space_(kDim) {}
   ConfigurationSpace space_;
 };
 
-// NEWCONFIG test
+// Test of NewConfig
 TEST_F(ConfigurationSpaceTest, new_config) {
   Config src_config(kDim);
   src_config(0) = 0.0;
@@ -408,14 +413,14 @@ TEST_F(ConfigurationSpaceTest, new_config) {
   dst_config(0) = 1.0;
   dst_config(1) = 1.0;
 
-  // Check the configuration that goes on one step
+  // Check configuration advancing in one step
   bool unreach;
   Config next_config = space_.NewConfig(src_config, dst_config, 0.1, unreach);
   EXPECT_FALSE(unreach);
   EXPECT_NEAR(0.070711, next_config(0), kDoubleEps);
   EXPECT_NEAR(0.070711, next_config(1), kDoubleEps);
 
-  // Check when arriving
+  // Check arrival case
   Config dst_reach_config(kDim);
   dst_reach_config(0) = 0.05;
   dst_reach_config(1) = 0.0;
@@ -426,12 +431,12 @@ TEST_F(ConfigurationSpaceTest, new_config) {
   EXPECT_NEAR(dst_reach_config(0), reach_config(0), kDoubleEps);
   EXPECT_NEAR(dst_reach_config(1), reach_config(1), kDoubleEps);
 
-  // Exception DELTA is negative
+  // Exception negative delta
   EXPECT_THROW(
       space_.NewConfig(src_config, dst_config, -0.1, unreach),
       std::invalid_argument);
 
-  // Exception DOF difference
+  // Exception dof difference
   Config inval_config(kDim+1);
   inval_config(0) = 0.0;
   inval_config(1) = 0.0;
@@ -448,7 +453,7 @@ TEST_F(ConfigurationSpaceTest, random_config) {
   EXPECT_TRUE((random_config(1) >= 0.0 && random_config(1) <= 4.0));
 }
 
-// When checkline test constrain is fraudulent
+// CheckLine test with invalid constrain
 TEST_F(ConfigurationSpaceTest, check_line) {
   Config src_config(kDim);
   src_config(0) = 0.0;
@@ -457,18 +462,18 @@ TEST_F(ConfigurationSpaceTest, check_line) {
   dst_config(0) = 1.0;
   dst_config(1) = 1.0;
   Path path;
-  // It should be imagined in the same place and fails
+  // Should fail as it projects to the same place
   EXPECT_FALSE(space_.CheckLine(src_config, dst_config, 0.1, path));
 }
 
-// Exceptions because there is no random configuration function function function
+// Exception as random configuration generation function is not set
 TEST_F(ConfigurationSpaceTestNoFunctions, no_random_config_func) {
   EXPECT_THROW(
       space_.GenerateRandomConfig(),
       LackRequiredFunc);
 }
 
-// CHECKLINE test
+// Test of CheckLine
 TEST_F(ConfigurationSpaceTestNoConstrain, check_line) {
   Config src_config(kDim);
   src_config(0) = 0.0;
@@ -478,9 +483,9 @@ TEST_F(ConfigurationSpaceTestNoConstrain, check_line) {
   dst_config(1) = 1.0;
   Path path;
 
-  // Example of passing
+  // Example of path output
   EXPECT_TRUE(space_.CheckLine(src_config, dst_config, 0.1, path));
-  // There are initial values ​​and ends
+  // Initial value and endpoint match
   EXPECT_TRUE(path.front() == src_config);
   EXPECT_TRUE(path.back() == dst_config);
 
@@ -490,7 +495,7 @@ TEST_F(ConfigurationSpaceTestNoConstrain, check_line) {
   EXPECT_TRUE(space_.CheckLine(src_config, dst_config, 0.1, path));
   EXPECT_NEAR(dst_config(1), path.back()(1), 1.0e-8);
 
-  // An example of a configuration that is not a FEASIBLE on the way
+  // Example with feasible configuration in the middle
   Config infeasible_dst_config(kDim);
   infeasible_dst_config(0) = 1.0;
   infeasible_dst_config(1) = 1.2;
@@ -498,7 +503,7 @@ TEST_F(ConfigurationSpaceTestNoConstrain, check_line) {
   EXPECT_FALSE(space_.CheckLine(
       src_config, infeasible_dst_config, 0.1, infeasible_path));
 
-  // Exception DOF difference
+  // Exception dof difference
   Config inval_config(kDim+1);
   inval_config(0) = 0.0;
   inval_config(1) = 0.0;
@@ -509,7 +514,7 @@ TEST_F(ConfigurationSpaceTestNoConstrain, check_line) {
     DimensionMismatch);
 }
 
-// Check for Feasty
+// Feasibility check
 TEST_F(ConfigurationSpaceTest, check_feasibility) {
   Config feasible_config(kDim);
   feasible_config << 0.0, 0.0;
@@ -518,7 +523,7 @@ TEST_F(ConfigurationSpaceTest, check_feasibility) {
   EXPECT_TRUE(space_.CheckFeasibility(feasible_config));
   EXPECT_FALSE(space_.CheckFeasibility(infeasible_config));
 
-  // Exception DOF difference
+  // Exception dof difference
   Config inval_config(kDim+1);
   inval_config(0) = 0.0;
   inval_config(1) = 0.0;
@@ -528,7 +533,7 @@ TEST_F(ConfigurationSpaceTest, check_feasibility) {
       DimensionMismatch);
 }
 
-// The exception is that the feasibility function is not set
+// Exception as Feasibility function is not set
 TEST_F(ConfigurationSpaceTestNoFunctions, no_check_feasibility_func) {
   Config feasible_config(kDim);
   feasible_config << 0.0, 0.0;
@@ -537,7 +542,7 @@ TEST_F(ConfigurationSpaceTestNoFunctions, no_check_feasibility_func) {
       LackRequiredFunc);
 }
 
-// Check of checktransferability
+// Check of CheckTransferability
 TEST_F(ConfigurationSpaceTest, check_transferability) {
   Config src_config(kDim);
   src_config << 0.0, 0.0;
@@ -545,12 +550,12 @@ TEST_F(ConfigurationSpaceTest, check_transferability) {
   feasible_config << 1.0, 1.0;
   Config infeasible_config(kDim);
   infeasible_config << 0.1, 2.0;
-  // Transitionable example
+  // Example of transition possibility
   EXPECT_TRUE(space_.CheckTransferability(src_config, feasible_config));
-  // Unable to transition
+  // Example of transition impossibility
   EXPECT_FALSE(space_.CheckTransferability(src_config, infeasible_config));
 
-  // Exception DOF difference
+  // Exception dof difference
   Config inval_config(kDim+1);
   inval_config(0) = 0.0;
   inval_config(1) = 0.0;
@@ -561,7 +566,7 @@ TEST_F(ConfigurationSpaceTest, check_transferability) {
       DimensionMismatch);
 }
 
-// Operation correctly even if Transferability is not set
+// Works correctly even without Transferability set
 TEST_F(ConfigurationSpaceTestNoFunctions, no_check_transferability_func) {
   space_.set_check_feasibility(CheckConfig);
   Config src_config(kDim);
@@ -570,9 +575,9 @@ TEST_F(ConfigurationSpaceTestNoFunctions, no_check_transferability_func) {
   feasible_config << 1.0, 1.0;
   Config infeasible_config(kDim);
   infeasible_config << 0.1, 1.2;
-  // Transitionable example
+  // Example of transition possibility
   EXPECT_TRUE(space_.CheckTransferability(src_config, feasible_config));
-  // Unable to transition
+  // Example of transition impossibility
   EXPECT_FALSE(space_.CheckTransferability(src_config, infeasible_config));
 }
 
@@ -589,7 +594,7 @@ TEST_F(ConfigurationSpaceTest, calc_distance) {
       sqrt(2.0), space_.CalcDistance(src_config, dst_config), kDoubleEps);
 }
 
-// The distance measurement Euglid distance is automatically used.
+// Distance measurement Euclidean distance is automatically used.
 TEST_F(ConfigurationSpaceTestNoFunctions, no_calc_distance_func) {
   Config src_config(kDim);
   src_config(0) = 0.0;
@@ -601,13 +606,13 @@ TEST_F(ConfigurationSpaceTestNoFunctions, no_calc_distance_func) {
       sqrt(2.0), space_.CalcDistance(src_config, dst_config), kDoubleEps);
 }
 
-// Assessment of configuration
+// Configuration evaluation
 TEST_F(ConfigurationSpaceTest, eval_func) {
   Config config(kDim);
   config(0) = 0.0;
   config(1) = 0.0;
   EXPECT_NEAR(1.0, space_.EvaluateConfig(config), kDoubleEps);
-  // Exception DOF difference
+  // Exception dof difference
   Config inval_config(kDim+1);
   inval_config(0) = 0.0;
   inval_config(1) = 0.0;
@@ -617,7 +622,7 @@ TEST_F(ConfigurationSpaceTest, eval_func) {
       DimensionMismatch);
 }
 
-// Exceptions because the EVALUATE function is not set
+// Exception as Evaluate function is not set
 TEST_F(ConfigurationSpaceTestNoFunctions, no_evaluate_config_func) {
   Config config(kDim);
   config(0) = 0.0;
@@ -628,7 +633,7 @@ TEST_F(ConfigurationSpaceTestNoFunctions, no_evaluate_config_func) {
 }
 
 
-// GOAL configuration generation
+// goal configuration generation
 TEST_F(ConfigurationSpaceTest, goal_func) {
   Config goal;
   space_.GenerateGoalConfig(goal);
@@ -636,13 +641,13 @@ TEST_F(ConfigurationSpaceTest, goal_func) {
               (goal(0) == 3.0 && goal(1) == 3.5));
 }
 
-// Exceptions because the Goal generated function is not set
+// Exception as goal generation function is not set
 TEST_F(ConfigurationSpaceTestNoFunctions, no_generate_goal_config_func) {
   Config a;
   EXPECT_FALSE(space_.GenerateGoalConfig(a));
 }
 
-// Generation of START configuration
+// start configuration generation
 TEST_F(ConfigurationSpaceTest, start_func) {
   Config start;
   space_.GenerateStartConfig(start);
@@ -650,14 +655,14 @@ TEST_F(ConfigurationSpaceTest, start_func) {
               (start(0) == 3.0 && start(1) == 3.5));
 }
 
-// Exceptions because the Goal generated function is not set
+// Exception as goal generation function is not set
 TEST_F(ConfigurationSpaceTestNoFunctions, no_generate_start_config_func) {
   Config a;
   EXPECT_FALSE(space_.GenerateStartConfig(a));
 }
 
 
-// Goal condition judgment test
+// Goal condition determination test
 TEST_F(ConfigurationSpaceTest, is_goal_func) {
   Config goal_config(kDim);
   goal_config << 1.0, 3.5;
@@ -666,7 +671,7 @@ TEST_F(ConfigurationSpaceTest, is_goal_func) {
   EXPECT_TRUE(space_.CheckConfigInGoal(goal_config));
   EXPECT_FALSE(space_.CheckConfigInGoal(non_goal_config));
 
-  // Exception DOF difference
+  // Exception dof difference
   Config inval_config(kDim+1);
   inval_config(0) = 0.0;
   inval_config(1) = 0.0;
@@ -677,7 +682,7 @@ TEST_F(ConfigurationSpaceTest, is_goal_func) {
 }
 
 
-// Exceptions because the Goal generated function is not set
+// Exception as goal generation function is not set
 TEST_F(ConfigurationSpaceTestNoFunctions, no_is_goal_config_func) {
   Config goal_config(kDim);
   goal_config << 1.0, 3.5;
@@ -687,7 +692,7 @@ TEST_F(ConfigurationSpaceTestNoFunctions, no_is_goal_config_func) {
 }
 
 
-// Restraint the configuration
+// Constraint configuration
 TEST_F(ConfigurationSpaceTest, constraint_config_func) {
   Config config(kDim);
   config << 1.0, 3.5;
@@ -695,7 +700,7 @@ TEST_F(ConfigurationSpaceTest, constraint_config_func) {
   EXPECT_TRUE(space_.ConstrainConfig(config, constrainted_config));
   EXPECT_NEAR(0.0, constrainted_config(0), kDoubleEps);
 
-  // Exception DOF difference
+  // Exception dof difference
   Config inval_config(kDim+1);
   inval_config(0) = 0.0;
   inval_config(1) = 0.0;
@@ -706,7 +711,7 @@ TEST_F(ConfigurationSpaceTest, constraint_config_func) {
 }
 
 
-// Success without any restraint generation functions
+// Succeeds in doing nothing if constraint generation function is not set
 TEST_F(ConfigurationSpaceTestNoFunctions, no_constraint_config_func) {
   Config config(kDim);
   Config constrainted_config(kDim);
@@ -716,7 +721,7 @@ TEST_F(ConfigurationSpaceTestNoFunctions, no_constraint_config_func) {
 }
 
 
-// Restraint the configuration
+// Constraint configuration
 TEST_F(ConfigurationSpaceTest, constraint_start_config_func) {
   Config config(kDim);
   config << 0.0, 3.5;
@@ -724,7 +729,7 @@ TEST_F(ConfigurationSpaceTest, constraint_start_config_func) {
   EXPECT_TRUE(space_.ConstrainStartConfig(config, constrainted_config));
   EXPECT_NEAR(1.0, constrainted_config(0), kDoubleEps);
 
-  // Exception DOF difference
+  // Exception dof difference
   Config inval_config(kDim+1);
   inval_config(0) = 0.0;
   inval_config(1) = 0.0;
@@ -735,7 +740,7 @@ TEST_F(ConfigurationSpaceTest, constraint_start_config_func) {
 }
 
 
-// Restraint the configuration
+// Constraint configuration
 TEST_F(ConfigurationSpaceTest, constraint_goal_config_func) {
   Config config(kDim);
   config << 1.0, 3.5;
@@ -743,7 +748,7 @@ TEST_F(ConfigurationSpaceTest, constraint_goal_config_func) {
   EXPECT_TRUE(space_.ConstrainGoalConfig(config, constrainted_config));
   EXPECT_NEAR(2.0, constrainted_config(0), kDoubleEps);
 
-  // Exception DOF difference
+  // Exception dof difference
   Config inval_config(kDim+1);
   inval_config(0) = 0.0;
   inval_config(1) = 0.0;
@@ -755,7 +760,7 @@ TEST_F(ConfigurationSpaceTest, constraint_goal_config_func) {
 
 
 
-// Success without any restraint generation functions
+// Succeeds in doing nothing if constraint generation function is not set
 TEST_F(ConfigurationSpaceTestNoFunctions, no_constraint_start_config_func) {
   Config config(kDim);
   Config constrainted_config(kDim);
@@ -765,7 +770,7 @@ TEST_F(ConfigurationSpaceTestNoFunctions, no_constraint_start_config_func) {
 }
 
 
-// Success without any restraint generation functions
+// Succeeds in doing nothing if constraint generation function is not set
 TEST_F(ConfigurationSpaceTestNoFunctions, no_constraint_goal_config_func) {
   Config config(kDim);
   Config constrainted_config(kDim);

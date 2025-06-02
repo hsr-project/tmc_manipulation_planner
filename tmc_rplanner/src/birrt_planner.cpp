@@ -25,7 +25,12 @@ LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT
 OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH
 DAMAGE.
 */
-/// @brief    Implementation of Pointopointplanner with Birrt_planner
+/// @file     birrt_planner.cpp
+/// @brief Implementation of PointToPointPlanner using birrt_planner
+/// @author   Koji Terada
+/// @version  1.0.0
+/// @date     2011.10.25
+/// @note     [1.0.0] 2011.10.19 Newly created
 
 #include <tmc_rplanner/birrt_planner.hpp>
 #include <tmc_rplanner/configuration_tree.hpp>
@@ -35,8 +40,12 @@ DAMAGE.
 
 namespace tmc_rplanner {
 
-/// @brief Proceed with Tree A with a random configuration,
-///        Try to connect from Tree B to Tree A
+/// @brief Advance tree a one step towards a random configuration,
+///        and attempt to connect from tree b to tree a
+/// @param space Configuration space
+/// @param tree_a Exploration side tree
+/// @param tree_b Connection side tree
+/// @return true: Connection successful false: Connection unsuccessful
 bool BuildOneStep(ConfigurationSpace::Ptr space,
                   ConfigurationTree& tree_a,
                   ConfigurationTree& tree_b) {
@@ -50,7 +59,13 @@ bool BuildOneStep(ConfigurationSpace::Ptr space,
   return false;
 }
 
-/// @brief Pass generation
+/// @brief Path generation
+/// @param init_config Initial configuration
+/// @param goal_config Goal configuration
+/// @param path_out Generated trajectory
+/// @return kSucess: Success
+/// @return kTerminate: Terminated
+/// @return kMaxItr: Maximum iteration count reached
 PlanRet BiRrtPlanner::PlanPath(const Config& init_config,
                         const Config& goal_config,
                         Path& path_out) {
@@ -72,7 +87,7 @@ PlanRet BiRrtPlanner::PlanPath(const Config& init_config,
   tree_s.SetRootConfig(init_config);
   tree_g.SetRootConfig(goal_config);
   for (int32_t i = 0; i < max_itr_; ++i)  {
-    // Check the end conditions (timeout, etc.)
+    // Check termination conditions (timeout, etc.)
     if (is_terminate_ && is_terminate_()) {
       return kTerminate;
     }
@@ -89,7 +104,7 @@ PlanRet BiRrtPlanner::PlanPath(const Config& init_config,
       }
     }
   }
-  // Integrate the tree in the case of success
+  // Merge the trees in case of success
   if (is_success == true) {
     Path start_path;
     Path goal_path;
@@ -100,7 +115,7 @@ PlanRet BiRrtPlanner::PlanPath(const Config& init_config,
     tree_s.PrintTree(std::cerr);
     tree_g.PrintTree(std::cerr);
 #endif
-    /// Pass from the goal is added in reverse order
+    /// Paths from the goal are added in reverse order
     path_out = start_path;
     path_out.insert(path_out.end(), goal_path.rbegin(), goal_path.rend());
     return kSuccess;

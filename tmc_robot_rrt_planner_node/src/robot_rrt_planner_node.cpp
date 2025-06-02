@@ -25,6 +25,10 @@ LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT
 OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH
 DAMAGE.
 */
+///
+/// robot_rrt_planner_node.cpp
+///
+///
 
 #include "robot_rrt_planner_node.hpp"
 
@@ -34,7 +38,6 @@ DAMAGE.
 
 #include <tmc_manipulation_types_bridge/manipulation_msg_convertor.hpp>
 #include <tmc_robot_kinematics_model/numeric_ik_solver.hpp>
-#include <tmc_utils/parameters.hpp>
 
 namespace {
 const double kDefaultDelta = 0.1;
@@ -47,19 +50,23 @@ const double kDefaultWeightLinearBaseIK = 10.0;
 const double kDefaultWeightRotationalBaseIK = 10.0;
 const double kDefaultBaseTranslationMax = 10.0;
 
-// Numerical IK maximum number of repetitions
+// Maximum number of iterations for numerical IK
 const int32_t kMaxItrIK = 1000;
-// Numerical IK tolerance error
+// Tolerance for numerical IK
 const double kIKDelta = 1.0e-3;
-// Numerical IK tolerance fluctuation
+// Allowable variation for numerical IK
 const double kIKConvergeThreshold = 1.0e-10;
-// // Frameid for debugging
+// // Debug Frame ID
 // const char* const kDebugFrameId = "/debug/robot_base";
 
-// /// List of Marker ID and Robot_collisin_detector
+// /// List of marker IDs and object names on robot_collisin_detector
 // typedef std::map<string, visualization_msgs::Marker> AttachedMarkerList;
 
-/// @brief Take out the joint angle specified by Joint_names from Initial_state
+/// @brief Extract joint angles specified by joint_names from initial_state
+/// @param [in] robot_collision_detector Robot collision detection model
+/// @param [in] initial_state Initial posture
+/// @param [in] joint_names List of joint names to be extracted
+/// @return Extracted joint angle vector
 Eigen::VectorXd ExtractJoints(
     const tmc_robot_collision_detector::RobotCollisionDetector::Ptr& robot_collision_detector,
     const tmc_manipulation_types::JointState& initial_state,
@@ -68,7 +75,10 @@ Eigen::VectorXd ExtractJoints(
   return robot_collision_detector->GetRobotNamedAngle(joint_names).position;
 }
 
-/// Take out all joint angles
+/// Extract all joint angles
+/// @param [in] robot_collision_detector Robot collision detection model
+/// @param [in] partial_joint_state Partial joint angles
+/// @return All joint angle vectors
 tmc_manipulation_types::JointState FetchAllJoints(
     const tmc_robot_collision_detector::RobotCollisionDetector::Ptr& robot_collision_detector,
     const tmc_manipulation_types::JointState& partial_joint_state) {
@@ -86,7 +96,9 @@ void InitPoseMsg(geometry_msgs::msg::Pose& pose) {
   pose.orientation.w = 1.0;
 }
 
-/// @brief Calculate the simultaneous conversion where the X axis faces AXIS direction
+/// @brief Calculate the simultaneous transformation where the x-axis faces the direction of axis
+/// @param [in] x_axis Direction of the x-axis
+/// @return Coordinate system where the x-axis faces the direction of x_axis
 Eigen::Affine3d CalcPoseFromAxisX(const Eigen::Vector3d& x_axis) {
   Eigen::Vector3d x_axis_n(x_axis);
   x_axis_n.normalize();
@@ -100,14 +112,18 @@ Eigen::Affine3d CalcPoseFromAxisX(const Eigen::Vector3d& x_axis) {
   return Eigen::Affine3d::Identity() * aa;
 }
 
-/// @brief Build the last IK's chain of responsibility with numerical IK.
+/// @brief Construct a chain of responsibility for IK ending with numerical IK.
+/// @param[in] ik_plugins IK plugin names arranged in order of low priority
+/// @param[in] robot_model Robot model passed to numerical IK
+/// @param[in] ik_plugin_loader Plugin loader
+/// @return Chain of responsibility for IK ending with numerical IK
 tmc_robot_kinematics_model::IKSolver::Ptr LoadIKSolver(
     const rclcpp::Logger& logger,
     const std::vector<std::string>& ik_plugins,
     const tmc_robot_kinematics_model::IRobotKinematicsModel::Ptr& robot,
     const std::string& robot_model,
     pluginlib::ClassLoader<tmc_robot_kinematics_model::IKSolver>& ik_plugin_loader) {
-  /// Read IK_plugin
+  /// Load ik_plugin
   std::vector<tmc_robot_kinematics_model::IKSolver::Ptr> ik_plugin_solvers;
   for (const auto& plugin : ik_plugins) {
     try {
@@ -135,7 +151,15 @@ tmc_robot_kinematics_model::IKSolver::Ptr LoadIKSolver(
   return chain_ik_solver;
 }
 
-/// @brief ORIGINAL_WEIGHT_CONFIG overwrites with weIGHTS to create Weight_config
+/// @brief Create weight_config by overwriting original_weight_config with weights
+/// @param [in] use_joints List of joints to be used
+/// @param [in] original_weights Original joint angle weights
+/// @param [in] weighted_joints List of joints to be weighted
+/// @param [in] weights Weights for each joint
+/// @param [in] base_type Type of base movement
+/// @param [in] weight_linear_base Translational weight of the base cart
+/// @param [in] weight_rotational_base Rotational weight of the base cart
+/// @retval Joint weight vector
 tmc_robot_planner::Config CalculateWeightConfig(
     const rclcpp::Logger& logger,
     const std::vector<std::string>& use_joints,
@@ -203,7 +227,12 @@ tmc_robot_planner::Config CalculateWeightConfig(
   return weight_config;
 }
 
-/// @brief Extract the weight of target_name
+/// @brief Extract weight of target_name
+/// @param [in] joint_names List of joint names
+/// @param [in] weights Weights for each joint
+/// @param [in] target_name Target to be extracted
+/// @param [in] default_value Value if the target to be extracted does not exist
+/// @retval Joint weight
 double ExtractWeight(const std::vector<std::string>& joint_names,
                      const std::vector<double>& weights,
                      const std::string& target_name,
@@ -216,7 +245,11 @@ double ExtractWeight(const std::vector<std::string>& joint_names,
   }
 }
 
-/// @brief Read a plugin that restricts the joints
+/// @brief Load plugins that constrain joints
+/// @param[in] name Plugin name
+/// @param[in] loader Plugin loader
+/// @param[in/out] cache Plugins managed by name
+/// @param[out] dst_plugin Target plugin
 tmc_robot_planner::IConfigurationConstraint::Ptr LoadConfigurationConstraint(
     const rclcpp::Logger& logger,
     const std::string& name,
@@ -258,7 +291,7 @@ RobotRrtPlannerNode::RobotRrtPlannerNode(const rclcpp::NodeOptions& options)
 bool RobotRrtPlannerNode::Init() {
   auto node = shared_from_this();
 
-  // Robot model, initialization of Planner
+  // Initialize robot model and planner
   auto robot_model = tmc_utils::GetParameter<std::string>(node, "robot_description_kinematics", "");
   if (robot_model.empty()) {
     robot_model = tmc_utils::GetParameter<std::string>(node, "robot_description", "");
@@ -288,13 +321,13 @@ bool RobotRrtPlannerNode::Init() {
 
   planner_ = std::make_shared<tmc_robot_planner::RobotCBiRrtPlanner>(robot, robot_collision_detector_, ik_solver);
 
-  // Whether to output a file request for orbital plan
+  // Whether to output the trajectory planning request to a file or not
   const auto save_request = tmc_utils::GetParameter<bool>(node, "save_request", false);
   if (save_request) {
     request_logger_ = std::make_shared<tmc_utils::MessageLogger>(tmc_utils::GetLogDirectory() + "/plan_");
   }
 
-  // Acquisition of weight parameters
+  // Get weight parameters
   weight_names_ = tmc_utils::GetParameter<std::vector<std::string>>(node, "weight_names", {});
   weights_ = tmc_utils::GetParameter<std::vector<double>>(node, "weights", {});
   if (weight_names_.size() != weights_.size()) {
@@ -324,6 +357,8 @@ bool RobotRrtPlannerNode::Init() {
   step_sampling_deviation_ = tmc_utils::GetParameter<double>(node, "step_sampling_deviation", kDefaultStepSampling);
 
   publish_debug_info_ = tmc_utils::GetParameter<bool>(node, "publish_debug_info", false);
+  print_debug_info_ = std::make_shared<tmc_utils::DynamicParameter<bool>>(node, "print_debug_info", false);
+
   step_mode_ = tmc_utils::GetParameter<bool>(node, "step_mode", false);
 
   if (publish_debug_info_) {
@@ -418,9 +453,9 @@ void RobotRrtPlannerNode::PlanWithTsrConstraints(
   planning_request.weight_config_ik = CalculateWeightConfig(
       get_logger(), req->use_joints, Eigen::VectorXd::Ones(req->use_joints.size() + base_dof),
       ik_weight_names_, ik_weights_, weight_linear_base_ik_, weight_rotational_base_ik_, planning_request.base_type);
-  // Overwrite the weight of IK by weighting in Request
-  // If you have '_linear_base' in Weighted_Joints, overwrite Linear_base_ik
-  // If weighted_Joints has '_rotational_base', overwrite Rotational_base_ik
+  // Overwrite ik weights with weighting in request
+  // If '_linear_base' is in weighted_joints, overwrite linear_base_ik
+  // If '_rotational_base' is in weighted_joints, overwrite rotational_base_ik
   if (req->weighted_joints.size() != req->weight.size()) {
     RCLCPP_ERROR(get_logger(), "Mismatch weight joint size and weights size.");
     res->error_code.val = moveit_msgs::msg::MoveItErrorCodes::INVALID_MOTION_PLAN;
@@ -436,10 +471,11 @@ void RobotRrtPlannerNode::PlanWithTsrConstraints(
     return;
   }
 
-  // Read the restraint plugin
+  // Load constraint plugin
   for (const auto& plugin : req->extra_constraints) {
-    tmc_robot_planner::IConfigurationConstraint::Ptr constraint;
-    if (!LoadConfigurationConstraint(get_logger(), plugin, constraint_plugin_loader_, constraint_plugin_cache_)) {
+    tmc_robot_planner::IConfigurationConstraint::Ptr constraint =
+        LoadConfigurationConstraint(get_logger(), plugin, constraint_plugin_loader_, constraint_plugin_cache_);
+    if (!constraint) {
       res->error_code.val = moveit_msgs::msg::MoveItErrorCodes::INVALID_MOTION_PLAN;
       return;
     }
@@ -448,23 +484,25 @@ void RobotRrtPlannerNode::PlanWithTsrConstraints(
     planning_request.extra_goal_constraints.push_back(constraint);
   }
   for (const auto& plugin : req->extra_start_constraints) {
-    tmc_robot_planner::IConfigurationConstraint::Ptr constraint;
-    if (!LoadConfigurationConstraint(get_logger(), plugin, constraint_plugin_loader_, constraint_plugin_cache_)) {
+    tmc_robot_planner::IConfigurationConstraint::Ptr constraint =
+        LoadConfigurationConstraint(get_logger(), plugin, constraint_plugin_loader_, constraint_plugin_cache_);
+    if (!constraint) {
       res->error_code.val = moveit_msgs::msg::MoveItErrorCodes::INVALID_MOTION_PLAN;
       return;
     }
     planning_request.extra_start_constraints.push_back(constraint);
   }
   for (const auto& plugin : req->extra_goal_constraints) {
-    tmc_robot_planner::IConfigurationConstraint::Ptr constraint;
-    if (!LoadConfigurationConstraint(get_logger(), plugin, constraint_plugin_loader_, constraint_plugin_cache_)) {
+    tmc_robot_planner::IConfigurationConstraint::Ptr constraint =
+        LoadConfigurationConstraint(get_logger(), plugin, constraint_plugin_loader_, constraint_plugin_cache_);
+    if (!constraint) {
       res->error_code.val = moveit_msgs::msg::MoveItErrorCodes::INVALID_MOTION_PLAN;
       return;
     }
     planning_request.extra_goal_constraints.push_back(constraint);
   }
 
-  // Use of external obstacles and amendment
+  // Use external obstacles and objects being grasped
   tmc_manipulation_types_bridge::ConvertSequenceWithEigenOut<moveit_msgs::msg::CollisionObject,
                                                              tmc_manipulation_types::OuterObjectParameters>(
       req->environment_before_planning.collision_objects,  planning_request.known_objects,
@@ -474,10 +512,12 @@ void RobotRrtPlannerNode::PlanWithTsrConstraints(
       req->attached_objects, planning_request.attached_objects,
       tmc_manipulation_types_bridge::AttachedObjectMsgToAttachedObject);
 
-  if (publish_debug_info_) {
+  if (publish_debug_info_ || print_debug_info_->value()) {
     // PublishEnvironmentDebug(req->environment_before_planning, true, debug_environment_pub_);
     // SetDebugCallBacks_(req->use_joints, planning_request.attached_objects, req->environment_before_planning);
     SetDebugCallBacks_(req->use_joints);
+  }
+  if (print_debug_info_->value()) {
     RCLCPP_INFO(get_logger(), "[planner_node]:Start planning with tsr constraints!");
   }
 
@@ -571,7 +611,7 @@ void RobotRrtPlannerNode::PlanWithJointGoals(
   res->error_code = tsr_res->error_code;
 }
 
-/// Exercise plan with the target value of the Hand position
+/// Motion planning with Hand position as the target
 void RobotRrtPlannerNode::PlanWithHandGoals(
     const tmc_planning_msgs::srv::PlanWithHandGoals::Request::SharedPtr req,
     tmc_planning_msgs::srv::PlanWithHandGoals::Response::SharedPtr res) {
@@ -598,7 +638,7 @@ void RobotRrtPlannerNode::PlanWithHandGoals(
   tsr_req->extra_goal_constraints = req->extra_goal_constraints;
   tsr_req->goal_no_ik_joint_state = req->goal_no_ik_joint_state;
 
-  // Converts the target value to TSR
+  // Convert end-effector target to TSR
   for (const auto& hand_goal : req->origin_to_hand_goals) {
     tmc_planning_msgs::msg::TaskSpaceRegion hand_goal_tsr;
     hand_goal_tsr.end_frame_id = req->ref_frame_id;
@@ -622,7 +662,7 @@ void RobotRrtPlannerNode::PlanWithHandGoals(
   res->origin_to_hand_after_planning = tf2::toMsg(robot_collision_detector_->GetObjectTransform(req->ref_frame_id));
 }
 
-/// Exercise plan with the target value of Hand straight
+/// Motion planning with Hand line as the target
 void RobotRrtPlannerNode::PlanWithHandLine(
     const tmc_planning_msgs::srv::PlanWithHandLine::Request::SharedPtr req,
     tmc_planning_msgs::srv::PlanWithHandLine::Response::SharedPtr res) {
@@ -657,11 +697,11 @@ void RobotRrtPlannerNode::PlanWithHandLine(
   robot_collision_detector_->SetRobotNamedAngle(initial_config);
 
   const auto origin_to_hand = robot_collision_detector_->GetObjectTransform(req->ref_frame_id);
-  // Decide ORIGIN_TO_HAND so that REQ AXIS becomes an X -axis
+  // Determine origin_to_hand so that the axis in req becomes the x-axis
   Eigen::Vector3d axis(req->axis.x, req->axis.y, req->axis.z);
   axis.normalize();
 
-  // Separate processing depending on whether AXIS is local or global
+  // Handle differently depending on whether the axis is local or global
   Eigen::Affine3d origin_to_tsr;
   Eigen::Affine3d tsr_to_hand;
   if (req->local_origin_of_axis) {
@@ -672,7 +712,7 @@ void RobotRrtPlannerNode::PlanWithHandLine(
     origin_to_tsr = CalcPoseFromAxisX(axis);
     tsr_to_hand = origin_to_tsr.inverse() * origin_to_hand;
   }
-  // Straight -line restraint
+  // Linear constraint
   tmc_manipulation_types::RegionValues min_constraint;
   tmc_manipulation_types::RegionValues max_constraint;
   if (req->goal_value > 0.0) {
@@ -709,7 +749,7 @@ void RobotRrtPlannerNode::PlanWithHandLine(
   res->origin_to_hand_after_planning = tf2::toMsg(robot_collision_detector_->GetObjectTransform(req->ref_frame_id));
 }
 
-  // /// Take out the object posture
+  // /// Extract object posture
   // geometry_msgs::Pose RobotRrtPlannerNode::FetchFrame_(
   //     const tmc_manipulation_types::JointState& joint_state,
   //     const string& object_name) {
@@ -743,9 +783,9 @@ void RobotRrtPlannerNode::SetDebugCallBacks_(const std::vector<std::string>& joi
 }
 
 /// @brief For debugging
-///  Publish of the given joint_state
-///  Update the marker position of ATTACHED_OBJECT
-///  Display interference PAIR on the console
+///  Publish the given joint_state
+///  Update the marker position of the attached_object
+///  Display interfering pairs on the console
 void RobotRrtPlannerNode::PublishJointStateAndAttachedObject_(
     const Eigen::VectorXd& config,
     bool feasible,
@@ -765,40 +805,41 @@ void RobotRrtPlannerNode::PublishJointStateAndAttachedObject_(
     joint_state_msg.header.stamp = this->now();
     debug_joint_state_pub_->publish(joint_state_msg);
 
+    // TODO(Koji Terada) ロボットの基底リンクの名前をパラメータで与える
     auto origin_to_base = tf2::eigenToTransform(robot_collision_detector_->GetRobotTransform());
     origin_to_base.header.stamp = this->now();
     origin_to_base.header.frame_id = "origin";
     origin_to_base.child_frame_id = "base_link";
     debug_tf_broadcaster_->sendTransform(origin_to_base);
-  }
-  if (!debug_msg.empty()) {
-    RCLCPP_INFO(get_logger(), "[planner_node]:%s", debug_msg.c_str());
-  }
 
-  // if (publish_debug_info_) {
-  //   tmc_manipulation_msgs::CollisionEnvironment current_collision_environment;
-  //   FetchCollisionEnvironment(
-  //       robot_collision_detector_->GetRobotNamedAngle(),
-  //       robot_collision_detector_->GetRobotTransform(),
-  //       attached_objects,
-  //       robot_collision_detector_,
-  //       environment,
-  //       current_collision_environment);
-  //   geometry_msgs::Pose origin_to_robot;
-  //   Affine3dToPoseMsg(robot_collision_detector_->GetRobotTransform(),
-  //                     origin_to_robot);
-  //   PublishEnvironmentDebug(current_collision_environment,
-  //                           debug_environment_pub_);
-  // }
-
-  if (!feasible) {
-    if (!planner_->limit_joint().empty()) {
-      RCLCPP_INFO(get_logger(), "[planner_node]: limit = %s", planner_->limit_joint().c_str());
+    // tmc_manipulation_msgs::CollisionEnvironment current_collision_environment;
+    // FetchCollisionEnvironment(
+    //     robot_collision_detector_->GetRobotNamedAngle(),
+    //     robot_collision_detector_->GetRobotTransform(),
+    //     attached_objects,
+    //     robot_collision_detector_,
+    //     environment,
+    //     current_collision_environment);
+    // geometry_msgs::Pose origin_to_robot;
+    // Affine3dToPoseMsg(robot_collision_detector_->GetRobotTransform(),
+    //                   origin_to_robot);
+    // PublishEnvironmentDebug(current_collision_environment,
+    //                         debug_environment_pub_);
+  }
+  if (print_debug_info_->value()) {
+    if (!debug_msg.empty()) {
+      RCLCPP_INFO(get_logger(), "[planner_node]:%s", debug_msg.c_str());
     }
-    if (!planner_->last_contact_pair().empty()) {
-      RCLCPP_INFO(get_logger(), "[planner_node]: contact pair = %s vs %s",
-                  planner_->last_contact_pair().at(0).first.c_str(),
-                  planner_->last_contact_pair().at(0).second.c_str());
+
+    if (!feasible) {
+      if (!planner_->limit_joint().empty()) {
+        RCLCPP_INFO(get_logger(), "[planner_node]: limit = %s", planner_->limit_joint().c_str());
+      }
+      if (!planner_->last_contact_pair().empty()) {
+        RCLCPP_INFO(get_logger(), "[planner_node]: contact pair = %s vs %s",
+                    planner_->last_contact_pair().at(0).first.c_str(),
+                    planner_->last_contact_pair().at(0).second.c_str());
+      }
     }
   }
   if (step) {

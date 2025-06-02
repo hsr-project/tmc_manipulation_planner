@@ -25,6 +25,10 @@ LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT
 OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH
 DAMAGE.
 */
+///
+/// robot_rrt_planner_node_mani.cpp - main
+///
+///
 #include <rclcpp/rclcpp.hpp>
 #include "robot_rrt_planner_node.hpp"
 

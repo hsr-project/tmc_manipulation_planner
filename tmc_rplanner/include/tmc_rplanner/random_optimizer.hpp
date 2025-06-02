@@ -25,7 +25,12 @@ LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT
 OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH
 DAMAGE.
 */
-/// @brief    Optimization by the Monte Carlo method
+/// @file     random_optimizer.hpp
+/// @brief    Optimization using the Monte Carlo method
+/// @author   Koji Terada
+/// @version  1.0.0
+/// @date     2011.10.25
+/// @note     [1.0.0] 2011.10.19 Newly created
 
 #ifndef TMC_MANIPULATION_TMC_RPLANNER_RANDOM_OPTIMIZER_HPP_
 #define TMC_MANIPULATION_TMC_RPLANNER_RANDOM_OPTIMIZER_HPP_
@@ -36,15 +41,15 @@ DAMAGE.
 namespace tmc_rplanner {
 
 /// @class Random_Optimizer
-/// @brief Implementation by Random_optimizer of Configoptimizer
-/// @note Just return the optimal value in a random configuration
+/// @brief Implementation using ConfigOptimizer's random_optimizer
+/// @note Only returns the best value among random configurations
 class RandomOptimizer : public IConfigOptimizer {
  public:
-  /// @brief Pass the planner space and the termination conditions
-  /// @param space Configuration space
-  /// @param max_itr Maximum number of repetitions
-  /// @param max_eval Maximum evaluation
-  /// @param is_terminate Forced termination conditions
+  /// @brief Pass the planner space and termination conditions
+  /// @param space Pointer to the planner space
+  /// @param max_itr Maximum number of iterations
+  /// @param max_eval Maximum number of evaluations
+  /// @param is_terminate Forced termination condition
   RandomOptimizer(ConfigurationSpace::Ptr space,
                   int32_t max_itr,
                   int32_t max_eval,
@@ -52,26 +57,26 @@ class RandomOptimizer : public IConfigOptimizer {
       space_(space), max_itr_(max_itr),
       max_eval_(max_eval), is_terminate_(is_terminate) {}
 
-  /// @brief Pass the planner space and the termination conditions
-  /// @param space Configuration space
-  /// @param max_itr Maximum number of repetitions
-  /// @param max_eval Maximum evaluation
+  /// @brief Pass the planner space and termination conditions
+  /// @param space Pointer to the planner space
+  /// @param max_itr Maximum number of iterations
+  /// @param max_eval Maximum number of evaluations
   RandomOptimizer(ConfigurationSpace::Ptr space,
                   int32_t max_itr,
                   int32_t max_eval) :
       space_(space), max_itr_(max_itr),
       max_eval_(max_eval) {}
   virtual ~RandomOptimizer() {}
-  /// Optimization execution
+  /// Execute optimization
   virtual bool Optimize(Config& config_out,
                         double& value_out);
 
  private:
-  // Copy prohibition
+  // Prohibition of copying
   RandomOptimizer(const RandomOptimizer&);
   RandomOptimizer& operator=(const RandomOptimizer&);
   const ConfigurationSpace::Ptr space_;
-  /// Maximum number of repetitions
+  /// Maximum number of iterations
   const int32_t max_itr_;
   /// Maximum number of evaluations
   const int32_t max_eval_;

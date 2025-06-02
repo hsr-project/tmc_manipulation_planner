@@ -25,7 +25,12 @@ LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT
 OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH
 DAMAGE.
 */
-/// @brief    Generalized Birrt
+/// @file     multi_birrt_planner.cpp
+/// @brief Generalized BiRRT
+/// @author   Koji Terada
+/// @version  1.0.0
+/// @date     2012.3.27
+/// @note     [1.0.0] 2012.3.28 Newly created
 
 #include <ctime>
 #include <algorithm>
@@ -43,8 +48,12 @@ using StartGoalPairSet = std::vector<StartGoalPair>;
 
 namespace tmc_rplanner {
 
-/// @brief Proceed with Tree A with a random configuration,
-///        Try to connect from Tree B to Tree A
+/// @brief Advance tree a one step towards a random configuration,
+///        and attempt to connect from tree b to tree a
+/// @param space Configuration space
+/// @param tree_a Exploring tree
+/// @param tree_b Connecting tree
+/// @return true: Connection successful false: Connection failed
 static bool BuildOneStepM(ConfigurationSpace::Ptr space,
                           ConfigurationTree& tree_a,
                           ConfigurationTree& tree_b,
@@ -59,7 +68,7 @@ static bool BuildOneStepM(ConfigurationSpace::Ptr space,
   return false;
 }
 
-/// Pass generation.
+/// Path generation.
 PlanRet MultiBirrtPlanner::PlanPath(const std::vector<Config>& start_configs,
                                     const std::vector<Config>& goal_configs,
                                     Path& path_out) {
@@ -80,7 +89,7 @@ void MultiBirrtPlanner::PathCallBack_(const Path& path) {
 }
 
 
-// Production of paths. Until the number of passes is available
+// Path generation. Until the specified number of paths is made
 PlanRet MultiBirrtPlanner::PlanPaths(const std::vector<Config>& start_configs,
                                      const std::vector<Config>& goal_configs,
                                      uint32_t max_paths,
@@ -108,7 +117,7 @@ PlanRet MultiBirrtPlanner::PlanPaths(const std::vector<Config>& start_configs,
   bool start_config_obtained = false;
   bool goal_config_obtained = false;
 
-  // After checking the initial values ​​given by arguments, added
+  // Check the initial value given by the argument and then add
   for (std::vector<Config>::const_iterator config = start_configs.begin();
        config != start_configs.end(); ++config) {
     Config constrained_config;
@@ -122,7 +131,7 @@ PlanRet MultiBirrtPlanner::PlanPaths(const std::vector<Config>& start_configs,
     }
   }
 
-  // Added after checking the terminal value given by arguments
+  // Check the terminal value given by the argument and then add
   for (std::vector<Config>::const_iterator config = goal_configs.begin();
        config != goal_configs.end(); ++config) {
     Config constrained_config;
@@ -139,7 +148,7 @@ PlanRet MultiBirrtPlanner::PlanPaths(const std::vector<Config>& start_configs,
   // Main loop
   for (int32_t i = 0; i < max_itr_; ++i)  {
     is_success = false;
-    // Check the end conditions (timeout, etc.)
+    // Check exit condition (timeout, etc.)
     if (is_terminate_ && is_terminate_()) {
       if (!paths_out.empty()) {
         return kSuccess;
@@ -152,8 +161,8 @@ PlanRet MultiBirrtPlanner::PlanPaths(const std::vector<Config>& start_configs,
       }
     }
 
-    // Add the initial value with the probability of Probability_start_generate
-    // Added if there is no initial value yet
+    // Add initial value with probability of probability_start_generate
+    // Add even if initial value does not exist yet
     if (!start_config_obtained || randf(eng) < probability_start_generate_) {
       Config config;
       if (space_->GenerateStartConfig(config)) {
@@ -172,8 +181,8 @@ PlanRet MultiBirrtPlanner::PlanPaths(const std::vector<Config>& start_configs,
       continue;
     }
 
-    // Add the terminal value with the probability of Probability_start_generate
-    // Added if the terminal value has not yet existed
+    // Add terminal value with probability of probability_start_generate
+    // Add even if terminal value does not exist yet
     if (!goal_config_obtained || randf(eng) < probability_goal_generate_) {
       Config config;
       if (space_->GenerateGoalConfig(config)) {
@@ -203,15 +212,15 @@ PlanRet MultiBirrtPlanner::PlanPaths(const std::vector<Config>& start_configs,
         is_success = true;
       }
     }
-    // Add a tree if you succeed
+    // Add tree in case of success
     if (is_success == true) {
       Path start_path;
       Path goal_path;
       tree_s->TrackBackPath(start_path);
       tree_g->TrackBackPath(goal_path);
 
-      // If there is no combination of SART and Goal before
-      // Add to Start_goal_pair_set and add a path to Paths_out
+      // If the combination of start and goal is unique
+      // Add to start_goal_pair_set and add path to paths_out
       StartGoalPair new_pair(start_path.front(), goal_path.front());
 
       if (std::find(start_goal_pair_set.begin(),
@@ -219,7 +228,7 @@ PlanRet MultiBirrtPlanner::PlanPaths(const std::vector<Config>& start_configs,
                     new_pair) == start_goal_pair_set.end()) {
         start_goal_pair_set.push_back(new_pair);
         Path path;
-        /// Pass from the goal is added in reverse order
+        /// Path from goal is added in reverse order
         path = start_path;
         path.insert(path.end(), goal_path.rbegin(), goal_path.rend());
         paths_out.push_back(path);

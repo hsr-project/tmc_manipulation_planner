@@ -56,8 +56,8 @@ using std::numeric_limits;
 using std::ofstream;
 using std::pair;
 
-// Loose than the original
-// Perhaps because of the initial speed, there were many cases where the retreat failed at the starting point.
+// Relaxed compared to the original
+// Possibly due to the influence of initial velocity, cases of failure in backward integration at the starting point frequently occurred
 const double Trajectory::eps = 0.00002;
 
 static double squared(double d) { return d * d; }
@@ -72,10 +72,10 @@ Trajectory::Trajectory(const Path &path, const VectorXd &maxVelocity,
       valid(true),
       timeStep(timeStep),
       cachedTime(numeric_limits<double>::max()) {
-  // In the original, the initial speed is zero
-  // In order to optimize with initial speed, do you use the first speed of S and use a straight segment?
-  // Do you devise an F (S) that has the initial speed of the joint space even if the initial speed of S is zero?
-  // I couldn't find a good F (S), so I chose the former
+  // The original sets the initial velocity to zero
+  // For optimization with initial velocity, either input the initial velocity of s here and use a linear segment
+  // Or devise f(s) in such a way that initial velocity exists in the joint space even if the initial velocity of s is zero
+  // Chose the former as no suitable f(s) could be found
   trajectory.push_back(TrajectoryStep(0.0, init_velocity_abs));
   double afterAcceleration =
       getMinMaxPathAcceleration(0.0, init_velocity_abs, true);

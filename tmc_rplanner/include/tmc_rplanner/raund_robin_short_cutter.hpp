@@ -25,7 +25,12 @@ LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT
 OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH
 DAMAGE.
 */
-/// @brief    Shortcut by a brute force
+/// @file     raund_robin_short_cutterr.hpp
+/// @brief    Shortcut by brute force
+/// @author   Koji Terada
+/// @version  1.0.0
+/// @date     2011.11.01
+/// @note     [1.0.0] 2011.11.1 Newly created
 
 #ifndef TMC_MANIPULATION_TMC_RPLANNER_ROUND_ROBIN_SHORT_CUTTER_HPP_
 #define TMC_MANIPULATION_TMC_RPLANNER_ROUND_ROBIN_SHORT_CUTTER_HPP_
@@ -36,15 +41,15 @@ DAMAGE.
 namespace tmc_rplanner {
 
 /// @class RaundRobinShorCutter
-/// @brief Shortcut by a brute force
+/// @brief Shortcut by brute force
 class RoundRobinShortCutter : public IPathShortCutter {
  public:
-  /// @brief Give the planner space
-  /// @param space Configuration space
-  /// @param delta Exploration carved width
-  /// @param bidirectional Shortcut in both directions
-  /// @param skip When shortcuts, skip the node with this value
-  /// @param is_terminate termination conditions
+  /// @brief Pass the planner space
+  /// @param space Pointer to the planner space
+  /// @param delta Search increment width
+  /// @param bidirectional Shortcut bidirectionally
+  /// @param skip Skip nodes by this value when doing shortcuts.
+  /// @param is_terminate Termination condition
   RoundRobinShortCutter(ConfigurationSpace::Ptr space,
                         double delta,
                         bool bidirectional,
@@ -53,11 +58,11 @@ class RoundRobinShortCutter : public IPathShortCutter {
       space_(space), delta_(delta),
       bidirectional_(bidirectional), skip_(skip),
       is_terminate_(is_terminate) {}
-  /// @brief Give the planner space
-  /// @param space Configuration space
-  /// @param delta Exploration carved width
-  /// @param bidirectional Shortcut in both directions
-  /// @param skip When shortcuts, skip the node with this value
+  /// @brief Pass the planner space
+  /// @param space Pointer to the planner space
+  /// @param delta Search increment width
+  /// @param bidirectional Shortcut bidirectionally
+  /// @param skip Skip nodes by this value when doing shortcuts.
   RoundRobinShortCutter(ConfigurationSpace::Ptr space,
                         double delta,
                         bool bidirectional,
@@ -66,11 +71,11 @@ class RoundRobinShortCutter : public IPathShortCutter {
       bidirectional_(bidirectional), skip_(skip) {}
 
   ~RoundRobinShortCutter() {}
-  /// Shorter the path
+  /// Shorten the path
   virtual bool ShortCut(const Path& path_in, Path& path_out);
 
  private:
-  // Copy prohibition
+  // Prohibition of copying
   RoundRobinShortCutter(const RoundRobinShortCutter&);
   RoundRobinShortCutter& operator=(const RoundRobinShortCutter&);
   bool ShortCutOnce_(int32_t skip, const Path& path_in, Path& path_out) const;

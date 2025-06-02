@@ -1,33 +1,33 @@
 #!/usr/bin/env python
-'''
-Copyright (c) 2024 TOYOTA MOTOR CORPORATION
-All rights reserved.
-Redistribution and use in source and binary forms, with or without
-modification, are permitted (subject to the limitations in the disclaimer
-below) provided that the following conditions are met:
-* Redistributions of source code must retain the above copyright notice, this
-  list of conditions and the following disclaimer.
-* Redistributions in binary form must reproduce the above copyright notice,
-  this list of conditions and the following disclaimer in the documentation
-  and/or other materials provided with the distribution.
-* Neither the name of the copyright holder nor the names of its contributors may be used
-  to endorse or promote products derived from this software without specific
-  prior written permission.
-NO EXPRESS OR IMPLIED LICENSES TO ANY PARTY'S PATENT RIGHTS ARE GRANTED BY THIS
-LICENSE. THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
-"AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO,
-THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
-ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE
-LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR
-CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE
-GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION)
-HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT
-LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT
-OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH
-DAMAGE.
-'''
+# Copyright (c) 2024 TOYOTA MOTOR CORPORATION
+# All rights reserved.
+# Redistribution and use in source and binary forms, with or without
+# modification, are permitted (subject to the limitations in the disclaimer
+# below) provided that the following conditions are met:
+# * Redistributions of source code must retain the above copyright notice, this
+#   list of conditions and the following disclaimer.
+# * Redistributions in binary form must reproduce the above copyright notice,
+#   this list of conditions and the following disclaimer in the documentation
+#   and/or other materials provided with the distribution.
+# * Neither the name of the copyright holder nor the names of its contributors may be used
+#   to endorse or promote products derived from this software without specific
+#   prior written permission.
+# NO EXPRESS OR IMPLIED LICENSES TO ANY PARTY'S PATENT RIGHTS ARE GRANTED BY THIS
+# LICENSE. THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
+# "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO,
+# THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
+# ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE
+# LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR
+# CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE
+# GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION)
+# HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT
+# LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT
+# OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH
+# DAMAGE.
 # -*- coding: utf-8 -*-
-u"""Timeopt class single test."""
+u"""Unit test for the Timeopt class."""
+
+from __future__ import print_function
 
 from math import cos
 from math import sin
@@ -103,12 +103,12 @@ class TestTimeopt(unittest.TestCase):
         self.timeopt.set_trajectory(self._traj)
 
     def test_preprocess(self):
-        u"""Check below.
+        u"""Perform the following checks.
 
-        1. Is MVC and VLC properly stored?
-        2. Is dynamics calculated properly?Test
+        1. Check if MVC and VLC are stored correctly
+        2. Test if dynamics are calculated correctly.
         """
-        # Prepare the value of MVC and VLC checks with Mock
+        # Prepare mock values for checking MVC and VLC
         VLC_CHECK = 11.0
         MVC_CHECK = 22.0
         SA_CHECK = 33.0
@@ -120,7 +120,7 @@ class TestTimeopt(unittest.TestCase):
         self.timeopt._dynamics.get_mvc.return_value = MVC_CHECK
         self.timeopt._dynamics.calc_accel_limit.return_value = (SA_CHECK, SA_CHECK)
 
-        # Handle
+        # Process
         self.target.set_test_case('CASE_A')
         self.timeopt.preprocess(0.1)
 
@@ -134,7 +134,7 @@ class TestTimeopt(unittest.TestCase):
         eq_([MVC_CHECK] * size, self.timeopt._mvc)
         eq_([SA_CHECK] * size, self.timeopt._sa_mvc)
         assert_almost_equal(4.0, self.timeopt._sd[-1])
-        # Check of a, b, c, d
+        # Check a, b, c, d
         test_abcd = self.target.test_case['CASE_A']
         for i in range(size):
             for pair in self.timeopt._dynamics.limits:
@@ -150,24 +150,24 @@ class TestTimeopt(unittest.TestCase):
         self.timeopt._Timeopt__integrate_forward_segment.return_value = ('OK', 1)
         self.timeopt._Timeopt__search_switching_point = MagicMock('_Timeopt__search_switching_point')
         self.timeopt._Timeopt__search_switching_point.return_value = ('NG', 1)
-        # Handle
+        # Process
         self.target.set_test_case('CASE_A')
         self.timeopt.preprocess(0.1)
         self.timeopt.update()
 
     def test_integrate_forward_segment_cross(self):
-        u"""Is the intersection well working well?"""
+        u"""Check if intersection determination is working correctly."""
         self.timeopt._Timeopt__integrate_forward_adaptive = \
             MagicMock('_Timeopt__integrate_forward_adaptive')
-        # In this case, SV [1], SV [2], SA [0], SA [1] should be added.
+        # In this case, values should be assigned to sv[1], sv[2], sa[0], sa[1]
         self.timeopt._Timeopt__integrate_forward_adaptive.side_effect = \
             [('OK', 1, 1, 1), ('OK', 2, 2, 2), ('OK', 3, 3, 3),
              ('OK', 4, 4, 4), ('OK', 5, 5, 5), ('OK', 6, 6, 6)]
 
-        # Handle
+        # Process
         self.target.set_test_case('CASE_A')
         self.timeopt.preprocess(0.1)
-        # Set a value that considers the retreat integration to make an intersection.
+        # Set values considering backward integration for intersection determination
         self.timeopt._sv = [4.5] * self.timeopt._size
 
         result = self.timeopt._Timeopt__integrate_forward_segment(0)
@@ -185,13 +185,13 @@ class TestTimeopt(unittest.TestCase):
         eq_(5, self.timeopt._sa[4])
 
     def test_integrate_forward_segment_stop(self):
-        u"""Check that the SV and SA buffer will be updated properly."""
+        u"""Verify that the buffer of sv, sa is properly updated when stopping."""
         self.timeopt._Timeopt__integrate_forward_adaptive = MagicMock('_Timeopt__integrate_forward_adaptive')
-        # In this case, SV [1], SV [2], SA [0], SA [1] should be added.
+        # In this case, values should be assigned to sv[1], sv[2], sa[0], sa[1]
         self.timeopt._Timeopt__integrate_forward_adaptive.side_effect = \
             [('OK', 1, 1, 1), ('OK', 2, 2, 2), ('MVC', 3, 3, 3)]
 
-        # Handle
+        # Process
         self.target.set_test_case('CASE_A')
         self.timeopt.preprocess(0.1)
 
@@ -206,10 +206,10 @@ class TestTimeopt(unittest.TestCase):
         eq_(0, self.timeopt._sa[2])
 
     def test_integrate_forward_adaptive(self):
-        u"""Do you check multiple"""
+        u"""Check if it is divided into multiple parts."""
         self.timeopt._Timeopt__integrate_forward_divide = MagicMock('_Timeopt__integrate_forward_divide')
         self.timeopt._Timeopt__integrate_forward_divide.return_value = ('MVC', 1, 1, 0.1), 0, (1, 1)
-        # Handle
+        # Process
         self.target.set_test_case('CASE_A')
         self.timeopt.preprocess(0.1)
         self.timeopt._Timeopt__integrate_forward_adaptive(1, 1, 0.1)
@@ -221,13 +221,13 @@ class TestTimeopt(unittest.TestCase):
         eq_(64, call_args_list[3][0][3])
 
     def test_integrate_forward_divide_ok(self):
-        u"""Check if the split is correct"""
+        u"""Check if the division is correct"""
         self.timeopt._Timeopt__integrate_forward_step = MagicMock('_Timeopt__integrate_forward_step')
         self.timeopt._Timeopt__integrate_forward_step.return_value = ('OK', 1, 2, 3)
-        # Handle
+        # Process
         self.target.set_test_case('CASE_A')
         self.timeopt.preprocess(0.1)
-        # If singular is set, integrate only 1STEP with singular.
+        # If singular is set, integrate singular for only 1 step
         self.timeopt._fwd_singular = True
         result, _, _ = self.timeopt._Timeopt__integrate_forward_divide(0, 1, 0.1, 4)
         eq_(('OK', 1, 2, 3), result)
@@ -236,15 +236,15 @@ class TestTimeopt(unittest.TestCase):
         eq_(True, args[0][0][3])
 
     def test_integrate_forward_divide_stop(self):
-        u"""Check if it is divided and investigated."""
+        u"""Check if it is investigated after being divided."""
         self.timeopt._Timeopt__integrate_forward_step = MagicMock('_Timeopt__integrate_forward_step')
         self.timeopt._Timeopt__integrate_forward_step.side_effect = \
             [('OK', 1, 2, 3), ('OK', 1, 2, 3),
              ('MVC', 1, 2, 3), ('OK', 1, 2, 3)]
-        # Handle
+        # Process
         self.target.set_test_case('CASE_A')
         self.timeopt.preprocess(0.1)
-        # If singular is set, integrate only 1STEP with singular.
+        # If singular is set, integrate singular for only 1 step
         self._fwd_singular = True
         result, _, _ = self.timeopt._Timeopt__integrate_forward_divide(
             0, 1, 0.1, 4)
@@ -253,7 +253,7 @@ class TestTimeopt(unittest.TestCase):
             self.timeopt._Timeopt__integrate_forward_step.call_count)
 
     def test_integrate_forward_step_mvc1(self):
-        u"""When the limit is tight"""
+        u"""When constraints are tight."""
         self.timeopt._kinematics.get_vlc = MagicMock('get_vlc')
         self.timeopt._dynamics.get_mvc = MagicMock('get_mvc')
         self.timeopt._dynamics.calc_accel_limit = MagicMock('calc_accel_limit')
@@ -269,7 +269,7 @@ class TestTimeopt(unittest.TestCase):
         eq_('MVC', r)
 
     def test_integrate_forward_step_mvc2(self):
-        u"""If it goes on MVC"""
+        u"""In case affecting MVC."""
         self.timeopt._kinematics.get_vlc = MagicMock('get_vlc')
         self.timeopt._dynamics.get_mvc = MagicMock('get_mvc')
         self.timeopt._dynamics.calc_accel_limit = MagicMock('calc_accel_limit')
@@ -286,7 +286,7 @@ class TestTimeopt(unittest.TestCase):
         assert_almost_equal(1.0 + sa_max * dt_max, sv_next)
 
     def test_integrate_forward_step_vlc1(self):
-        u"""When shaping to VLC"""
+        u"""In case it can be reshaped to VLC."""
         self.timeopt._kinematics.get_vlc = MagicMock('get_vlc')
         self.timeopt._dynamics.get_mvc = MagicMock('get_mvc')
         self.timeopt._dynamics.calc_accel_limit = MagicMock('calc_accel_limit')
@@ -303,7 +303,7 @@ class TestTimeopt(unittest.TestCase):
         assert_almost_equal(1.05, sv_next)
 
     def test_integrate_forward_step_vlc2(self):
-        u"""If VLC cannot be shaped"""
+        u"""In case it cannot be reshaped to VLC."""
         self.timeopt._kinematics.get_vlc = MagicMock('get_vlc')
         self.timeopt._dynamics.get_mvc = MagicMock('get_mvc')
         self.timeopt._dynamics.calc_accel_limit = MagicMock('calc_accel_limit')
@@ -335,13 +335,13 @@ class TestTimeopt(unittest.TestCase):
         assert_almost_equal(1.0 + sa_max * dt_max, sv_next)
 
     def test_integrate_backward_segment_stop(self):
-        u"""Check that the SV and SA buffer will be updated properly."""
+        u"""Verify that the buffer of sv, sa is properly updated when stopping."""
         self.timeopt._Timeopt__integrate_backward_adaptive = MagicMock('_Timeopt__integrate_backward_adaptive')
-        # In this case, SV [9], SV [8], SA [10], SA [9] should be added.
+        # In this case, values should be assigned to sv[9], sv[8], sa[10], sa[9]
         self.timeopt._Timeopt__integrate_backward_adaptive.side_effect = \
             [('OK', 9, 9, 9), ('OK', 8, 8, 8), ('MVC', 7, 7, 7)]
 
-        # Handle
+        # Process
         self.target.set_test_case('CASE_A')
         self.timeopt.preprocess(0.1)
 
@@ -356,10 +356,10 @@ class TestTimeopt(unittest.TestCase):
         eq_(0, self.timeopt._sa[7])
 
     def test_integrate_backward_adaptive(self):
-        u"""Do you check multiple"""
+        u"""Check if it is divided into multiple parts."""
         self.timeopt._Timeopt__integrate_backward_divide = MagicMock('_Timeopt__integrate_backward_divide')
         self.timeopt._Timeopt__integrate_backward_divide.return_value = ('MVC', 1, 1, 0.1), 0, (1, 1)
-        # Handle
+        # Process
         self.target.set_test_case('CASE_A')
         self.timeopt.preprocess(0.1)
         self.timeopt._Timeopt__integrate_backward_adaptive(10, 1, 0.1)
@@ -372,13 +372,13 @@ class TestTimeopt(unittest.TestCase):
         eq_(64, call_args_list[3][0][3])
 
     def test_integrate_backward_divide_ok(self):
-        u"""Check if the split is correct"""
+        u"""Check if the division is correct"""
         self.timeopt._Timeopt__integrate_backward_step = MagicMock('_Timeopt__integrate_backward_step')
         self.timeopt._Timeopt__integrate_backward_step.return_value = ('OK', 9, 2, 3)
-        # Handle
+        # Process
         self.target.set_test_case('CASE_A')
         self.timeopt.preprocess(0.1)
-        # If singular is set, integrate only 1STEP with singular.
+        # If singular is set, integrate singular for only 1 step
         self.timeopt._bkw_singular = True
         result, _, _ = self.timeopt._Timeopt__integrate_backward_divide(10, 1, 0.1, 4)
         eq_(('OK', 9, 2, 3), result)
@@ -387,22 +387,22 @@ class TestTimeopt(unittest.TestCase):
         eq_(True, args[0][0][3])
 
     def test_integrate_backward_divide_stop(self):
-        u"""Check if it is divided and investigated"""
+        u"""Check if it is investigated after being divided."""
         self.timeopt._Timeopt__integrate_backward_step = MagicMock('_Timeopt__integrate_backward_step')
         self.timeopt._Timeopt__integrate_backward_step.side_effect = \
             [('OK', 9, 2, 3), ('OK', 9, 2, 3),
              ('MVC', 9, 2, 3), ('OK', 9, 2, 3)]
-        # Handle
+        # Process
         self.target.set_test_case('CASE_A')
         self.timeopt.preprocess(0.1)
-        # If singular is set, integrate only 1STEP with singular.
+        # If singular is set, integrate singular for only 1 step
         self._fwd_singular = True
         result, _, _ = self.timeopt._Timeopt__integrate_backward_divide(10, 1, 0.1, 4)
         eq_(('MVC', 9, 2, 3), result)
         eq_(3, self.timeopt._Timeopt__integrate_backward_step.call_count)
 
     def test_integrate_backward_step_mvc1(self):
-        u"""When the limit is tight"""
+        u"""When constraints are tight."""
         self.timeopt._kinematics.get_vlc = MagicMock('get_vlc')
         self.timeopt._dynamics.get_mvc = MagicMock('get_mvc')
         self.timeopt._dynamics.calc_accel_limit = MagicMock('calc_accel_limit')
@@ -416,7 +416,7 @@ class TestTimeopt(unittest.TestCase):
         eq_('MVC', r)
 
     def test_integrate_backward_step_mvc2(self):
-        u"""If it goes on MVC"""
+        u"""In case affecting MVC."""
         self.timeopt._kinematics.get_vlc = MagicMock('get_vlc')
         self.timeopt._dynamics.get_mvc = MagicMock('get_mvc')
         self.timeopt._dynamics.calc_accel_limit = MagicMock('calc_accel_limit')
@@ -432,7 +432,7 @@ class TestTimeopt(unittest.TestCase):
         assert_almost_equal(0.9, sd_prev)
 
     def test_integrate_backward_step_vlc1(self):
-        u"""When shaping to VLC"""
+        u"""In case it can be reshaped to VLC."""
         self.timeopt._kinematics.get_vlc = MagicMock('get_vlc')
         self.timeopt._dynamics.get_mvc = MagicMock('get_mvc')
         self.timeopt._dynamics.calc_accel_limit = MagicMock('calc_accel_limit')
@@ -449,7 +449,7 @@ class TestTimeopt(unittest.TestCase):
         assert_almost_equal(1.05, sv_prev)
 
     def test_integrate_backward_step_vlc2(self):
-        u"""If VLC cannot be shaped"""
+        u"""In case it cannot be reshaped to VLC."""
         self.timeopt._kinematics.get_vlc = MagicMock('get_vlc')
         self.timeopt._dynamics.get_mvc = MagicMock('get_mvc')
         self.timeopt._dynamics.calc_accel_limit = MagicMock('calc_accel_limit')
@@ -465,7 +465,7 @@ class TestTimeopt(unittest.TestCase):
         assert_almost_equal(0.9, sd_prev)
 
     def test_integrate_backward_step_ok(self):
-        u"""When integration"""
+        u"""In case it can be integrated."""
         self.timeopt._kinematics.get_vlc = MagicMock('get_vlc')
         self.timeopt._dynamics.get_mvc = MagicMock('get_mvc')
         self.timeopt._dynamics.calc_accel_limit = MagicMock('calc_accel_limit')
@@ -482,28 +482,28 @@ class TestTimeopt(unittest.TestCase):
         assert_almost_equal(1.0 - sa_min * dt_min, sv_prev)
 
     def test_calc_dt(self):
-        u"""Check if it has become a speed exercise DS = 0.5 * SA * dt^2 + SV * DT."""
+        u"""Verify if the uniform acceleration motion is ds = 0.5 * sa * dt^2 + sv * dt."""
         def calc_ds(sa, sv, dt):
             return 0.5 * sa * dt ** 2 + sv * dt
         ds = 0.1
         self.timeopt._ds = ds
 
-        # SA is positive
+        # sa is positive
         (sv, sa) = (1, 2)
         dt = self.timeopt._Timeopt__calc_dt(sv, sa, ds)
         assert_almost_equal(calc_ds(sa, sv, dt), ds)
 
-        # SA is negative
+        # sa is negative
         (sv, sa) = (1, -2)
         dt = self.timeopt._Timeopt__calc_dt(sv, sa, ds)
         assert_almost_equal(calc_ds(sa, sv, dt), ds)
 
-        # SA 0
+        # sa is 0
         (sv, sa) = (1, 0)
         dt = self.timeopt._Timeopt__calc_dt(sv, sa, ds)
         assert_almost_equal(calc_ds(sa, sv, dt), ds)
 
-        # There is no solution
+        # No solution
         (sv, sa) = (0, -1)
         dt = self.timeopt._Timeopt__calc_dt(sv, sa, ds)
         assert_almost_equal(self.timeopt._MINIMUM_DT, dt)
@@ -513,34 +513,34 @@ class TestTimeopt(unittest.TestCase):
         dt = self.timeopt._Timeopt__calc_dt_back(sv, sa, ds)
         assert_almost_equal(self.timeopt._MINIMUM_DT, dt)
 
-        # with, sv が 0
+        # sa, sv are 0
         (sv, sa) = (0, 0)
         dt = self.timeopt._Timeopt__calc_dt(sv, sa, ds)
         assert_almost_equal(self.timeopt._MINIMUM_DT, dt)
 
     def test_calc_dt_back(self):
-        u"""Check if it has become an acceleration exercise DS = -0.5 * SA * dt^2 + sv * dt."""
+        u"""Verify if the uniform acceleration motion is ds = - 0.5 * sa * dt^2 + sv * dt."""
         def calc_ds(sa, sv, dt):
             return - 0.5 * sa * dt ** 2 + sv * dt
         ds = 0.1
         self.timeopt._ds = ds
 
-        # SA is positive
+        # sa is positive
         (sv, sa) = (1, 1)
         dt = self.timeopt._Timeopt__calc_dt_back(sv, sa, ds)
         assert_almost_equal(calc_ds(sa, sv, dt), ds)
 
-        # SA is negative
+        # sa is negative
         (sv, sa) = (1, -2)
         dt = self.timeopt._Timeopt__calc_dt_back(sv, sa, ds)
         assert_almost_equal(calc_ds(sa, sv, dt), ds)
 
-        # SA 0
+        # sa is 0
         (sv, sa) = (1, 0)
         dt = self.timeopt._Timeopt__calc_dt_back(sv, sa, ds)
         assert_almost_equal(calc_ds(sa, sv, dt), ds)
 
-        # There is no solution
+        # No solution
         (sv, sa) = (0, 1)
         dt = self.timeopt._Timeopt__calc_dt_back(sv, sa, ds)
         assert_almost_equal(self.timeopt._MINIMUM_DT, dt)
@@ -550,13 +550,13 @@ class TestTimeopt(unittest.TestCase):
         dt = self.timeopt._Timeopt__calc_dt_back(sv, sa, ds)
         assert_almost_equal(self.timeopt._MINIMUM_DT, dt)
 
-        # with, sv が 0
+        # sa, sv are 0
         (sv, sa) = (0, 0)
         dt = self.timeopt._Timeopt__calc_dt_back(sv, sa, ds)
         assert_almost_equal(self.timeopt._MINIMUM_DT, dt)
 
     def test_recalc_trajectory(self):
-        u"""Check if Time is calculated in S, SV, SA."""
+        u"""Check if time is calculated with s, sv, sa."""
         self.timeopt._sd = [0, 1, 2, 3, 4]
         self.timeopt._sv = [0, 0.1, 0.2, 0.3, 0.4]
         self.timeopt._sa = [0.1, 0.1, 0.1, 0.1, 0.1]
@@ -570,7 +570,7 @@ class TestTimeopt(unittest.TestCase):
         assert_almost_equal(13.3388559, self.timeopt._time[4], places=3)
 
     def test_tangent_point_found(self):
-        u"""Check if you can find the tangent point."""
+        u"""Check if tangent point can be found."""
         curr = 0
         self.timeopt._ds = 1.0
         self.timeopt._sd = [0, 1, 2]
@@ -587,7 +587,7 @@ class TestTimeopt(unittest.TestCase):
         assert_almost_equal(0.95, sp[3])
 
     def test_check_trap_point(self):
-        u"""Example of Trap Point"""
+        u"""Example of Trap point."""
         self.timeopt._kinematics.update = MagicMock()
         self.timeopt._dynamics.update = MagicMock()
         self.timeopt.calc_accel_limit = MagicMock('calc_accel_limit')
@@ -607,22 +607,22 @@ class TestTimeopt(unittest.TestCase):
         self.timeopt._dynamics.set_limit('joint1', 'effort', (-0.1, 0.1))
         pair = ('joint1', 'effort')
 
-        # If there is no zero_intertia_point
+        # When there is no zero inertia point
         self.timeopt._a_buff[pair] = [0, 1, 1]
         res = self.timeopt._Timeopt__check_zero_inertia_point(1)
         eq_([], res)
 
-        # If ZERO_INTERTIA_POINT is 1
+        # When there is zero inertia point 1
         self.timeopt._a_buff[pair] = [0, 0, 1]
         res = self.timeopt._Timeopt__check_zero_inertia_point(1)
         eq_([pair], res)
 
-        # If ZERO_INTERTIA_POINT has 2
+        # When there is zero inertia point 2
         self.timeopt._a_buff[pair] = [0, 1, 0]
         res = self.timeopt._Timeopt__check_zero_inertia_point(1)
         eq_([pair], res)
 
-        # If ZERO_INTERTIA_POINT is there 3
+        # When there is zero inertia point 3
         self.timeopt._a_buff[pair] = [0, 1, -1]
         res = self.timeopt._Timeopt__check_zero_inertia_point(1)
         eq_([pair], res)
@@ -632,7 +632,7 @@ class TestTimeopt(unittest.TestCase):
         self.timeopt._Timeopt__integrate_backward_adaptive = MagicMock('bwa')
         self.timeopt._Timeopt__integrate_backward_segment = MagicMock('bws')
 
-        # Prerequisite
+        # Preconditions
         self.timeopt._sd = [1, 2, 3, 4]
         self.timeopt._sv = [1, 1, 1, 1]
         sp = (2.4, 1, 2.6, 1)
@@ -642,7 +642,7 @@ class TestTimeopt(unittest.TestCase):
         self.timeopt._Timeopt__integrate_backward_adaptive.return_value = ('OK', 0, 0, 0)
         self.timeopt._Timeopt__integrate_backward_segment.return_value = ('MVC', 0)
 
-        # check
+        # Check
         res = self.timeopt._Timeopt__integrate_from_switching_point(2, sp)
         ok_(not res)
 
@@ -651,7 +651,7 @@ class TestTimeopt(unittest.TestCase):
         self.timeopt._Timeopt__integrate_backward_adaptive.return_value = ('MVC', 0, 0, 0)
         self.timeopt._Timeopt__integrate_backward_segment.return_value = ('MVC', 0)
 
-        # check
+        # Check
         res = self.timeopt._Timeopt__integrate_from_switching_point(2, sp)
         ok_(not res)
 
@@ -660,7 +660,7 @@ class TestTimeopt(unittest.TestCase):
         self.timeopt._Timeopt__integrate_backward_adaptive.return_value = ('OK', 0, 0, 0)
         self.timeopt._Timeopt__integrate_backward_segment.return_value = ('MVC', 0)
 
-        # check
+        # Check
         res = self.timeopt._Timeopt__integrate_from_switching_point(2, sp)
         ok_(not res)
 
@@ -669,10 +669,10 @@ class TestTimeopt(unittest.TestCase):
         self.timeopt._Timeopt__integrate_backward_adaptive.return_value = ('OK', 2, 5, 0)
         self.timeopt._Timeopt__integrate_backward_segment.return_value = ('END', 0)
 
-        # check
+        # Check
         res = self.timeopt._Timeopt__integrate_from_switching_point(2, sp)
         ok_(res)
-        # S Check the update of orbit
+        # Check updates on the s trajectory
         eq_(3, self.timeopt._sd[3])
         eq_(2, self.timeopt._sv[3])
         eq_(2, self.timeopt._sd[2])

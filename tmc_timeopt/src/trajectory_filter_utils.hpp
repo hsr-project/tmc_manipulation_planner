@@ -33,21 +33,21 @@ DAMAGE.
 #include <Eigen/Core>
 
 namespace tmc_timeopt {
-// Experimental parameters
+// Experimentally determined parameters
 constexpr double kMaxDeviation = 0.03;
 constexpr double kTimeStep = 0.001;
 constexpr double kMinPointsDistance = 1e-6;
 
 
-// Judge whether or not the same point
+// Determine whether it is the same point
 bool IsSameWayPoints(const Eigen::VectorXd& frist, const Eigen::VectorXd& second);
 
-// In the algorithm, if the same point is continuous, it will be unstable, so take out only valid points.
+// The algorithm becomes unstable when the same points are consecutive, so extract only valid points
 bool ExtractValidWayPoints(const Eigen::VectorXd& initial_positions,
                            const std::vector<Eigen::VectorXd>& way_points_in,
                            std::vector<Eigen::VectorXd>& way_points_out);
 
-// Validation for input
+// Input validation
 bool ValidateInput(const Eigen::VectorXd& initial_positions,
                    const Eigen::VectorXd& initial_velocities,
                    const std::vector<Eigen::VectorXd>& way_points,

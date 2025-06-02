@@ -25,7 +25,12 @@ LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT
 OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH
 DAMAGE.
 */
-/// @brief    Implementation of PointtoConditionPlanner with RRT_PLANNER
+/// @file     rrt_planner.hpp
+/// @brief Implementation of PointToConditionPlanner via rrt_planner
+/// @author   Koji Terada
+/// @version  1.0.0
+/// @date     2011.10.25
+/// @note     [1.0.0] 2011.10.19 Newly created
 
 #ifndef TMC_MANIPULATION_TMC_RPLANNER_RRT_PLANNER_HPP_
 #define TMC_MANIPULATION_TMC_RPLANNER_RRT_PLANNER_HPP_
@@ -40,20 +45,20 @@ class ConfigurationTree;
 
 
 /// @class rrt_Planner
-/// @brief Planna implemented RRT
+/// @brief Planner implementing RRT
 /// @note See J.J. Kuffner and S.M. LaValle. RRT-Connect:
 ///       An efficient approach to single-query path planning.
 ///       In Proc. IEEE Int’l Conf. on Robotics and Automation (ICRA‘2000
 ///       pages 995-1001, San Francisco, CA, April 2000.
 class RrtPlanner : public IPointToConditionPlanner {
  public:
-  /// @brief Pass the planner space and the termination conditions
-  /// @param space Configuration space
-  /// @param delta Exploration carved width
-  /// @param max_itr Maximum number of repetitions
-  /// @param goal_bias The ratio of aiming for goal [0.0-1.0]
-  /// @param greedy Flag to keep extending FEASIBLE when aiming for goal
-  /// @param is_terminate Forced termination conditions
+  /// @brief Passes the planner space and termination condition
+  /// @param space Pointer to the planner space
+  /// @param delta Search increment width
+  /// @param max_itr Maximum number of iterations
+  /// @param goal_bias Proportion aiming for the goal [0.0-1.0]
+  /// @param greedy Flag to continue extending feasibly when aiming for the goal
+  /// @param is_terminate Forced termination condition
   RrtPlanner(ConfigurationSpace::Ptr space,
              double delta,
              int32_t max_itr,
@@ -62,12 +67,12 @@ class RrtPlanner : public IPointToConditionPlanner {
              TerminateConditionFunc is_terminate) :
       space_(space), delta_(delta), max_itr_(max_itr),
       goal_bias_(goal_bias), greedy_(greedy), is_terminate_(is_terminate) {}
-  /// @brief Pass the planner space and the termination conditions
-  /// @param space Configuration space
-  /// @param delta Exploration carved width
-  /// @param max_itr Maximum number of repetitions
-  /// @param goal_bias The ratio of aiming for goal [0.0-1.0]
-  /// @param greedy Flag to keep extending FEASIBLE when aiming for goal
+  /// @brief Passes the planner space and termination condition
+  /// @param space Pointer to the planner space
+  /// @param delta Search increment width
+  /// @param max_itr Maximum number of iterations
+  /// @param goal_bias Proportion aiming for the goal [0.0-1.0]
+  /// @param greedy Flag to continue extending feasibly when aiming for the goal
   RrtPlanner(ConfigurationSpace::Ptr space,
              double delta,
              int32_t max_itr,
@@ -77,12 +82,12 @@ class RrtPlanner : public IPointToConditionPlanner {
       goal_bias_(goal_bias), greedy_(greedy) {}
 
   virtual ~RrtPlanner() {}
-  /// Creating paths
+  /// Path creation
   virtual PlanRet PlanPath(const Config& init_config,
                            Path& path_out);
 
  private:
-  // Copy prohibition
+  // Prohibition of copying
   RrtPlanner(const RrtPlanner&);
   RrtPlanner& operator=(const RrtPlanner&);
   bool BuildOneStep_(ConfigurationTree& tree);

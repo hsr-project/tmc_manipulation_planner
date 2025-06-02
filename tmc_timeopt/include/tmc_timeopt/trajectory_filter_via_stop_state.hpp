@@ -39,25 +39,25 @@ class Trajectory;
 
 class TrajectoryFilterViaStopState : public ITrajectoryFilter {
  public:
-  // constructor
-  // @param[in] initial_positions Current joint position
-  // @param[in] initial_velocities Current joint velocity
-  // @param[in] way_points Joint position
-  // @param[in] max_velocities Maximum values ​​of joint velocity
-  // @param[in] max_accelerations Maximum value of joint acceleration
+  // Constructor
+  // @param[in] initial_positions  Current joint positions
+  // @param[in] initial_velocities  Current joint velocities
+  // @param[in] way_points  Waypoint joint positions
+  // @param[in] max_velocities  Maximum joint velocities
+  // @param[in] max_accelerations  Maximum joint accelerations
   TrajectoryFilterViaStopState(const Eigen::VectorXd& initial_positions,
                                const Eigen::VectorXd& initial_velocities,
                                const std::vector<Eigen::VectorXd>& way_points,
                                const Eigen::VectorXd& max_velocities,
                                const Eigen::VectorXd& max_accelerations);
 
-  // constructor
-  // @param[in] initial_positions Current joint position
-  // @param[in] initial_velocities Current joint velocity
-  // @param[in] way_points Joint position
-  // @param[in] max_velocities Maximum values ​​of joint velocity
-  // @param[in] max_accelerations Maximum value of joint acceleration
-  // @param[in] interrupt Interrupt function
+  // Constructor
+  // @param[in] initial_positions  Current joint positions
+  // @param[in] initial_velocities  Current joint velocities
+  // @param[in] way_points  Waypoint joint positions
+  // @param[in] max_velocities  Maximum joint velocities
+  // @param[in] max_accelerations  Maximum joint accelerations
+  // @param[in] interrupt  Interruption function, optimization stops if returns true
   TrajectoryFilterViaStopState(const Eigen::VectorXd& initial_positions,
                                const Eigen::VectorXd& initial_velocities,
                                const std::vector<Eigen::VectorXd>& way_points,
@@ -65,14 +65,14 @@ class TrajectoryFilterViaStopState : public ITrajectoryFilter {
                                const Eigen::VectorXd& max_accelerations,
                                std::function<bool()>& interrupt);
 
-  // constructor
-  // @param[in] initial_positions Current joint position
-  // @param[in] initial_velocities Current joint velocity
-  // @param[in] way_points Joint position
-  // @param[in] max_velocities Maximum values ​​of joint velocity
-  // @param[in] max_accelerations Maximum value of joint acceleration
-  // @param[in] acceleration_rate_for_stop The ratio of joint acceleration at the stop
-  // @param[in] interrupt Interrupt function
+  // Constructor
+  // @param[in] initial_positions  Current joint positions
+  // @param[in] initial_velocities  Current joint velocities
+  // @param[in] way_points  Waypoint joint positions
+  // @param[in] max_velocities  Maximum joint velocities
+  // @param[in] max_accelerations  Maximum joint accelerations
+  // @param[in] acceleration_rate_for_stop  Acceleration rate for initial stop
+  // @param[in] interrupt  Interruption function, optimization stops if returns true
   TrajectoryFilterViaStopState(const Eigen::VectorXd& initial_positions,
                                const Eigen::VectorXd& initial_velocities,
                                const std::vector<Eigen::VectorXd>& way_points,
@@ -82,19 +82,22 @@ class TrajectoryFilterViaStopState : public ITrajectoryFilter {
                                std::function<bool()>& interrupt);
   virtual ~TrajectoryFilterViaStopState() = default;
 
-  // Get the joint position
-  // @param[in] time_from_start Time [sec]
+  // Get joint positions at time_from_start
+  // @param[in] time_from_start  Time to get joint positions [sec]
+  // @return Eigen::VectorXd  Joint positions
   Eigen::VectorXd GetPosition(double time_from_start) const override;
 
-  // Get the joint velocity
-  // @param[in] time_from_start Time [sec]
+  // Get joint velocities at time_from_start
+  // @param[in] time_from_start  Time to get joint velocities [sec]
+  // @return Eigen::VectorXd  Joint velocities
   Eigen::VectorXd GetVelocity(double time_from_start) const override;
 
-  // Get the path playback time
+  // Get trajectory playback time
+  // @return double  Trajectory playback time [sec]
   double GetDuration() const override;
 
-  // Get whether you have succeeded in optimization
-  // @return If you succeed in the Bool optimization and the GET function is available, True
+  // Check if optimization succeeded
+  // @return bool  True if optimization succeeded and Get functions are available
   bool IsValid() const override { return is_valid_; }
 
  private:

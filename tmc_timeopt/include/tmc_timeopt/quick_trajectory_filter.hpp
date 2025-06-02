@@ -40,25 +40,25 @@ class Trajectory;
 
 class QuickTrajectoryFilter : public ITrajectoryFilter {
  public:
-  // constructor
-  // @param[in] initial_positions Current joint position
-  // @param[in] initial_velocities Current joint velocity
-  // @param[in] way_points Joint position
-  // @param[in] max_velocities Maximum values ​​of joint velocity
-  // @param[in] max_accelerations Maximum value of joint acceleration
+  // Constructor
+  // @param[in] initial_positions  Current joint positions
+  // @param[in] initial_velocities  Current joint velocities
+  // @param[in] way_points  Waypoint joint positions
+  // @param[in] max_velocities  Maximum joint velocities
+  // @param[in] max_accelerations  Maximum joint accelerations
   QuickTrajectoryFilter(const Eigen::VectorXd& initial_positions,
                         const Eigen::VectorXd& initial_velocities,
                         const std::vector<Eigen::VectorXd>& way_points,
                         const Eigen::VectorXd& max_velocities,
                         const Eigen::VectorXd& max_accelerations);
 
-  // constructor
-  // @param[in] initial_positions Current joint position
-  // @param[in] initial_velocities Current joint velocity
-  // @param[in] way_points Joint position
-  // @param[in] max_velocities Maximum values ​​of joint velocity
-  // @param[in] max_accelerations Maximum value of joint acceleration
-  // @param[in] interrupt Interrupt function
+  // Constructor
+  // @param[in] initial_positions  Current joint positions
+  // @param[in] initial_velocities  Current joint velocities
+  // @param[in] way_points  Waypoint joint positions
+  // @param[in] max_velocities  Maximum joint velocities
+  // @param[in] max_accelerations  Maximum joint accelerations
+  // @param[in] interrupt  Interrupt function, true if the optimization process should be interrupted
   QuickTrajectoryFilter(const Eigen::VectorXd& initial_positions,
                         const Eigen::VectorXd& initial_velocities,
                         const std::vector<Eigen::VectorXd>& way_points,
@@ -67,19 +67,22 @@ class QuickTrajectoryFilter : public ITrajectoryFilter {
                         std::function<bool()>& interrupt);
   virtual ~QuickTrajectoryFilter() = default;
 
-  // Get the joint position
-  // @param[in] time_from_start Time [sec]
+  // Get joint positions at time_from_start
+  // @param[in] time_from_start  Desired time to get joint positions [sec]
+  // @return Eigen::VectorXd  Joint positions
   Eigen::VectorXd GetPosition(double time_from_start) const override;
 
-  // Get the joint velocity
-  // @param[in] time_from_start Time [sec]
+  // Get joint velocities at time_from_start
+  // @param[in] time_from_start  Desired time to get joint velocities [sec]
+  // @return Eigen::VectorXd  Joint velocities
   Eigen::VectorXd GetVelocity(double time_from_start) const override;
 
-  // Get the path playback time
+  // Get trajectory playback time
+  // @return double  Trajectory playback time [sec]
   double GetDuration() const override;
 
-  // Get whether you have succeeded in optimization
-  // @return If you succeed in the Bool optimization and the GET function is available, True
+  // Get whether optimization was successful
+  // @return bool  True if optimization was successful and Get functions are available
   bool IsValid() const override { return trajectory_ != nullptr; }
 
  private:

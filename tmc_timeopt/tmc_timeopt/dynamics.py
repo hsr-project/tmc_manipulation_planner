@@ -1,33 +1,31 @@
-'''
-Copyright (c) 2024 TOYOTA MOTOR CORPORATION
-All rights reserved.
-Redistribution and use in source and binary forms, with or without
-modification, are permitted (subject to the limitations in the disclaimer
-below) provided that the following conditions are met:
-* Redistributions of source code must retain the above copyright notice, this
-  list of conditions and the following disclaimer.
-* Redistributions in binary form must reproduce the above copyright notice,
-  this list of conditions and the following disclaimer in the documentation
-  and/or other materials provided with the distribution.
-* Neither the name of the copyright holder nor the names of its contributors may be used
-  to endorse or promote products derived from this software without specific
-  prior written permission.
-NO EXPRESS OR IMPLIED LICENSES TO ANY PARTY'S PATENT RIGHTS ARE GRANTED BY THIS
-LICENSE. THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
-"AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO,
-THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
-ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE
-LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR
-CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE
-GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION)
-HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT
-LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT
-OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH
-DAMAGE.
-'''
 # !/usr/bin/env python
+# Copyright (c) 2024 TOYOTA MOTOR CORPORATION
+# All rights reserved.
+# Redistribution and use in source and binary forms, with or without
+# modification, are permitted (subject to the limitations in the disclaimer
+# below) provided that the following conditions are met:
+# * Redistributions of source code must retain the above copyright notice, this
+#   list of conditions and the following disclaimer.
+# * Redistributions in binary form must reproduce the above copyright notice,
+#   this list of conditions and the following disclaimer in the documentation
+#   and/or other materials provided with the distribution.
+# * Neither the name of the copyright holder nor the names of its contributors may be used
+#   to endorse or promote products derived from this software without specific
+#   prior written permission.
+# NO EXPRESS OR IMPLIED LICENSES TO ANY PARTY'S PATENT RIGHTS ARE GRANTED BY THIS
+# LICENSE. THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
+# "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO,
+# THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
+# ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE
+# LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR
+# CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE
+# GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION)
+# HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT
+# LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT
+# OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH
+# DAMAGE.
 # -*- coding: utf-8 -*-
-u"""Dynamics interface module required for Topp."""
+u"""Interface module for dynamics required by TOPP."""
 
 import itertools
 import math
@@ -38,13 +36,13 @@ import tmc_timeopt.poly2 as poly2
 
 
 class Dynamics(object):
-    u"""Bass class that defines Dynamics required for Topp."""
+    u"""Base class defining dynamics required by TOPP."""
 
     def __init__(self, target):
         u"""Initialize this class.
 
         Args:
-            target (Target): Targeting dynamics
+            target(Target): Dynamics target.
         """
         self.target = target
         self.limits = {}
@@ -56,28 +54,28 @@ class Dynamics(object):
         u"""Set constraints such as torque.
 
         Args:
-            name (str): Name of output variable
-            limit_type (str): Limit type ('Effort', 'ZMP', etc)
-            limit (tuple): (lower limit, upper limit)
+            name (str): Name of the output variable.
+            limit_type (str): Type of limit ('effort', 'ZMP', etc).
+            limit (tuple): (lower limit, upper limit).
         """
         self.limits[name, limit_type] = limit
 
     def update(self):
-        u"""Acquired the dynamic parameter (A, B, C, D) of Target and update the member variable."""
+        u"""Obtain dynamics parameters (a,b,c,d) of Target and update member variables."""
         self.target.update_dynamics()
         (self.a, self.b, self.c, self.d) = self.target.get_dynamics()
 
     def calc_accel_limit(self, sv):
-        u"""Calculate the upper and lower limit of orbit acceleration under Dynamics constraints.
+        u"""Calculate the upper and lower bounds of trajectory acceleration under Dynamics constraints.
 
         Args:
-            sv (Float): Speed ​​of S in orbit
+            sv (float): Velocity of s on the trajectory.
         Return:
-            (l, u): Acceleration (lower, upper limit)
+            (l, u): (lower limit, upper limit) of acceleration.
         """
         (sa_min, sa_max) = ({}, {})
 
-        # If the SV is a very large value, if you do not use INF, you will get an exception with SV ** 2.
+        # If sv is a significantly large value, inf should be used to prevent exception in sv**2.
         try:
             sv ** 2
         except OverflowError:
@@ -98,7 +96,7 @@ class Dynamics(object):
                     pair] * sv - self.d[pair]) / self.a[pair]
                 sa_max[pair] = (limit[0] - self.b[pair] * sv ** 2 - self.c[
                     pair] * sv - self.d[pair]) / self.a[pair]
-        # Returns a set of up and down limit
+        # Return the intersection of upper and lower limits.
         (lst, u) = (float('-inf'), float('inf'))
         for pair in self.limits:
             lst = max(lst, sa_min[pair])
@@ -106,23 +104,23 @@ class Dynamics(object):
         return (lst, u)
 
     def get_mvc_accel(self):
-        u"""Returns the point on the MVC (Maximum Velocity Curve) calculated from the acceleration restriction.
+        u"""Return the point on MVC (Maximum Velocity Curve) calculated from acceleration constraints.
 
-        It is necessary to call Update () and set a point.
+        update() must be called to set the points.
 
-        The restrictions on the original get_mvc_accel_effort are limited to acceleration constraints.
-        In acceleration control, it can be calculated at high speed because it becomes CI == 0, DI == 0.
+        The original constraints of get_mvc_accel_effort are limited to acceleration constraints.
+        In acceleration control, ci == 0, di == 0, allowing for fast computation.
 
         Return:
-            mvc (float): speed of S at MVC points (SV)
+            mvc (float): Velocity of s (sv) at a point on MVC.
         """
         (u, l) = ({}, {})
         cond = [pair for pair in self.limits
                 if pair[1] == 'acceleration']
-        non_zero = []  # List of conditions of A! = 0
+        non_zero = []  # List of conditions where a!=0.
         rlst = []
 
-        # Check the sign of A under each condition and sort
+        # Check the sign of a in each condition and classify.
         for pair in cond:
             limit = self.limits[pair]
             if self.a[pair] > sys.float_info.epsilon:
@@ -131,7 +129,7 @@ class Dynamics(object):
             elif self.a[pair] < - sys.float_info.epsilon:
                 (l[pair], u[pair]) = (limit[1], limit[0])
                 non_zero.append(pair)
-            # In the case of a == 0, add it to the ZERO list and exclude it from COND.
+            # If a==0, add to zero list and exclude from conditions.
             else:
                 l[pair] = limit[0]
                 u[pair] = limit[1]
@@ -140,7 +138,7 @@ class Dynamics(object):
                 r = [self.d[pair] - l[pair], self.c[pair], self.b[pair]]
                 rlst.append(r)
 
-        # Calculate the secondary inequality parameters
+        # Calculate parameters of the quadratic inequality.
         p = {pair: [(l[pair] - self.d[pair]) / self.a[pair],
                     -self.c[pair] / self.a[pair],
                     -self.b[pair] / self.a[pair]]
@@ -149,8 +147,8 @@ class Dynamics(object):
                     -self.c[pair] / self.a[pair],
                     -self.b[pair] / self.a[pair]]
              for pair in non_zero}
-        # Find a solution for all combinations
-        # It also depends on the positional relationship (Q-P-P-Q) of the two conditions, so it becomes Permutations.
+        # Determine the solution space for all combinations.
+        # Permutations arise as it also depends on the positional relationship of two conditions (q-p or p-q).
         for pair_1, pair_2 in itertools.permutations(non_zero, 2):
             r = [q[pair_1][i] - p[pair_2][i] for i in range(3)]
             rlst.append(r)
@@ -174,9 +172,9 @@ class Dynamics(object):
         return self.mvc
 
     def get_mvc_accel_effort(self):
-        u"""Returns the point on the MVC (Maximum Velocity Curve) calculated from the torque restriction.
+        u"""Return the point on MVC (Maximum Velocity Curve) calculated from torque constraints.
 
-        It is necessary to call Update () and set a point.
+        update() must be called to set the points.
 
         when ai > 0
         sa_min_i < (l_limit_i - bi * sv**2 - ci * sv - di) / ai
@@ -187,25 +185,25 @@ class Dynamics(object):
         sa_max_i < (l_limit_i - bi * sv**2 - ci * sv - di) / ai
 
         However, sa_min_i <= sa_max_i
-        I saw everything,
+        satisfy all, and
 
         when ai == 0
         l_limit_i < bi * sv**2 + ci * sv + di
         u_limit_i > bi * sv**2 + ci * sv + di
 
-        The maximum value of the first area of ​​the SV is MVC
-        It may be defined defined.
+        one maximum value of the area of sv is MVC
+        It can sometimes theoretically become Inf.
 
         Return:
-            mvc (float): speed of S at MVC points (SV)
+            mvc (float): Velocity of s (sv) at a point on MVC.
         """
         (u, l, p, q) = ({}, {}, {}, {})
         cond = [pair for pair in self.limits
                 if pair[1] == 'effort' or pair[1] == 'acceleration']
-        non_zero = []  # List of conditions of A! = 0
-        zero = []  # List of conditions of a == 0
+        non_zero = []  # List of conditions where a!=0.
+        zero = []  # List of conditions where a==0.
         ans = {}
-        # Check the sign of A under each condition and sort
+        # Check the sign of a in each condition and classify.
         for pair in cond:
             limit = self.limits[pair]
             if self.a[pair] > sys.float_info.epsilon:
@@ -214,12 +212,12 @@ class Dynamics(object):
             elif self.a[pair] < - sys.float_info.epsilon:
                 (l[pair], u[pair]) = (limit[1], limit[0])
                 non_zero.append(pair)
-            # In the case of a == 0, add it to the ZERO list and exclude it from COND.
+            # If a==0, add to zero list and exclude from conditions.
             else:
                 l[pair] = limit[0]
                 u[pair] = limit[1]
                 zero.append(pair)
-        # Calculate the secondary inequality parameters
+        # Calculate parameters of the quadratic inequality.
         for pair in non_zero:
             (p[pair], q[pair]) = ([0] * 3, [0] * 3)
             p[pair][0] = (l[pair] - self.d[pair]) / self.a[pair]
@@ -228,20 +226,20 @@ class Dynamics(object):
             q[pair][0] = (u[pair] - self.d[pair]) / self.a[pair]
             q[pair][1] = -self.c[pair] / self.a[pair]
             q[pair][2] = -self.b[pair] / self.a[pair]
-        # Find a solution for all combinations
-        # It also depends on the positional relationship (Q-P-P-Q) of the two conditions, so it becomes Permutations.
+        # Determine the solution space for all combinations.
+        # Permutations arise as it also depends on the positional relationship of two conditions (q-p or p-q).
         for pair_1, pair_2 in itertools.permutations(non_zero, 2):
-            # Set the secondary inequality and solve it
+            # Set and solve the quadratic inequality.
             r = [0] * 3
             for i in range(3):
                 r[i] = q[pair_1][i] - p[pair_2][i]
             ans[pair_1, pair_2] = Interval()
             ans_of_inequality = poly2.solve_inequality(r, '>')
-            # If there is no solution restriction
+            # If there is a constraint with no solution.
             if not ans_of_inequality:
                 raise ValueError('Too tight constraint %s, %s' % pair)
             ans[pair_1, pair_2].set_list(ans_of_inequality)
-        # In the case of a == 0, the problem to solve is different (candidate for Zero-Inertia Switching Point)
+        # When a==0, the problem to be solved is different (candidate for zero-inertia switching point).
         ans_zero = {}
         for pair in zero:
             r = [0] * 3
@@ -254,14 +252,14 @@ class Dynamics(object):
             tmp_l = Interval()
             tmp_l.set_list(poly2.solve_inequality(r, '>'))
             ans_zero[pair] = tmp_l * tmp_u
-        # Take a set of solutions
+        # Take the intersection of the solution spaces.
         final = Interval([float('-inf'), float('inf')])
         for pair_1 in non_zero:
             for pair_2 in non_zero:
                 if pair_1 == pair_2:
                     continue
                 final = final * ans[pair_1, pair_2]
-        # Accumulation of the solution space when a == 0
+        # Intersection of the solution spaces when a==0.
         for pair in zero:
             final = final * ans_zero[pair]
         lst = final.get_list()
@@ -269,12 +267,12 @@ class Dynamics(object):
         return self.mvc
 
     def calc_zero_inertia_sv(self, pair):
-        u"""uReturns the restricted SV assuming that the current status (SD, SV) that was updated n with pdate () is ZERO INERTIA SP.
+        u"""Assume the current state (sd,sv) updated by update() is a zero-inertia sp and return the sv of the constraint.
 
         Args:
-            pair (Tuple): Constation pair (name, type)
+            pair (tuple): Pair of constraints (name, type).
         Return:
-            sv (Float): Maximum value of SV that can be taken
+            sv (float): Maximum possible value of sv.
         """
         r = [self.d[pair] - self.limits[pair][1], self.c[pair], self.b[pair]]
         tmp_u = Interval()

@@ -1,13 +1,13 @@
 <package format="3">
   <name>tmc_timeopt_ros</name>
-  <version>2.0.0</version>
-  <description> Ros node of time optimal trajectory parametarization </description>
+  <version>2.0.1</version>
+  <description>RoS node for time-optimal trajectory parameterization</description>
   <maintainer email="xr-hsr-support@mail.toyota.co.jp">HSR Support</maintainer>
 
   <license>BSD 3-clause Clear License</license>
 
-  <author>Keisuke Takeshita</author>
   <author>Koji Terada</author>
+  <author>Keisuke Takeshita</author>
 
   <exec_depend>python3-numpy</exec_depend>
   <exec_depend>rcl_interfaces</exec_depend>

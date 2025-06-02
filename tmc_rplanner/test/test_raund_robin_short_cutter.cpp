@@ -25,7 +25,12 @@ LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT
 OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH
 DAMAGE.
 */
-/// @brief    RAUND_ROBIN_SHORT_CUTTER test
+/// @file     test_raund_robin_short_cutter.cpp
+/// @brief Test of raund_robin_short_cutter
+/// @author   Koji Terada
+/// @version  1.0.0
+/// @date     2011.12.01
+/// @note     [1.0.0] 2011.12.01 Newly created
 
 #include <stdlib.h>
 #include <gtest/gtest.h>
@@ -42,13 +47,13 @@ using tmc_rplanner::Path;
 using tmc_rplanner::RoundRobinShortCutter;
 
 namespace {
-// State space used in the test
+// Dimension of the state space used in the test
 int32_t kDim = 2;
-// Exploration
+// Search width
 double kDelta = 0.2;
-// Identity tolerance value of floating point
+// Tolerance for floating-point equality
 double kDoubleEps = 1e-5;
-// Acquisitive shortcuts after shortcut
+// Acceptable post-shortcut trajectory length
 double kLengthAcceptable = 16.0;
 
 static double Randd() {
@@ -92,7 +97,7 @@ double CalcLength(const Path& path) {
 /// raund_robin_short_cutter
 ///////////////////////////////////////////
 
-// Check that the trajectory created in Birrt is shortened
+// Check if the trajectory created by birrt becomes shorter
 TEST(RaundRobinShortCutterTest, simple_shortcut) {
   ConfigurationSpace::Ptr cspace(new ConfigurationSpace(kDim));
   cspace->set_random_config(RandomConfig);
@@ -120,13 +125,13 @@ TEST(RaundRobinShortCutterTest, simple_shortcut) {
   double bi_length = CalcLength(bi_path);
   double mono_length = CalcLength(mono_path);
 
-  // Rough> Mono> The length of BI
+  // Order of lengths: rough > mono > bi
   EXPECT_TRUE(rough_length >= mono_length);
   EXPECT_TRUE(mono_length >= bi_length);
-  // BI length is within KlengThaceptable
+  // Length of bi is within kLengthAcceptable
   EXPECT_TRUE(bi_length <= kLengthAcceptable);
 
-  // Check if the shortcuted path is correct
+  // Check if the shortcut path is correct
   Config old_config = init;
   for (Path::iterator config = ++(mono_path.begin()); config != mono_path.end(); ++config) {
     EXPECT_TRUE((*config - old_config).norm() <= kDelta + kDoubleEps);
@@ -134,7 +139,7 @@ TEST(RaundRobinShortCutterTest, simple_shortcut) {
     old_config = *config;
   }
 
-  // Check if the shortcuted path is correct
+  // Check if the shortcut path is correct
   old_config = init;
   for (Path::iterator config = ++(bi_path.begin()); config != bi_path.end(); ++config) {
     EXPECT_TRUE((*config - old_config).norm() <= kDelta + kDoubleEps);
@@ -143,7 +148,7 @@ TEST(RaundRobinShortCutterTest, simple_shortcut) {
   }
 }
 
-// Sky exception transmission test
+// Test of empty exception throw
 TEST(RaundRobinShortCutterTest, short_cut_empty_exceptional) {
   ConfigurationSpace::Ptr cspace(new ConfigurationSpace(kDim));
   cspace->set_random_config(RandomConfig);
@@ -168,7 +173,7 @@ TEST(RaundRobinShortCutterTest, short_cut_negative_skip_exceptional) {
                std::invalid_argument);
 }
 
-// End with the end condition function
+// Termination by the termination condition function
 TEST(RaundRobinShortCutterTest, terminate) {
   ConfigurationSpace::Ptr cspace(new ConfigurationSpace(kDim));
   cspace->set_random_config(RandomConfig);

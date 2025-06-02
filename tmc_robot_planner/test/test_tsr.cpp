@@ -25,6 +25,13 @@ LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT
 OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH
 DAMAGE.
 */
+/// @file     test_eigen_utils
+/// @brief    Test of eigen_utils
+/// @author   Koji Terada
+/// @version  1.0.0
+/// @date     2012.2.24
+/// @note     [1.0.0] 2012.2.24 Newly created
+
 #include <stdlib.h>
 
 #include <gtest/gtest.h>
@@ -43,11 +50,12 @@ using tmc_robot_planner::CalcClosestPose;
 using tmc_robot_planner::GenerateSample;
 
 namespace {
-/// A threshold that is regarded as the value of DOUBLE is near
+/// Threshold for considering double values as close
+
 double kDoubleEps = 1.0e-10;
 }
 
-// Check if the correct distance can be achieved in TSR only in parallel
+// Check if the correct distance is obtained for TSR with only translation
 TEST(DistanceTest, pos) {
   RegionValues min;
   RegionValues max;
@@ -68,7 +76,7 @@ TEST(DistanceTest, pos) {
   // std::cerr << "distance = " << distance2(0) << std::endl;
 }
 
-// Check if you can sampled it for TSR only in parallel
+// Check if sampling can be performed for TSR with only translation
 TEST(SamplingTest, pos) {
   RegionValues min;
   RegionValues max;
@@ -89,7 +97,7 @@ TEST(SamplingTest, pos) {
   }
 }
 
-// Check if you can sample the TSR of rotation
+// Check if sampling can be performed for rotational TSR
 TEST(SamplingTest, rot) {
   RegionValues min;
   RegionValues max;
@@ -112,7 +120,7 @@ TEST(SamplingTest, rot) {
   }
 }
 
-// Check whether the near -point can be calculated recently for the rotation TSR
+// Check if the nearest point can be calculated for rotational TSR
 TEST(ClosestTest, rot) {
   RegionValues min;
   RegionValues max;

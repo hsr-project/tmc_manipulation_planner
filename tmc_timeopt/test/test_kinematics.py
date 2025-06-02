@@ -1,33 +1,31 @@
 #!/usr/bin/env python
-'''
-Copyright (c) 2024 TOYOTA MOTOR CORPORATION
-All rights reserved.
-Redistribution and use in source and binary forms, with or without
-modification, are permitted (subject to the limitations in the disclaimer
-below) provided that the following conditions are met:
-* Redistributions of source code must retain the above copyright notice, this
-  list of conditions and the following disclaimer.
-* Redistributions in binary form must reproduce the above copyright notice,
-  this list of conditions and the following disclaimer in the documentation
-  and/or other materials provided with the distribution.
-* Neither the name of the copyright holder nor the names of its contributors may be used
-  to endorse or promote products derived from this software without specific
-  prior written permission.
-NO EXPRESS OR IMPLIED LICENSES TO ANY PARTY'S PATENT RIGHTS ARE GRANTED BY THIS
-LICENSE. THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
-"AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO,
-THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
-ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE
-LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR
-CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE
-GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION)
-HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT
-LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT
-OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH
-DAMAGE.
-'''
+# Copyright (c) 2024 TOYOTA MOTOR CORPORATION
+# All rights reserved.
+# Redistribution and use in source and binary forms, with or without
+# modification, are permitted (subject to the limitations in the disclaimer
+# below) provided that the following conditions are met:
+# * Redistributions of source code must retain the above copyright notice, this
+#   list of conditions and the following disclaimer.
+# * Redistributions in binary form must reproduce the above copyright notice,
+#   this list of conditions and the following disclaimer in the documentation
+#   and/or other materials provided with the distribution.
+# * Neither the name of the copyright holder nor the names of its contributors may be used
+#   to endorse or promote products derived from this software without specific
+#   prior written permission.
+# NO EXPRESS OR IMPLIED LICENSES TO ANY PARTY'S PATENT RIGHTS ARE GRANTED BY THIS
+# LICENSE. THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
+# "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO,
+# THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
+# ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE
+# LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR
+# CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE
+# GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION)
+# HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT
+# LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT
+# OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH
+# DAMAGE.
 # -*- coding: utf-8 -*-
-u"""KINEMATICS class single test."""
+u"""Unit test for the Kinematics class."""
 
 from math import cos
 from math import sin
@@ -55,7 +53,7 @@ class DummyTarget(Target):
 class KinematicsTestCase(unittest.TestCase):
 
     def setUp(self):
-        # Test only logic with a dummy target
+        # Test only the logic with a dummy target.
         self.target = DummyTarget()
         self.kinematics = Kinematics(self.target)
 
@@ -103,17 +101,17 @@ class KinematicsTestCase(unittest.TestCase):
 
     def test_get_vlc(self):
         self.kinematics.update(0.0)
-        # One -time alternate differentiation of the orbit S is difficult to predict, so it is obtained
+        # Obtain the first derivative with respect to s as it's difficult to predict.
         current = self.kinematics.get_current_point()
         fds = (current['JOINT1'][1], current['JOINT2'][1],
                current['JOINT3'][1])
         vlc = self.kinematics.get_vlc()
-        # VLC should be because Joint3 is the hardest
+        # JOINT3 is the tightest, so vlc should be that.
         assert_almost_equal(2.0 / fds[2], vlc)
 
-    # Tests that are almost meaningless in the flip of the actual situation
+    # Almost a pointless test as it is a mere reversal of reality.
     def test_get_state(self):
-        # This is not necessary to call it, but it is called once for the test
+        # This does not normally need to be called, but call it once for the test.
         self.kinematics.update(5.0)
         current = self.kinematics.get_current_point()
         f = (current['JOINT1'][0], current['JOINT2'][0],
@@ -135,7 +133,7 @@ class KinematicsTestCase(unittest.TestCase):
         assert_almost_equals(state['JOINT3'][1], fds[2] * 1.0)
         assert_almost_equals(state['JOINT3'][2], fds[2] * 1.0 + fdds[2] * 1.0)
 
-    # It is difficult to predict, so it is a test
+    # A tentative test as predictions are difficult.
     def test_calc_accel_limit(self):
         self.kinematics.update(5.0)
         (sa_min, sa_max) = self.kinematics.calc_accel_limit(1.0)

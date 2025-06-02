@@ -1,7 +1,7 @@
 <package format="3">
   <name>tmc_rplanner</name>
-  <version>2.0.0</version>
-  <description>Motion planning library</description>
+  <version>2.0.1</version>
+  <description>Planner library. Provides interfaces to various planners.</description>
   <maintainer email="xr-hsr-support@mail.toyota.co.jp">HSR Support</maintainer>
 
   <license>BSD 3-clause Clear License</license>

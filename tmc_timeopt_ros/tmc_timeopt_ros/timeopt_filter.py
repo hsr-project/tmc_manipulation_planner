@@ -1,31 +1,29 @@
 #!/usr/bin/env python
-'''
-Copyright (c) 2024 TOYOTA MOTOR CORPORATION
-All rights reserved.
-Redistribution and use in source and binary forms, with or without
-modification, are permitted (subject to the limitations in the disclaimer
-below) provided that the following conditions are met:
-* Redistributions of source code must retain the above copyright notice, this
-  list of conditions and the following disclaimer.
-* Redistributions in binary form must reproduce the above copyright notice,
-  this list of conditions and the following disclaimer in the documentation
-  and/or other materials provided with the distribution.
-* Neither the name of the copyright holder nor the names of its contributors may be used
-  to endorse or promote products derived from this software without specific
-  prior written permission.
-NO EXPRESS OR IMPLIED LICENSES TO ANY PARTY'S PATENT RIGHTS ARE GRANTED BY THIS
-LICENSE. THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
-"AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO,
-THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
-ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE
-LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR
-CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE
-GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION)
-HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT
-LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT
-OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH
-DAMAGE.
-'''
+# Copyright (c) 2024 TOYOTA MOTOR CORPORATION
+# All rights reserved.
+# Redistribution and use in source and binary forms, with or without
+# modification, are permitted (subject to the limitations in the disclaimer
+# below) provided that the following conditions are met:
+# * Redistributions of source code must retain the above copyright notice, this
+#   list of conditions and the following disclaimer.
+# * Redistributions in binary form must reproduce the above copyright notice,
+#   this list of conditions and the following disclaimer in the documentation
+#   and/or other materials provided with the distribution.
+# * Neither the name of the copyright holder nor the names of its contributors may be used
+#   to endorse or promote products derived from this software without specific
+#   prior written permission.
+# NO EXPRESS OR IMPLIED LICENSES TO ANY PARTY'S PATENT RIGHTS ARE GRANTED BY THIS
+# LICENSE. THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
+# "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO,
+# THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
+# ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE
+# LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR
+# CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE
+# GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION)
+# HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT
+# LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT
+# OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH
+# DAMAGE.
 # -*- coding: utf-8 -*-
 import sys
 
@@ -44,8 +42,8 @@ from trajectory_msgs.msg import JointTrajectory
 from trajectory_msgs.msg import JointTrajectoryPoint
 
 
-# Experimental determined, even if you repeat Move_TO_GO and Move_TO_NEUTRAL in HSR, 1.0E-3 often gets caught.
-# More loose feeling
+# Experimentally determined, with HSR, repeating move_to_go and move_to_neutral often gets stuck at 1.0e-3
+# Slightly looser than that
 _EPSILON = 1.0e-2
 
 
@@ -68,7 +66,7 @@ def _is_in_acc_limit(joint_names, accelerations, acc_limit_dict):
 
 def _ros_trajectory_from_timeopt(
         trajectory, joint_names, logger, acc_limit_dict, min_step=0.01, offset=0.0):
-    u"""Convert the orbit that can be taken with get_optimal_trajectory of Timeopt to ROS
+    u"""Convert trajectory obtained from timeopt's get_optimal_trajectory to ROS
 
     Args:
         trajectory: timeopt trajectory (list  (time, state) )
@@ -94,7 +92,7 @@ def _ros_trajectory_from_timeopt(
             trajectory_points.append(joint_point)
             last_time = point[0]
         else:
-            logger.error('Acc error')
+            logger.debug('Acc error')
     msg = JointTrajectory(joint_names=joint_names,
                           points=trajectory_points)
     return msg
@@ -104,23 +102,23 @@ def _timeopt_trajectory_from_ros(start_state,
                                  trajectory_msg,
                                  target_joint_names,
                                  decimate_threshold=1e-3):
-    u"""Convert the ROS orbit so that it can be handled with Timeopt
+    u"""Convert ROS trajectory to be usable with timeopt
 
     Args:
         start_state: Initial state.
-        trajectory_msg: ROS joint orbit (Trajectory_msg/JointTrajecotry)
-        target_joint_names: Orbit optimized with Timeopt (List (str))
-        decimate_threshold: Skills that are close to 2 points.
+        trajectory_msg: Joint trajectory in ROS (trajectory_msg/JointTrajecotry)
+        target_joint_names: Trajectory to optimize with timeopt (list (str) )
+        decimate_threshold: Threshold to consider two points close. Value of 2-norm of position (float)
     Return:
-        Timeopt_trajectory: Trajectory (TrajectoryDict) used in Timeopt
+        timeopt_trajectory: Trajectory used by timeopt (TrajectoryDict)
     Note:
-        If there is no point that changes from the initial state, return None
+        Returns None if there are no changing points from initial state
     """
     points = trajectory_msg.points
     joint_names = trajectory_msg.joint_names
 
-    # If there is almost the same point, the calculation will be unstable.
-    # The same point is unnecessary because of the shortest time control characteristics
+    # Calculation becomes unstable if there are almost the same points.
+    # The same points are unnecessary due to the characteristics of minimum-time control, so decimate them
     decimate_point = []
     prev_point = [start_state.position[start_state.name.index(joint)]
                   for joint in joint_names]
@@ -133,28 +131,28 @@ def _timeopt_trajectory_from_ros(start_state,
     points = decimate_point
     point_num = len(points) + 1
 
-    # If there is no score
+    # When there are no waypoints
     if (point_num == 1):
         return None
 
     traj = TrajectoryDict(point_num)
     if (point_num == 2):
-        # If there are 2 points, use a straight orbital.
+        # If there are two waypoints, it is considered a linear trajectory
         for name in target_joint_names:
             traj.append(name, LinearTrajectory)
     else:
-        # Usually interpolate with a tertiary natural sprine
+        # Normally interpolate with cubic natural splines
         for name in target_joint_names:
             traj.append(name, NaturalCubicSplineTrajectory)
 
-    # Enter the point of Start_state as the starting point
+    # Start with the start_state point as the starting point
     for index, name in enumerate(start_state.name):
         if name in traj:
             traj[name][0] = (start_state.position[index], 0, 0)
     for name in set(target_joint_names) - set(start_state.name):
         traj[name][0] = (0, 0, 0)
 
-    # Settings via points
+    # Setting waypoints
     for index, name in enumerate(joint_names):
         for i in range(point_num - 1):
             traj[name][i + 1] = (points[i].positions[index], 0, 0)
@@ -165,7 +163,7 @@ def _timeopt_trajectory_from_ros(start_state,
 
 
 class TimeoptFilterNode(Node):
-    u"""Node that converts a spatial command orbital into a time orbit"""
+    u"""A node that converts spatial command trajectories into temporal trajectories"""
 
     _DEFAULT_ACCELERATION_LIMIT = 1.0
     _DEFAULT_VELOCITY_LIMIT = 1.0
@@ -230,7 +228,7 @@ class TimeoptFilterNode(Node):
         self._dynamics.set_limit(joint_name, 'acceleration', limits)
 
     def _set_joint_limit_request(self, joint_limits):
-        u"""Set TMC_MANIPULATION_MSGS/JINTLIMITS for the request"""
+        u"""Set the request's tmc_manipulation_msgs/JointLimits"""
         for limit in joint_limits:
             if limit.has_velocity_limits:
                 self._update_velocity_limit(limit.joint_name, limit.max_velocity)
@@ -254,26 +252,26 @@ class TimeoptFilterNode(Node):
         return SetParametersResult(successful=True)
 
     def _timeopt_trajectory_from_ros(self, start_state, trajectory):
-        u"""Convert ROS orbit to Timeopt orbit
+        u"""Convert ROS trajectory to timeopt trajectory
 
-        Functionation to implement robot -specific processing by overlighting
+        Functionate to implement robot-specific processing with overwrite
         """
         return _timeopt_trajectory_from_ros(
             start_state, trajectory, self._target.names,
             self._DECIMATE_THRESHOLD)
 
     def _set_trajectory(self, timeopt_trajectory):
-        u"""Set the orbit to the time optimization instance
+        u"""Set trajectory to time optimization instance
 
-        Functionation to implement robot -specific processing by overlighting
+        Functionate to implement robot-specific processing with overwrite
         """
         self._timeopt.set_trajectory(timeopt_trajectory)
 
     def _callback_timeopt_filter(self, req, res):
-        u"""Filter_trajectory service callback.
+        u"""Callback for filter_trajectory service.
 
-        Receive command spaces (TMC_MANIPULATION/FilterJointtrajectory)
-        Return the shortest time orbit (JointTrajectory)
+        Receive command space trajectory (tmc_manipulation/FilterJointTrajectory),
+        Return minimum-time trajectory (JointTrajectory)
         """
         self.get_logger().debug('\n%s' % req)
         start = self.get_clock().now()
@@ -290,7 +288,7 @@ class TimeoptFilterNode(Node):
             return res
 
         if timeopt_traj is None:
-            # If there is no point through, return the trajectory with the minimum time without optimization.
+            # When there are no waypoints, return a trajectory with minimum time without optimization
             self.get_logger().info('no movement')
             output_traj = JointTrajectory()
             output_traj.joint_names = req.trajectory.joint_names
@@ -317,7 +315,7 @@ class TimeoptFilterNode(Node):
             req.trajectory.joint_names,
             self.get_logger(),
             _extract_acc_limit_dict(req.trajectory.joint_names, self._kinematics.limits))
-        # The first point is for calculation, so delete it
+        # The first point is for calculation, so remove it
         trajectory.points = trajectory.points[1:]
         res.trajectory = trajectory
         res.is_success = True

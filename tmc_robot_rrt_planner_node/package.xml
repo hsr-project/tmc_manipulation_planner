@@ -1,14 +1,13 @@
 <package format="3">
   <name>tmc_robot_rrt_planner_node</name>
-  <version>2.0.0</version>
-  <description>プランニングのサービスを提供するノード</description>
+  <version>2.0.1</version>
+  <description>Node that provides planning services</description>
   <maintainer email="xr-hsr-support@mail.toyota.co.jp">HSR Support</maintainer>
 
   <license>BSD 3-clause Clear License</license>
 
   <url type="website">None</url>
 
-  <author>Keisuke Takeshita</author>
   <author>Koji Terada</author>
 
   <buildtool_depend>ament_cmake</buildtool_depend>

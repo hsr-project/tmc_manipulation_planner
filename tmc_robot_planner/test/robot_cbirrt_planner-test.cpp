@@ -25,8 +25,9 @@ LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT
 OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH
 DAMAGE.
 */
-///  Planner library test
-///  Moving and checking URDF models
+///  Test of planner library
+///  Mainly checking cart movement and urdf model
+///  @author Koji Terada
 
 #include <stdlib.h>
 
@@ -80,25 +81,25 @@ using tmc_robot_planner::IConfigurationConstraint;
 using tmc_rplanner::Config;
 
 namespace {
-// Margin for floating point comparison
+// Margin for floating-point comparison
 const double kDoubleEps = 1.0e-3;
-// Hand name
+// Name of the hand
 const char* const kHandName = "link7";
-// Numerical IK maximum number of repetitions
+// Maximum number of iterations for numerical IK
 const int32_t kMaxItrIK = 1000;
-// Numerical IK tolerance error
+// Numerical IK tolerance for error
 const double kIKDelta = 1.0e-3;
-// Numerical IK tolerance fluctuation
+// Numerical IK tolerance for variation
 const double kIKConvergeThreshold = 1.0e-10;
-// Timeout [S]
+// Timeout[s]
 const double kTimeOutPlanning = 120.0;
-// Timeout [S]
+// Timeout[s]
 const double kTimeOutPlanningVeryShort = 0.0001;
-// Exploration
+// Search width
 const double kDelta = 0.01;
-// Interference check width
+// Check width for interference
 const double kSubDelta = 0.005;
-// Maximum number of repetitions
+// Maximum number of iterations
 const int32_t kMaxItrPlanning = 1000;
 }  // anonymous namespace
 
@@ -131,14 +132,14 @@ class RobotCBiRrtPlannerUrdfTest :  public ::testing::Test {
     robot_collision_detector_->SetRobotNamedAngle(initial_config_);
   }
 
-  // Check if the orbit is correct
-  // *Continuous (width between Config is Delta or less)
-  // *Not interfered
-  // *If you have a Constraint_tsr, meet it
-  // *The initial value is one of the following:
-  //   1. What was set in Start_configs 2.Start_tsrs
-  // *The terminal value is one of the following:
-  //   1. Those set in Goal_configs 2.Goal_tsrs generated
+  // Check the trajectory for correctness in the following aspects
+  // * Continuous (distance between configs is within delta)
+  // * No interference
+  // * Satisfies constraint_tsr if available
+  // * Initial value is one of the following.
+  //   1. Set in start_configs 2. Generated from start_tsrs
+  // * Terminal value is one of the following.
+  //   1. Set in goal_configs 2. Generated from goal_tsrs
   void CheckResultTrajectory(const RobotTrajectory& trajectory,
                              const CBiRrtRequest& req,
                              const CBiRrtParameters& params);
@@ -157,7 +158,7 @@ void RobotCBiRrtPlannerUrdfTest::CheckResultTrajectory(
   JointTrajectory trajectory = robot_trajectory.joint_trajectory;
   MultiDOFJointTrajectory base_trajectory =
       robot_trajectory.multi_dof_joint_trajectory;
-  // Check if the track interval is beyond the delta
+  // Check if the trajectory intervals exceed delta
   for (uint32_t i = 0; i < trajectory.path.size(); ++i) {
     if (i != 0) {
       EXPECT_GE(params.delta + kDoubleEps,
@@ -175,28 +176,28 @@ void RobotCBiRrtPlannerUrdfTest::CheckResultTrajectory(
         true, contact_pair));
     EXPECT_TRUE(feasible);
 
-    // Constraint_tsr Check
+    // Check constraint_tsr
     if (!req.constraint_tsrs.empty()) {
       JointState joint_state;
       joint_state.name = req.use_joints;
       joint_state.position = trajectory.path[i];
-      // Set joint_angle, solve Kinematics in order, and check if it is within the range.
+      // Set joint_angle, solve forward Kinematics, and check if within range
       robot_collision_detector_->SetRobotTransform(req.origin_to_basejoint);
       robot_collision_detector_->SetRobotNamedAngle(joint_state);
       Eigen::Affine3d origin_to_end = robot_collision_detector_->
           GetObjectTransform(req.constraint_tsrs[0].end_frame_id);
 
-      // Confirm that it is fitted in TSR restraint
+      // Confirm it fits within TSR constraints
       double distance = (CalcDistanceToTsr(req.constraint_tsrs[0],
                                            origin_to_end)).norm();
-      // IK is Angleaxis, TSR is an RPY expression, so it can be tolerated because there can be about 3 times the error.
+      // IK is AngleAxis, TSR is in rpy representation; allow for approximately three times the error
       EXPECT_GE(kIKDelta * 3.0, distance);
     }
   }
 
-  // Initial value check
+  // Check initial value
   bool valid_start = false;
-  // Global angle initial value
+  // Initial joint angle
   for (std::vector<Config>::const_iterator config = req.start_configs.begin();
        config != req.start_configs.end();
        ++config) {
@@ -224,9 +225,9 @@ void RobotCBiRrtPlannerUrdfTest::CheckResultTrajectory(
   }
   EXPECT_TRUE(valid_start);
 
-  // End value check
+  // Check terminal value
   bool valid_goal = false;
-  // Global angle initial value
+  // Initial joint angle
   for (std::vector<Config>::const_iterator config = req.goal_configs.begin();
        config != req.goal_configs.end();
        ++config) {
@@ -255,7 +256,7 @@ void RobotCBiRrtPlannerUrdfTest::CheckResultTrajectory(
 }
 
 
-// Testing as a simple BIRRT
+// Test as simple Birrt
 TEST_F(RobotCBiRrtPlannerUrdfTest, plan_as_birrt) {
   NameSeq use_name(6);
   use_name[0] = ("joint1");
@@ -308,7 +309,7 @@ TEST_F(RobotCBiRrtPlannerUrdfTest, plan_as_birrt) {
 }
 
 
-// Test as a Birlt including Base movement in the X -direction
+// Test as Birrt including base movement in x direction
 TEST_F(RobotCBiRrtPlannerUrdfTest, plan_with_rail_x) {
   NameSeq use_name(6);
   use_name[0] = ("joint1");
@@ -366,7 +367,7 @@ TEST_F(RobotCBiRrtPlannerUrdfTest, plan_with_rail_x) {
   }
 }
 
-// Testing as a Birlt of hand -specified hand, including Planar's Base movement
+// Test as tip-specified Birrt including planar base movement
 TEST_F(RobotCBiRrtPlannerUrdfTest, plan_with_planar) {
   NameSeq use_name(6);
   use_name[0] = ("joint1");

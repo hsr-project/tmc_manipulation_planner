@@ -25,7 +25,12 @@ LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT
 OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH
 DAMAGE.
 */
-/// @brief    Planna interface with two points
+/// @file     point_to_point_planner.hpp
+/// @brief    Interface for a planner connecting two points
+/// @author   Koji Terada
+/// @version  1.0.0
+/// @date     2011.10.25
+/// @note     [1.0.0] 2011.10.19 Newly created
 
 #ifndef TMC_MANIPULATION_TMC_RPLANNER_POINT_TO_POINT_PLANNER_HPP_
 #define TMC_MANIPULATION_TMC_RPLANNER_POINT_TO_POINT_PLANNER_HPP_
@@ -36,14 +41,14 @@ DAMAGE.
 namespace tmc_rplanner {
 
 /// @class IPointToPointPlanner
-/// @brief Planner interface that connects two points
+/// @brief Interface for a planner connecting two points
 class IPointToPointPlanner {
  public:
   using Ptr = std::shared_ptr<IPointToPointPlanner>;
   using ConstPtr = std::shared_ptr<const IPointToPointPlanner>;
 
   virtual ~IPointToPointPlanner() {}
-  /// Creating paths
+  /// Path creation
   virtual PlanRet PlanPath(const Config& init_config,
                         const Config& goal_config,
                         Path& path_out) = 0;

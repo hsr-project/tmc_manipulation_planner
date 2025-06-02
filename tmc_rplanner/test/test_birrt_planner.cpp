@@ -25,7 +25,12 @@ LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT
 OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH
 DAMAGE.
 */
-/// @brief    Birrt_planner test
+/// @file     test_birrt_planner.cpp
+/// @brief    Test of birrt_planner
+/// @author   Koji Terada
+/// @version  1.0.0
+/// @date     2011.12.01
+/// @note     [1.0.0] 2011.12.01 Newly created
 
 #include <stdlib.h>
 #include <gtest/gtest.h>
@@ -41,11 +46,11 @@ using tmc_rplanner::kTerminate;
 using tmc_rplanner::Path;
 
 namespace {
-// State space used in the test
+// Dimension of the state space used in the test
 int32_t kDim = 2;
-// Exploration
+// Exploration width
 double kDelta = 0.2;
-// Identity tolerance value of floating point
+// Tolerance for floating point equality
 double kDoubleEps = 1e-5;
 
 
@@ -103,16 +108,16 @@ TEST_F(BiRrtPlannerTest, plan) {
   Path path;
   ASSERT_EQ(kSuccess, planner_->PlanPath(init, goal, path));
 
-  // Check of PATH
-  // The initial value is init
+  // Check of the path
+  // Initial value is init
   ASSERT_DOUBLE_EQ(init(0), path.front()(0));
   ASSERT_DOUBLE_EQ(init(1), path.front()(1));
 
-  // The terminal value is Goal
+  // Terminal value is goal
   ASSERT_DOUBLE_EQ(goal(0), path.back()(0));
   ASSERT_DOUBLE_EQ(goal(1), path.back()(1));
 
-  // Distance is always below Kdelta and FEASIBLE
+  // Distance is always less than or equal to kDelta and feasible
   Config old_config = init;
   for (Path::iterator config = ++(path.begin()); config != path.end(); ++config) {
     EXPECT_LE((*config - old_config).norm(), kDelta + kDoubleEps);
@@ -121,7 +126,7 @@ TEST_F(BiRrtPlannerTest, plan) {
   }
 }
 
-// Ends with maximum number of repetitions
+// End with the maximum number of iterations
 TEST(BiRrtPlanner, max_itr) {
   ConfigurationSpace::Ptr cspace(new ConfigurationSpace(kDim));
   cspace->set_random_config(RandomConfig);
@@ -136,7 +141,7 @@ TEST(BiRrtPlanner, max_itr) {
   EXPECT_EQ(kMaxItr, planner->PlanPath(init, goal, path));
 }
 
-// End with the end condition function
+// End by termination condition function
 TEST(BiRrtPlanner, terminate) {
   ConfigurationSpace::Ptr cspace(new ConfigurationSpace(kDim));
   cspace->set_random_config(RandomConfig);

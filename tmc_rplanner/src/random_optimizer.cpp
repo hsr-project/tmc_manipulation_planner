@@ -25,42 +25,50 @@ LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT
 OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH
 DAMAGE.
 */
-/// @brief    Implementation of Pointopointplanner by Random_optimizer
+/// @file     random_optimizer.cpp
+/// @brief    Implementation of PointToPointPlanner using random_optimizer
+/// @author   Koji Terada
+/// @version  1.0.0
+/// @date     2011.10.25
+/// @note     [1.0.0] 2011.10.19 Newly created
 
 #include <tmc_rplanner/random_optimizer.hpp>
 
 namespace tmc_rplanner {
 
-/// @brief Crease a random configuration to find the optimal solution
+/// @brief Generate random configurations to seek the optimal solution
+/// @param config_out Configuration with maximum evaluation
+/// @param value_out Evaluation value
+/// @return true: Success false: Failure
 bool RandomOptimizer::Optimize(Config& config_out, double& value_out) {
   double max_value = 0.0;
   int32_t num_eval = 0;
   Config max_config;
 
   for (int32_t i = 0; i < max_itr_; ++i)  {
-    // Random configuration occurs
+    // Generate random configurations
     Config new_config = space_->GenerateRandomConfig();
-    /// Check if configuration is valid
+    /// Check if the configuration is valid
     if (space_->CheckFeasibility(new_config)) {
-      /// Assessment of configuration
+      /// Evaluate the configuration
       ++num_eval;
       double value = space_->EvaluateConfig(new_config);
-      // Maximum value update
+      // Update maximum value
       if (value > max_value) {
         max_value = value;
         max_config = new_config;
       }
     }
-    // Ends when num_eval exceeds max_eval
+    // Terminate if num_eval exceeds max_eval
     if (num_eval > max_eval_) {
       break;
     }
-    // End condition check
+    // Check termination condition
     if (is_terminate_ && is_terminate_()) {
       break;
     }
   }
-  // Failure if the number of evaluations is 0
+  // Fail if the number of evaluations is zero
   if (num_eval == 0) {
     return false;
   } else {

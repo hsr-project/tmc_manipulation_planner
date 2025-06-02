@@ -1,31 +1,29 @@
-'''
-Copyright (c) 2024 TOYOTA MOTOR CORPORATION
-All rights reserved.
-Redistribution and use in source and binary forms, with or without
-modification, are permitted (subject to the limitations in the disclaimer
-below) provided that the following conditions are met:
-* Redistributions of source code must retain the above copyright notice, this
-  list of conditions and the following disclaimer.
-* Redistributions in binary form must reproduce the above copyright notice,
-  this list of conditions and the following disclaimer in the documentation
-  and/or other materials provided with the distribution.
-* Neither the name of the copyright holder nor the names of its contributors may be used
-  to endorse or promote products derived from this software without specific
-  prior written permission.
-NO EXPRESS OR IMPLIED LICENSES TO ANY PARTY'S PATENT RIGHTS ARE GRANTED BY THIS
-LICENSE. THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
-"AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO,
-THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
-ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE
-LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR
-CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE
-GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION)
-HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT
-LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT
-OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH
-DAMAGE.
-'''
 # !/usr/bin/env python
+# Copyright (c) 2024 TOYOTA MOTOR CORPORATION
+# All rights reserved.
+# Redistribution and use in source and binary forms, with or without
+# modification, are permitted (subject to the limitations in the disclaimer
+# below) provided that the following conditions are met:
+# * Redistributions of source code must retain the above copyright notice, this
+#   list of conditions and the following disclaimer.
+# * Redistributions in binary form must reproduce the above copyright notice,
+#   this list of conditions and the following disclaimer in the documentation
+#   and/or other materials provided with the distribution.
+# * Neither the name of the copyright holder nor the names of its contributors may be used
+#   to endorse or promote products derived from this software without specific
+#   prior written permission.
+# NO EXPRESS OR IMPLIED LICENSES TO ANY PARTY'S PATENT RIGHTS ARE GRANTED BY THIS
+# LICENSE. THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
+# "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO,
+# THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
+# ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE
+# LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR
+# CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE
+# GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION)
+# HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT
+# LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT
+# OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH
+# DAMAGE.
 # -*- coding: utf-8 -*-
 u"""Geometric calculation module."""
 
@@ -36,13 +34,13 @@ if sys.version_info.major == 2:
 
 
 class Kinematics(object):
-    u"""Base class for handling kinematics restrained in orbit."""
+    u"""Base class for dealing with kinematics constrained to orbits."""
 
     def __init__(self, target):
-        u"""Give the target and initialize.
+        u"""Initialize with a given target.
 
         Args:
-            Target calculation target
+            target Calculation target
         """
         self.target = target
         self.traj = {}
@@ -51,50 +49,50 @@ class Kinematics(object):
         self.curr = {}
 
     def set_limit(self, name, limit_type, limit):
-        u"""Set a motor restriction.
+        u"""Set kinematic constraints.
 
         Args:
-            name (str): Name of variables
-            limit_type (str): Type of restraint
-            limit (tuple): (lower limit, upper limit)
+            name (str): Name of the variable
+            limit_type (str): Type of constraint
+            limit (tuple): (Lower limit, Upper limit)
         """
         if not isinstance(limit, tuple):
-            raise(TypeError, limit)
+            raise TypeError('limit is not tuple')
         if name not in self.target.names:
             raise ValueError('No input name variables %s.' % name)
         self.limits[name, limit_type] = limit
 
     def set_trajectory(self, traj):
-        u"""Set the command space orbit.
+        u"""Set command space trajectory.
 
         Args:
-            traj (Dict of Trajectory): Instruction Space Orbit
+            traj (dict of Trajectory): Command space trajectory
         """
         self.traj = traj
         self.traj_memo = {}
-        # Current state dictionary
+        # Dictionary of current state
         self.curr = {}
         for name in self.traj.keys():
             self.curr[name] = (0, 0, 0)
 
     def get_current_point(self):
-        u"""Returns the current state.
+        u"""Return point of the current state.
 
         Return:
-            curr (point): Returns the current state of each joint
+            curr (Point): Return the state of each joint currently
         """
         return self.curr
 
     def update(self, sd):
-        u"""Update kinematics with orbit SD.The current state of Target is updated.
+        u"""Update kinematics with points sd on the trajectory. The current state of the target is updated.
 
         Args:
-            sd (float): A orbit position (specified by parameter S)
+            sd(float): Position on the trajectory (specified with parameter s)
         """
-        # Sd> Self.traj.length may be SD> Self.traj.length due to calculation error.
+        # sd > self.traj.length may occur due to calculation errors
         sd = min(sd, self.traj.length)
 
-        # Acquire orbit an interpolation point
+        # Get interpolation point on the trajectory
         if sd in self.traj_memo:
             self.curr = self.traj_memo[sd]
             self.target.update_point(self.traj_memo[sd])
@@ -105,7 +103,7 @@ class Kinematics(object):
                                   for name in self.traj}
 
     def pre_calc_traj(self, sd_seq, step):
-        u"""TRAJ advance calculation"""
+        u"""Pre-computation of traj"""
         temp = [self.traj[name].calc(sd_seq, step) for name in self.traj]
         self.traj_memo = {x[0]: {y[0]: y[1] for y in zip(self.traj, x[1:])}
                           for x in zip(sd_seq, *temp)}
@@ -114,9 +112,9 @@ class Kinematics(object):
             self.target.update_kinematics(self.curr)
 
     def get_vlc(self):
-        u"""Returns the point above the curve VLC (Velocity Limit Curve) due to speed restriction.First, you need to call update.
+        u"""Return a point on the curve VLC (Velocity Limit Curve) due to velocity constraints. Need to call update first.
 
-        Return sv_max (float): S speed on VLC
+        Return sv_max(float): s velocity of the point on VLC
         """
         pairs = [pair for pair in self.limits if pair[1] == 'velocity']
         sv_max = float('inf')
@@ -129,14 +127,14 @@ class Kinematics(object):
         return sv_max
 
     def get_state(self, sd, sv, sa):
-        u"""Returns the current state.
+        u"""Return point of the current state.
 
         Args:
-            sd (float): S in orbit
-            sv (float): Speed ​​of S in orbit
-            sa (float): Acceleration of S in orbit
+            sd (float): s on the trajectory
+            sv (float): Velocity of s on the trajectory
+            sa (float): Acceleration of s on the trajectory
         Return:
-            state (dict): [Location, speed, acceleration] of each joint
+            state (dict): [Position, Velocity, Acceleration] of each joint; the derivative values are time derivatives
         """
         state = {}
         self.update(sd)
@@ -148,12 +146,12 @@ class Kinematics(object):
         return state
 
     def calc_accel_limit(self, sv):
-        u"""Calculate the upper and lower limit of orbit acceleration under restrictions.
+        u"""Calculate the upper and lower limits of trajectory acceleration under constraints.
 
         Args:
-            sv (Float): Specification of calculation
+            sv (float): s velocity of the point to be calculated
         Return:
-            [sa_min, sa_max]: The lower limit and upper limit of the acceleration
+            [sa_min, sa_max] : Lower and upper limits of s acceleration
         """
         (sa_min, sa_max) = (float('-inf'), float('inf'))
         accel_limits = [

@@ -25,26 +25,42 @@ LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT
 OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH
 DAMAGE.
 */
-/// @brief    Planning parameter structure
+/// @file     planner_common.cpp
+/// @brief Structure for planning parameters
+/// @author   Koji Terada
+/// @version  1.0.0
+/// @date     2011.10.25
+/// @note     [1.0.0] 2011.10.19 Newly created
+
 
 #include <tmc_rplanner/planner_common.hpp>
 
 namespace tmc_rplanner {
 
 /// @func TreeToPath
-/// @brief Extract the track from the state tree
-///        Suppose the end of the state tree is the goal
-///        If the pass is larger than the size of TREE, the loop
-//         Throw an exception because it is
+/// @brief Extract trajectory from the state tree
+///        Assume the end of the state tree is the goal
+///        Loop if the path exceeds the size of the tree
+//         An exception is thrown because it is looping
+/// @param tree State tree
+/// @param path_out Output trajectory
+/// @note An infinite loop will occur if there is a loop in the tree.
+/// @exception tmc_rplanner::TreeLoop Detection of loop in the tree
 void TreeToPath(const Tree& tree, Path& path_out) {
   TreeToPath(tree, tree.size() - 1, path_out);
 }
 
 /// @func TreeToPath
-/// @brief Extract the track from the state tree
-///        Suppose the end of the state tree is the goal
-///        If the pass is larger than the size of TREE, the loop
-///        Throw an exception because it is
+/// @brief Extract trajectory from the state tree
+///        Assume the end of the state tree is the goal
+///        Loop if the path exceeds the size of the tree
+///        An exception is thrown because it is looping
+/// @param tree State tree
+/// @param path_out Output trajectory
+/// @param goal_index Index of the final state in the state tree
+/// @note An infinite loop will occur if there is a loop in the tree.
+/// @exception tmc_rplanner::TreeLoop Detection of loop in the tree
+/// @exception std::invalid_argument The goal_index is larger than the size of the tree
 void TreeToPath(const Tree& tree, uint32_t goal_index, Path& path_out) {
   if (tree.size() <= goal_index) {
     throw std::invalid_argument("Goal index over tree size.");
@@ -73,6 +89,8 @@ void SwapRoot(Tree& tree, const Node::WeakPtr& root) {
 }
 
 /// @brief Change the root of the state tree to the specified one
+/// @param tree State tree
+/// @param root Node to be set as the new root
 void ChangeTreeRoot(Tree& tree, const Node::WeakPtr& root) {
   if (!root.lock()->parent.expired()) {
     SwapRoot(tree, root);

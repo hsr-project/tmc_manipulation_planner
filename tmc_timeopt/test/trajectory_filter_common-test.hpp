@@ -125,7 +125,7 @@ bool VerifyVelocityLimit(const ITrajectoryFilter& trajectory,
   for (double t = 0.0; t < trajectory.GetDuration(); t += kTimeStep) {
     auto velocities = trajectory.GetVelocity(t);
     for (uint32_t i = 0; i < limits.size(); ++i) {
-      // The test will not be stable without a margin because it is a comparison of floating points.
+      // Since it's a comparison of floating point numbers, the test won't be stable without a margin
       if (fabs(velocities[i]) > limits[i] + kEpsilon) {
         std::cerr << t << ": " << velocities.transpose() << std::endl;
         return false;
@@ -197,7 +197,7 @@ class TrajectoryFilterCommonTest : public ::testing::Test {};
 
 TYPED_TEST_SUITE_P(TrajectoryFilterCommonTest);
 
-// Testing to fail when the speed limit contains non -correct values
+// Test to see if it fails when the speed limit includes non-positive values
 TYPED_TEST_P(TrajectoryFilterCommonTest, MaxVelocityNotPositive) {
   std::vector<std::array<double, 2>> test_cases = {
       {1.0, 0.0}, {0.0, 0.5}, {0.0, 0.0}, {1.0, -0.5}, {-1.0, 0.5}, {-1.0, -0.5}};
@@ -211,7 +211,7 @@ TYPED_TEST_P(TrajectoryFilterCommonTest, MaxVelocityNotPositive) {
   }
 }
 
-// Testing to fail if the acceleration limit contains non -correct values
+// Test to see if it fails when the acceleration limit includes non-positive values
 TYPED_TEST_P(TrajectoryFilterCommonTest, MaxAccelarationNotPositive) {
   std::vector<std::array<double, 2>> test_cases = {
       {0.5, 0.0}, {0.0, 1.0}, {0.0, 0.0}, {0.5, -1.0}, {-0.5, 1.0}, {-0.5, -1.0}};
@@ -225,7 +225,7 @@ TYPED_TEST_P(TrajectoryFilterCommonTest, MaxAccelarationNotPositive) {
   }
 }
 
-// Test of freedom disagreement
+// Test of freedom degree mismatch
 TYPED_TEST_P(TrajectoryFilterCommonTest, DofMismatch) {
   std::vector<std::array<uint32_t, 6>> test_cases = {
       {3, 2, 2, 2, 2, 2}, {2, 3, 2, 2, 2, 2}, {2, 2, 3, 2, 2, 2},
@@ -247,7 +247,7 @@ TYPED_TEST_P(TrajectoryFilterCommonTest, DofMismatch) {
   }
 }
 
-// Route is an empty test
+// Test for an empty path
 TYPED_TEST_P(TrajectoryFilterCommonTest, EmptyWayPoints) {
   auto input = TestInput();
   input.way_points.clear();
@@ -257,7 +257,7 @@ TYPED_TEST_P(TrajectoryFilterCommonTest, EmptyWayPoints) {
   EXPECT_FALSE(trajectory.IsValid());
 }
 
-// 1 Optimization of trajectory of freedom
+// Optimization of a 1-degree-of-freedom trajectory
 TYPED_TEST_P(TrajectoryFilterCommonTest, OneDofTrajectory) {
   auto input = TestInput();
   input.initial_positions.resize(1);
@@ -272,7 +272,7 @@ TYPED_TEST_P(TrajectoryFilterCommonTest, OneDofTrajectory) {
   EXPECT_FALSE(trajectory.IsValid());
 }
 
-// Interrupt test
+// Interruption test
 TYPED_TEST_P(TrajectoryFilterCommonTest, Interrupt) {
   auto input = TestInput();
   InterruptionMock return_false_mock(-1);
@@ -290,7 +290,7 @@ TYPED_TEST_P(TrajectoryFilterCommonTest, Interrupt) {
   EXPECT_FALSE(trajectory.IsValid());
 }
 
-// Optimization of orbit including the same points for continuous vouchers
+// Optimization of a trajectory that includes the same point at consecutive waypoints
 TYPED_TEST_P(TrajectoryFilterCommonTest, SeriallySameWayPoint) {
   auto input = TestInput();
   input.way_points.insert(input.way_points.begin(), input.way_points.front());
@@ -301,14 +301,14 @@ TYPED_TEST_P(TrajectoryFilterCommonTest, SeriallySameWayPoint) {
   EXPECT_TRUE(trajectory.IsValid());
 
   EXPECT_TRUE(VerifyBothEndVelocity(trajectory, input.initial_velocities));
-  // Kmaxdeviation = 0.03, so it should be in that degree.
+  // Since kMaxDeviation = 0.03, it should be within that range
   EXPECT_LT(CalcWayPointDistance(trajectory, input.way_points[1]), 0.03 * 2);
   EXPECT_LT(CalcLastPointDistnace(trajectory, input.way_points[2]), kEpsilon);
   EXPECT_TRUE(VerifyVelocityLimit(trajectory, input.max_velocities));
   EXPECT_TRUE(VerifyAccelarationLimit(trajectory, input.max_accelerations));
 }
 
-// Optimization of the same point of initial posture and voting points
+// Optimization when the initial posture and the first waypoint are the same point
 TYPED_TEST_P(TrajectoryFilterCommonTest, SameInitialPositionAndFirstWayPoint) {
   auto input = TestInput();
   input.way_points.insert(input.way_points.begin(), input.initial_positions);

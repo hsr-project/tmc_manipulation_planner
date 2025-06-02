@@ -25,7 +25,12 @@ LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT
 OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH
 DAMAGE.
 */
-/// @brief    Tree class in a configuration space used in planna
+/// @file     configuration_tree.hpp
+/// @brief    Tree structure class in configuration space used in planner
+/// @author   Koji Terada
+/// @version  1.0.0
+/// @date     2011.11.01
+/// @note     [1.0.0] 2011.10.26 Newly created
 
 #ifndef TMC_MANIPULATION_TMC_RPLANNER_CONFIGURATION_TREEHPP_
 #define TMC_MANIPULATION_TMC_RPLANNER_CONFIGURATION_TREEHPP_
@@ -45,35 +50,35 @@ class ConfigurationTree {
   ConfigurationTree(ConfigurationSpace::Ptr configuration_space, double delta, int32_t max_connect);
   ~ConfigurationTree() {}
 
-  /// Recently extend the branch from the distance of DELTA to DST_CONFIG from nearby TREE
-  /// @param[in] dst_config Goal configuration
+  /// Extend branches from the nearest node of the tree to dst_config by a distance of delta
+  /// @param[in] dst_config Target configuration
   ExtendRet Extend(const Config& dst_config);
 
-  /// Do the Extend until you reach DST_CONFIG
-  /// @param[in] dst_config Goal configuration
+  /// Perform Extend until reaching dst_config
+  /// @param[in] dst_config Target configuration
   ExtendRet Connect(const Config& dst_config);
 
-  /// Do the Extend until you reach DST_CONFIG
-  /// @param[in] dst_config Goal configuration
+  /// Perform Extend until reaching dst_config
+  /// @param[in] dst_config Target configuration
   /// @param[in] terminate Termination function
   ExtendRet Connect(const Config& dst_config,
                     TerminateConditionFunc terminate);
   /// Initialize the tree
   void ClearTree() {tree_.clear();}
-  /// Output the tree into the stream
+  /// Output the tree to a stream
   void PrintTree() const;
-  /// GOAL is the final element that extracts the path
+  /// Extract path with the final element as the goal
   void TrackBackPath(Path& path_out) const;
 
-  /// Acquisition of the latest configuration
-  /// @return The latest configuration
+  /// Get the latest configuration
+  /// @return Latest configuration
   Config GetLastConfig() const {return tree_.back()->data;}
 
-  /// Delete branches connected to the latest configuration
+  /// Remove the branch connected to the latest configuration
   void RemoveLastBranch();
 
-  /// Set root configuration
-  /// @param[in] config Root configuration
+  /// Set the root configuration
+  /// @param[in] config The configuration to set as root
   void SetRootConfig(const Config& config) {
     tree_.push_front(Node::Ptr(new Node(config)));
   }
@@ -88,7 +93,7 @@ class ConfigurationTree {
   void set_delta(double delta) {delta_ = delta;}
 
  private:
-  /// Copies are prohibited
+  /// Copying is prohibited
   ConfigurationTree(const ConfigurationTree&);
   ConfigurationTree& operator=(const ConfigurationTree&);
 
@@ -96,11 +101,11 @@ class ConfigurationTree {
   Tree tree_;
   /// Configuration space
   ConfigurationSpace::Ptr configuration_space_;
-  /// Tree search width
+  /// Exploration width of the tree
   double delta_;
-  /// Continue as much as the maximum number of times and negative values ​​to continue Extended with Connect.
+  /// Maximum number of times to continue Extend in Connect; if negative, continue as much as possible
   int32_t max_connect_;
-  /// Get a recent node from TREE
+  /// Retrieve the nearest node within the tree
   Node::WeakPtr FetchNearestNeighbor_(const Config& config);
 };
 }  // namespace tmc_rplanner

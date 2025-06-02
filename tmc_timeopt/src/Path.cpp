@@ -53,7 +53,7 @@ class LinearPathSegment : public PathSegment {
  public:
   LinearPathSegment(const Eigen::VectorXd &start, const Eigen::VectorXd &end)
       : start(start), end(end), PathSegment((end - start).norm()) {
-    // Calculate in advance to speed up
+    // Pre-calculate for optimization purposes
     tangent = (end - start) / length;
   }
 
@@ -125,10 +125,10 @@ class CircularPathSegment : public PathSegment {
       center = intersection + (endDirection - startDirection).normalized() * radius / cos(0.5 * angle);
       x = (intersection - distance * startDirection - center).normalized();
     } else {
-      // With the original implementation, the direction of travel is the opposite of the orbit.
-      // If it is the opposite, draw a semicircular arc on the maxdeviation.
-      // In this way, it will pass a bit off the point where the direction of travel is the opposite of the traveling direction.
-      // Optimization is possible with the concept of Circular Blend
+      // The original implementation cannot handle trajectories that move in the exact opposite direction
+      // In cases of exact opposite, make it draw a semicircle with a radius of maxDeviation
+      // In doing so, it passes slightly offset from the point where the direction is exactly opposite
+      // Optimization becomes possible with the circular blend concept
       radius = distance;
       center = intersection + (endDirection - startDirection).normalized() * distance * 2.0;
       x = Eigen::VectorXd::Zero(y.size());

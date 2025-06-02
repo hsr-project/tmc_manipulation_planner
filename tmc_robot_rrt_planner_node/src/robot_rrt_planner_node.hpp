@@ -25,6 +25,10 @@ LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT
 OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH
 DAMAGE.
 */
+///
+/// robot_rrt_planner_node.hpp - planner using CBiRRT2
+///
+///
 
 #ifndef TMC_ROBOT_RRT_PLANNER_NODE_ROBOT_RRT_PLANNER_NODE_HPP_
 #define TMC_ROBOT_RRT_PLANNER_NODE_ROBOT_RRT_PLANNER_NODE_HPP_
@@ -44,6 +48,7 @@ DAMAGE.
 #include <tmc_planning_msgs/srv/plan_with_tsr_constraints.hpp>
 #include <tmc_robot_planner/robot_cbirrt_planner.hpp>
 #include <tmc_utils/msg_io.hpp>
+#include <tmc_utils/parameters.hpp>
 
 namespace tmc_robot_rrt_planner_node {
 
@@ -56,11 +61,12 @@ class RobotRrtPlannerNode : public rclcpp::Node {
   /// Destructor
   virtual ~RobotRrtPlannerNode() = default;
 
-  /// Separate constructor and INIT to use Shared_from_this
+  /// Separate the constructor and Init to use shared_from_this
   bool Init();
 
  private:
-  // /// Take out all joint angles
+  // TODO(Takeshita) 外部障害物，把持物の利用
+  // /// Retrieve all joint angles
   // tmc_manipulation_types::JointState FetchAllJoints_(
   //     const tmc_manipulation_types::JointState& partial_joint_state);
 
@@ -69,50 +75,52 @@ class RobotRrtPlannerNode : public rclcpp::Node {
   //     const std::string& object_id);
   // geometry_msgs::Pose FetchFrame_(
   //     const std::string& object_id);
-  /// PLANWITHTSRCONSTRAINT callback
+  /// Callback for PlanWithTsrConstraint
   void PlanWithTsrConstraints(
       const tmc_planning_msgs::srv::PlanWithTsrConstraints::Request::SharedPtr req,
       tmc_planning_msgs::srv::PlanWithTsrConstraints::Response::SharedPtr res);
-  /// PlanwithJointGoals callback
+  /// Callback for PlanWithJointGoals
   void PlanWithJointGoals(
       const tmc_planning_msgs::srv::PlanWithJointGoals::Request::SharedPtr req,
       tmc_planning_msgs::srv::PlanWithJointGoals::Response::SharedPtr res);
-  /// PlanwithHandposes callback
+  /// Callback for PlanWithHandPoses
   void PlanWithHandGoals(
       const tmc_planning_msgs::srv::PlanWithHandGoals::Request::SharedPtr req,
       tmc_planning_msgs::srv::PlanWithHandGoals::Response::SharedPtr res);
-  /// PlanwithHandline callback
+  /// Callback for PlanWithHandLine
   void PlanWithHandLine(
       const tmc_planning_msgs::srv::PlanWithHandLine::Request::SharedPtr req,
       tmc_planning_msgs::srv::PlanWithHandLine::Response::SharedPtr res);
 
-  /// Reading PLUGIN to restrain the joints
+  /// Load the plugin that constrains joints
   pluginlib::ClassLoader<tmc_robot_planner::IConfigurationConstraint> constraint_plugin_loader_;
-  /// Plugin that restrains the loaded joint
+  /// Loaded plugin that constrains joints
   std::map<std::string, tmc_robot_planner::IConfigurationConstraint::Ptr> constraint_plugin_cache_;
-  /// Reading of reverse athletic plugin
+  /// Load inverse kinematics plugin
   pluginlib::ClassLoader<tmc_robot_kinematics_model::IKSolver> ik_plugin_loader_;
-  /// Reading in order of motor athletic plugin
+  /// Load forward kinematics plugin
   pluginlib::ClassLoader<tmc_robot_kinematics_model::IRobotKinematicsModel> fk_loader_;
 
-  /// Exploration
+  /// Exploration width
   double delta_;
-  /// Interference check width Delta _> = Sub_delta_
+  /// Collision check width should be delta_ >= sub_delta_
   double sub_delta_;
-  /// Maximum value in the parallel direction of Base [M]
+  /// Maximum translational value of the base [m]
   double base_translation_max_;
 
   double increase_sampling_deviation_;
   double step_sampling_deviation_;
 
-  /// Class to save Request
+  /// Class that saves the request
   tmc_utils::MessageLogger::Ptr request_logger_;
-  /// Flag for Publish for Debug
+  /// Flag for whether to publish for debugging
   bool publish_debug_info_;
+  /// Flag for whether to print debugging information
+  tmc_utils::DynamicParameter<bool>::Ptr print_debug_info_;
   /// Enable step execution mode
   bool step_mode_;
 
-  /// Set a callback for debugging
+  /// Set up a callback for debugging
   void SetDebugCallBacks_(const std::vector<std::string>& joint_names);
       // const tmc_manipulation_types::AttachedObjectSeq& attached_objects,
       // const tmc_manipulation_msgs::CollisionEnvironment& environment);
@@ -121,44 +129,44 @@ class RobotRrtPlannerNode : public rclcpp::Node {
       // const tmc_manipulation_types::AttachedObjectSeq& attached_objects,
       // const tmc_manipulation_msgs::CollisionEnvironment& environment);
 
-  /// The joint name that weighs with the planna
+  /// Joint names weighted by the planner
   std::vector<std::string> weight_names_;
-  /// Planner weight
+  /// Weights of the planner
   std::vector<double> weights_;
-  /// The joint name that weighs with IK
+  /// Joint names weighted by IK
   std::vector<std::string> ik_weight_names_;
-  /// IK weight
+  /// Weights of IK
   std::vector<double> ik_weights_;
-  /// Parallel weight
+  /// Translational weight
   double weight_linear_base_;
-  /// Rotation direction weight
+  /// Rotational weight
   double weight_rotational_base_;
-  /// IK weight in parallel direction
+  /// Translational IK weight
   double weight_linear_base_ik_;
-  /// IK weight in the direction of rotation
+  /// Rotational IK weight
   double weight_rotational_base_ik_;
 
-  /// ROBOT interference checker
+  /// Interference checker for the robot
   tmc_robot_collision_detector::RobotCollisionDetector::Ptr robot_collision_detector_;
-  /// CBIRRT2 planna
+  /// CBiRRT2 planner
   tmc_robot_planner::RobotCBiRrtPlanner::Ptr planner_;
 
-  /// Joint_state_publisher for debugging
+  /// Joint state publisher for debugging
   rclcpp::Publisher<sensor_msgs::msg::JointState>::SharedPtr debug_joint_state_pub_;
-  // /// Marker Publisher for debugging
+  // /// Marker publisher for debugging
   // ros::Publisher debug_environment_pub_;
-  // /// Pose Publisher for debugging
+  // /// Pose publisher for debugging
   // ros::Publisher debug_pose_pub_;
-  /// TF for debugging
+  /// tf for debugging
   std::unique_ptr<tf2_ros::TransformBroadcaster> debug_tf_broadcaster_;
 
-  /// Planwithtsrconstraints service
+  /// Service for PlanWithTsrConstraints
   rclcpp::Service<tmc_planning_msgs::srv::PlanWithTsrConstraints>::SharedPtr plan_with_constraints_service_;
-  /// PlanwithJointGoals service
+  /// Service for PlanWithJointGoals
   rclcpp::Service<tmc_planning_msgs::srv::PlanWithJointGoals>::SharedPtr plan_with_joints_service_;
-  /// PlanwithHandgoals service
+  /// Service for PlanWithHandGoals
   rclcpp::Service<tmc_planning_msgs::srv::PlanWithHandGoals>::SharedPtr plan_with_hand_service_;
-  /// PlanwithHandline service
+  /// Service for PlanWithHandLine
   rclcpp::Service<tmc_planning_msgs::srv::PlanWithHandLine>::SharedPtr plan_with_line_service_;
 };
 

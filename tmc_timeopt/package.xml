@@ -1,12 +1,10 @@
 <package format="3">
   <name>tmc_timeopt</name>
-  <version>2.0.0</version>
-  <description>Libraries to solve Time optimal trajectory parametarization.</description>
+  <version>2.0.1</version>
+  <description>Time optimal trajectory parameterization.</description>
   <maintainer email="xr-hsr-support@mail.toyota.co.jp">HSR Support</maintainer>]
-
-  <author>Keisuke Takeshita</author>
   <author>Koji Terada</author>
-
+  <author>Keisuke Takeshita</author>
   <license>BSD 3-clause Clear License</license>
 
   <buildtool_depend>ament_cmake</buildtool_depend>

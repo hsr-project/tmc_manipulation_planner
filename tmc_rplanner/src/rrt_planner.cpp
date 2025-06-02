@@ -25,7 +25,12 @@ LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT
 OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH
 DAMAGE.
 */
-/// @brief    Implementation of PointOpointplanner by rrt_planner
+/// @file     rrt_planner.cpp
+/// @brief Implementation of PointToPointPlanner using rrt_planner
+/// @author   Koji Terada
+/// @version  1.0.0
+/// @date     2011.10.25
+/// @note     [1.0.0] 2011.10.19 Newly created
 
 #include <ctime>
 #include <stdlib.h>
@@ -38,7 +43,9 @@ DAMAGE.
 
 namespace tmc_rplanner {
 
-/// @brief 1 Step RRT extends
+/// @brief Extend one-step RRT
+/// @param tree State space tree
+/// @return true: Reached goal false: Not reached
 bool RrtPlanner::BuildOneStep_(ConfigurationTree& tree) {
   Config random_config;
   bool to_goal = false;
@@ -47,15 +54,15 @@ bool RrtPlanner::BuildOneStep_(ConfigurationTree& tree) {
   std::mt19937 eng(static_cast<uint32_t>(std::time(0)));
   std::uniform_real_distribution<> randf(0.0, 1.0);
 
-  // Aim for the goal at the ratio of Goal_bias
+  // Aim for the goal at the rate of goal_bias
   if (randf(eng) < goal_bias_) {
     space_->GenerateGoalConfig(random_config);
     to_goal = true;
   } else {
     random_config = space_->GenerateRandomConfig();
   }
-  // If GREEDY is true, go to Goal anyway
-  // If GREEDY is False, 1-STEP
+  // If greedy is true, proceed towards the goal anyway
+  // If greedy is false, one-step
   if (greedy_) {
     ret = tree.Connect(random_config);
   } else {
@@ -64,7 +71,10 @@ bool RrtPlanner::BuildOneStep_(ConfigurationTree& tree) {
   return ((ret == kReached) && (to_goal));
 }
 
-/// @brief Plan a path
+/// @brief Plan the path
+/// @param inti_config Initial configuration
+/// @param path_out Result path
+/// @return Planning result
 PlanRet RrtPlanner::PlanPath(const Config& init_config,
                              Path& path_out) {
   path_out.clear();
@@ -77,23 +87,23 @@ PlanRet RrtPlanner::PlanPath(const Config& init_config,
   }
   tree.SetRootConfig(init_config);
   for (int32_t i = 0; i < max_itr_; ++i)  {
-    // Check the end conditions (timeout, etc.)
+    // Check termination conditions (e.g., timeout)
     if (is_terminate_ && is_terminate_()) {
       return kTerminate;
     }
-    // Expand Tree
+    // Extend the tree
     if (BuildOneStep_(tree)) {
       is_success = true;
       break;
     } else {
-      // GOAL Judgment
+      // Check if it is a goal
       if (space_->CheckConfigInGoal(tree.GetLastConfig())) {
         is_success = true;
         break;
       }
     }
   }
-  // Integrate the tree in the case of success
+  // Integrate the tree if successful
   if (is_success == true) {
     Path path;
     tree.TrackBackPath(path_out);

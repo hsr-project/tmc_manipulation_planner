@@ -25,7 +25,9 @@ LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT
 OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH
 DAMAGE.
 */
-/// @brief    Planna using ROBOT CBirrt
+/// @file     robot_cbirrt_planner.cpp
+/// @brief Planner using CBiRrt for robot
+/// @author   Koji Terada
 
 #include <algorithm>
 #include <exception>
@@ -62,13 +64,13 @@ using tmc_rplanner::MultiBirrtPlannerParam;
 using tmc_rplanner::ConfigurationSpace;
 
 namespace {
-// If the actual machine is zero -pointed, the simulator is a problem with accuracy, so the current posture can be a bit outside the limit, so it tolerates it.
+// Allow for zero-point deviation in actual machines or slight offsets beyond the limit in simulators due to precision issues with the current posture
 constexpr double kJointLimitsTorelance = 1.0e-2;
 
 const double kTsrNearThreshold = 1e-3;
-/// Epsilon determines that the base restraint has been broken
+/// Epsilon to judge if the constraint of the base is broken
 const double kBaseNearThreshold = 1e-5;
-/// Timeout Terminate object
+/// Terminate object for timeout
 class Terminate {
  public:
   explicit Terminate(double timeout) : timeout_(timeout), timer_() {
@@ -88,15 +90,15 @@ class Terminate {
 };
 
 
-/// Part of Joint_state's joint angle,
-///        Overwrite with diff_joint_state, return Merged_Joint_state
-///        Ignore if there is no joint name of Diff_Joint_state
+/// Overwrite some part of joint_state's joint angles,
+///        with diff_joint_state and return merged_joint_state
+///        Ignore when there's no joint name in diff_joint_state
 JointState MergeJointState(
     const JointState& joint_state,
     const JointState& diff_joint_state) {
   JointState modified_joint_state = joint_state;
 
-  // Find a corresponding joint
+  // Search for the corresponding joint
   for (std::vector<std::string>::const_iterator diff_joint_it =
            diff_joint_state.name.begin();
        diff_joint_it != diff_joint_state.name.end();
@@ -115,11 +117,11 @@ JointState MergeJointState(
   return modified_joint_state;
 }
 
-/// Obtain the lower and upper limit of Base_type
-/// @param[in] base_type Base degree of freedom
-/// @param[in] base_translation_max maximum parallel movement amount [M]
-/// @param[out] config_min_out lower limit
-/// @param[out] config_max_out upper limit
+/// Retrieve the lower and upper bounds of base_type
+/// @param[in] base_type Degrees of freedom of the base
+/// @param[in] Base_translation_max Maximum translational movement [m]
+/// @param[out] config_min Lower bound
+/// @param[out] config_max Upper bound
 void GetBaseMinMax(tmc_manipulation_types::BaseMovementType base_type,
                    double base_translation_max,
                    Eigen::VectorXd& config_min_out,
@@ -129,7 +131,7 @@ void GetBaseMinMax(tmc_manipulation_types::BaseMovementType base_type,
   Eigen::VectorXd config_max(base_dof);
   switch (base_type) {
     case tmc_manipulation_types::kFloat:
-      // Alradic limit
+      // Limit of translation
       config_min(0) = -base_translation_max;
       config_min(1) = -base_translation_max;
       config_min(2) = -base_translation_max;
@@ -145,7 +147,7 @@ void GetBaseMinMax(tmc_manipulation_types::BaseMovementType base_type,
       config_max(5) = M_PI;
       break;
     case tmc_manipulation_types::kPlanar:
-      // Alradic limit
+      // Limit of translation
       config_min(0) = -base_translation_max;
       config_min(1) = -base_translation_max;
       config_max(0) = base_translation_max;
@@ -187,7 +189,12 @@ void GetBaseMinMax(tmc_manipulation_types::BaseMovementType base_type,
   config_max_out = config_max;
 }
 
-/// separate joint angles and Base coordinates with bases_type
+/// Separate joint angles and base coordinates based on base_type
+/// @param[in] combined_config Config with joints and base integrated
+/// @param[in] base_type Type of base's degree of freedom
+/// @param[out] joint_config_out Pure joint angles
+/// @param[out] basejoint_to_base_out Coordinates of the base from basejoint
+/// @pre joint_dof + base_dof = combined_config
 void DecodeConfigToJointAndBase(
     const Eigen::VectorXd& combined_config,
     tmc_manipulation_types::BaseMovementType base_type,
@@ -247,7 +254,12 @@ void DecodeConfigToJointAndBase(
   }
 }
 
-/// Base_type combines joint angle and Base coordinates
+/// Combine joint angles and base coordinates based on base_type
+/// @param[in] joint_config Joint angles
+/// @param[in] basejoint_to_base Value of base's degree of freedom
+/// @param[in] base_type Type of base's degree of freedom
+/// @param[out] combined_config_out Combined state variable
+/// @pre basejoint_to_base follows constraints of base_type
 void EncodeJointAndBaseToConfig(
     const Eigen::VectorXd& joint_config,
     const Eigen::Affine3d& basejoint_to_base,
@@ -318,6 +330,9 @@ void EncodeJointAndBaseToConfig(
 
 namespace tmc_robot_planner {
 
+/// @param[in] Return joint angles specified by joint_names from joint_state
+/// @param[in] joint_names Names of joint angles to extract
+/// @retval Joint angle list
 Config ExtractConfig(
     const JointState& joint_state,
     const std::vector<std::string>& joint_names) {
@@ -335,7 +350,11 @@ Config ExtractConfig(
   return config;
 }
 
-/// @brief Give a vector of configuration and return it with a certain probability
+/// @brief Provide a configuration vector and return it with a certain probability
+/// @param ref_configs Config to return with a certain probability
+/// @param use_ref_threshold Return ref_configs with this probability
+/// @param eng Random number engine by mt19937
+/// @param random_config Generator when not chosen from ref_configs
 Config RandomConfigOrConfigs(
     const std::vector<Config>& ref_configs,
     double use_ref_threshold,
@@ -351,7 +370,12 @@ Config RandomConfigOrConfigs(
 }
 
 
-/// @brief Returns a random joint angle vector that satisfies the movable range
+/// @brief Returns a random joint angle vector that satisfies the range of motion
+/// @param config_min Lower bound
+/// @param config_max Upper bound
+/// @param eng Random number engine by mt19937
+/// @retval Random joint angle
+/// @exception invalid_argumnet
 Config RandomConfig(
     const Config& config_min,
     const Config& config_max,
@@ -372,8 +396,15 @@ Config RandomConfig(
   return random_config;
 }
 
-/// @brief Returns a random joint angle vector that satisfies the movable range
-///        However, follow the positive distribution around the REF
+/// @brief Returns a random joint angle vector that satisfies the range of motion
+///        However, it follows a normal distribution around ref
+/// @param config_min Lower bound
+/// @param config_max Upper bound
+/// @param config_ref Mean value
+/// @param config_sigma Variance
+/// @param eng Random number engine according to ranlux64
+/// @retval Random joint angle
+/// @exception invalid_argumnet
 Config RandomConfigAroundRef(
     const Config& config_min,
     const Config& config_max,
@@ -395,16 +426,24 @@ Config RandomConfigAroundRef(
   return random_config;
 }
 
-/// Funkta that returns a random joint angle vector that satisfies the movable range
+/// Functor that returns random joint angle vectors that satisfy the range of motion
 class RandomConfigIncreaseDev {
  public:
   RandomConfigIncreaseDev()
       : deviation_ratio_(0.0) {
   }
-  /// Returns a random joint angle vector that satisfies the movable range
-  /// However, every time it is called according to the normal distribution around the REF
-  /// Deviation_step_ for the decentralization to config_sigma
-  /// It will increase.
+  /// Returns a random joint angle vector that satisfies the range of motion
+  /// Follows a normal distribution around ref and increases
+  /// the variance towards config_sigma by deviation_step each time it's called
+  /// Increases gradually
+  /// @param step_sampling_deviation The rate to increase variance per step (0.0, 1.0]
+  /// @param config_min Lower bound
+  /// @param config_max Upper bound
+  /// @param config_ref Mean value
+  /// @param config_sigma Variance
+  /// @param eng Random number engine according to ranlux64
+  /// @retval Random joint angle
+  /// @exception invalid_argumnet
   Config Generate(
       double step_sampling_deviation,
       const Config& config_min,
@@ -440,7 +479,18 @@ class RandomConfigIncreaseDev {
 };
 
 
-/// @brief Interference check + movable range check function
+/// @brief Function that performs interference check + movable range check
+/// @param [in] config Original joint angle to constrain
+/// @param [in] use_joints Joint names to use
+/// @param [in] base_type Movement type of the base
+/// @param [in] origin_to_basejoint Robot posture from the origin
+/// @param [in] joint_min Minimum joint angle
+/// @param [in] joint_max Maximum joint angle
+/// @param [in/out] robot_collision_detector Collision check model for the robot
+/// @param [out] joint_limit_out Joint that hit the limit
+/// @param [out] collision_pair_out Pair of interfering parts
+/// @retval true: No interference
+/// @retval false: Interference or outside of movable range
 bool CheckContactAndLimit(
     const Config& config,
     const std::vector<std::string>& use_joints,
@@ -474,7 +524,7 @@ bool CheckContactAndLimit(
       origin_to_basejoint * basejoint_to_base);
   robot_collision_detector->SetRobotNamedAngle(joint_state);
 
-  // Update Collision_map
+  // Update collision_map
   CuboidOverlapType over = tmc_robot_collision_detector::kOverlapAabb;
   CuboidOverlapGroupType group = tmc_robot_collision_detector::kOverlapGroup;
   robot_collision_detector->RefleshOverlappedCuboids(over, group);
@@ -483,15 +533,21 @@ bool CheckContactAndLimit(
   return feasible;
 }
 
-/// Check if the specified posture is in TSR
-/// If there is no TSR restriction itself, be sure to return True
+/// Check if the specified posture is within the TSR
+/// Always returns true if the TSR constraint itself does not exist
+/// @param [in] config Original joint angle to constrain
+/// @param [in] use_joints Joint names to use
+/// @param [in] base_type Movement type of the base
+/// @param [in] tsrs TSR to constrain
+/// @param [in] origin_to_basejoint Robot posture from the origin
+/// @param [in/out] robot_model Robot's kinematics_model
 bool IsConfigInTsr(const Config& config,
                         const std::vector<std::string>& use_joints,
                         tmc_manipulation_types::BaseMovementType base_type,
                         const TaskSpaceRegionSeq& tsrs,
                         const Eigen::Affine3d& origin_to_basejoint,
                         IRobotKinematicsModel::Ptr robot_model) {
-  // If you don't have TSR, you'll always be successful without doing anything
+  // Always succeed if there's no Tsr
   if (tsrs.empty()) {
     return true;
   }
@@ -501,7 +557,7 @@ bool IsConfigInTsr(const Config& config,
   DecodeConfigToJointAndBase(
       config, base_type, joint_config, basejoint_to_base);
 
-  // Get END coordinates with Forward_kinematics
+  // Obtain end coordinates with forward_kinematics
   JointState joint_state = {use_joints, joint_config};
   Eigen::Affine3d end_pose;
 
@@ -509,7 +565,7 @@ bool IsConfigInTsr(const Config& config,
   robot_model->SetNamedAngle(joint_state);
   end_pose = robot_model->GetObjectTransform(tsrs[0].end_frame_id);
 
-  // Check if Pose is close
+  // Check if the pose is close
   if (CalcDistanceToTsr(tsrs.at(0), end_pose).norm() < kTsrNearThreshold) {
     return true;
   } else {
@@ -517,11 +573,21 @@ bool IsConfigInTsr(const Config& config,
   }
 }
 
-/// Restraint function to TSR
-/// Currently only one TSR is supported
-/// If there is no TSR, copy config to config_out and finish
-/// If there is a TSR, use IK_SLOVER near the recently TSR.
-/// Output the calculated IK value
+/// Constraint function for the Tsr
+/// Currently only supports one tsr
+/// Copy config to config_out and finish if there's no TSR
+/// If there's a TSR, use the ik_slover to calculate
+/// the IK value to the nearest neighbor of the TSR and output
+/// @param [in] config Original joint angle to constrain
+/// @param [in] use_joints Joint names to use
+/// @param [in] base_type Movement type of the base
+/// @param [in] tsrs TSR to constrain
+/// @param [in] origin_to_basejoint Robot posture from the origin
+/// @param [in] weight_ik Weight for ik (optional)
+/// @param [in/out] robot_model Robot's kinematics_model
+/// @param [in/out] ik_solver IK solver
+/// @param [out] config_out Output joint angles
+/// @return true: Constraint succeeded false: Constraint failed
 bool ConstrainToTsr(const Config& config,
                     const std::vector<std::string>& use_joints,
                     tmc_manipulation_types::BaseMovementType base_type,
@@ -531,7 +597,7 @@ bool ConstrainToTsr(const Config& config,
                     IRobotKinematicsModel::Ptr robot_model,
                     IKSolver::Ptr ik_solver,
                     Config& config_out) {
-  // If you don't have TSR, you'll always be successful without doing anything
+  // Always succeed if there's no Tsr
   if (tsrs.empty()) {
     config_out = config;
     return true;
@@ -542,7 +608,7 @@ bool ConstrainToTsr(const Config& config,
   DecodeConfigToJointAndBase(
       config, base_type, joint_config, basejoint_to_base);
 
-  /// Get END coordinates with Forward_kinematics
+  /// Obtain end coordinates with forward_kinematics
   JointState joint_state = {use_joints, joint_config};
   Eigen::Affine3d end_pose;
 
@@ -550,12 +616,12 @@ bool ConstrainToTsr(const Config& config,
   robot_model->SetNamedAngle(joint_state);
   end_pose = robot_model->GetObjectTransform(tsrs[0].end_frame_id);
 
-  // If it is not exactly the same POSE, it will take on TSR
+  // Project to Tsr if it's not exactly the same pose
   if (CalcDistanceToTsr(tsrs.at(0), end_pose).norm() < kTsrNearThreshold) {
     config_out = config;
     return true;
   } else {
-    // Recent TSR points
+    // Nearest point of Tsr
     Eigen::Affine3d origin_to_closest = CalcClosestPose(tsrs.at(0), end_pose);
     Eigen::Affine3d solution;
     IKRequest req(base_type);
@@ -587,7 +653,14 @@ bool ConstrainToTsr(const Config& config,
   }
 }
 
-/// Auxiliary function for processing Extra_constraint
+/// Auxiliary function to process extra_constraint
+/// @param [in] tsr_constraint_func Constraint function by tsr
+/// @param [in] use_joints Joint names to use
+/// @param [in] base_type Movement type of the base
+/// @param [in] extra_constaints Set of constraints
+/// @param [in] config_in Input configuration
+/// @param [out] config_out Output configuration
+/// @return true: Constraint succeeded false: Constraint failed
 bool ConstrainTsrAndExtra(
     const tmc_rplanner::ConstraintFunc& tsr_constraint_func,
     const std::vector<std::string>& use_joints,
@@ -616,7 +689,14 @@ bool ConstrainTsrAndExtra(
   return true;
 }
 
-/// Auxiliary function for processing Extra_constraint
+/// Auxiliary function to process extra_constraint
+/// @param [in] tsr_constraint_func Constraint function by tsr
+/// @param [in] use_joints Joint names to use
+/// @param [in] base_type Movement type of the base
+/// @param [in] extra_constaints Set of constraints
+/// @param [in] config_in Input configuration
+/// @param [out] config_out Output configuration
+/// @return true: Constraint succeeded false: Constraint failed
 bool CheckFeasibilityAndExtra(
     const tmc_rplanner::CheckFeasibilityFunc& tsr_feasibility_func,
     const std::vector<std::string>& use_joints,
@@ -646,7 +726,12 @@ bool CheckFeasibilityAndExtra(
   return true;
 }
 
-/// Auxiliary function to restrain only EXTRA_CONSTRAINT
+/// Auxiliary function to constrain only extra_constraint
+/// @param [in] use_joints Joint names to use
+/// @param [in] extra_constaints Set of constraints
+/// @param [in] config_in Input configuration
+/// @param [out] config_out Output configuration
+/// @return true: Constraint succeeded false: Constraint failed
 bool ConstrainExtra(
     const std::vector<std::string>& use_joints,
     const tmc_robot_kinematics_model::IRobotKinematicsModel::Ptr& robot,
@@ -670,7 +755,14 @@ bool ConstrainExtra(
   return true;
 }
 
-/// Generate Config from TSR
+/// Generate config from Tsr
+/// @param [in] gen Random number generation by mt19937
+/// @param [in] request Planning request information
+/// @param [in] tsrs Sample from this TSR
+/// @param [in] no_ik_joint_state Target value of joint angles not included in IK, like the neck
+/// @param [in/out] ik_solver IK Solver
+/// @param [in/out] randconf Random function
+/// @param [out] config_out Output joint angles
 bool SampleFromTsr(
     std::mt19937& gen,
     const CBiRrtRequest& request,
@@ -683,16 +775,16 @@ bool SampleFromTsr(
   tmc_manipulation_types::BaseMovementType base_type = request.base_type;
   Eigen::Affine3d origin_to_basejoint = request.origin_to_basejoint;
   Config weight_ik = request.weight_config_ik;
-  // If there is no TSR, always fails
+  // Always fails if there's no Tsr
   if (tsrs.empty()) {
     return false;
   }
   Eigen::Affine3d solution;
-  // Sampling from TSR
+  // Sample from Tsr
   boost::uniform_int<> randi(0, tsrs.size()-1);
   TaskSpaceRegion tsr = tsrs[randi(gen)];
   Eigen::Affine3d origin_to_sample = GenerateSample(tsr);
-  // The initial value is generated by random numbers
+  // Initial value generated with random numbers
   Config random_config = randconf();
   Config joint_config;
   Eigen::Affine3d basejoint_to_base;
@@ -727,13 +819,17 @@ bool SampleFromTsr(
   }
 }
 
-/// @brief Heavy joint angle distance calculation
+/// @brief Distance calculation for weighted joint angles
 /// l = Σw_i * (x_i - y_i)
 /// Define the distance
+/// @param [in] config1 First configuration
+/// @param [in] config2 Second configuration
+/// @param [in] weight Weight
+/// @param [out] Distance
 double CalcWeightedDistance(const Config& config1,
                             const Config& config2,
                             const Config& weight_config) {
-  // Configuration size is correct
+  // Ensure the size of the Configuration is correct
   if ((config1.size() == config2.size()) &&
       (config1.size() == weight_config.size())) {
     return ((weight_config.cwiseProduct(config1 - config2)).norm());
@@ -742,7 +838,11 @@ double CalcWeightedDistance(const Config& config1,
   }
 }
 
-/// @brief Planning from any joint posture to any posture
+/// @brief Plan from any joint posture to any pose
+/// @param [in] request Planning request
+/// @param [in] params Planning parameters
+/// @param [out] result_out Trajectory
+/// @return ErrorCode
 ErrorCode RobotCBiRrtPlanner::PlanPath(
     const CBiRrtRequest& request,
     const CBiRrtParameters& params,
@@ -781,7 +881,7 @@ ErrorCode RobotCBiRrtPlanner::PlanPath(
     throw std::invalid_argument("max itr must be positive int");
   }
 
-  // Check out Start, if you are empty, set a unit matrix, so it's through.
+  // Check start, if basejoint_to_bases is empty, set the identity matrix so skip
   if (!request.start_basejoint_to_bases.empty()) {
     if (request.start_configs.size() != request.start_basejoint_to_bases.size()) {
       throw std::invalid_argument(
@@ -789,7 +889,7 @@ ErrorCode RobotCBiRrtPlanner::PlanPath(
     }
   }
 
-  // Check out Goal, if Empty is EMPTY, sets a unit matrix.
+  // Check goal, if basejoint_to_bases is empty, set the identity matrix so skip
   if (!request.goal_basejoint_to_bases.empty()) {
     if (request.goal_configs.size() != request.goal_basejoint_to_bases.size()) {
       throw std::invalid_argument(
@@ -797,17 +897,17 @@ ErrorCode RobotCBiRrtPlanner::PlanPath(
     }
   }
 
-  // Erase all objects
+  // Remove all objects
   robot_collision_detector_->DestroyAllOuterObject();
-  // Create an object
+  // Create objects
   for (tmc_manipulation_types::OuterObjectParametersSeq::const_iterator
            object = request.known_objects.begin();
        object != request.known_objects.end(); ++object) {
     robot_collision_detector_->CreateOuterObject(*object);
   }
-  // Added VOXEL environment
+  // Add environment by voxel
   robot_collision_detector_->CreateCuboids(request.collision_map, false);
-  // Mounting object settings
+  // Configure attached objects
   for (AttachedObjectSeq::const_iterator attached_object
            = request.attached_objects.begin();
        attached_object != request.attached_objects.end();
@@ -825,10 +925,10 @@ ErrorCode RobotCBiRrtPlanner::PlanPath(
     }
   }
   tmc_rplanner::PlanRet plan_ret;
-  // Set the initial posture
+  // Set initial posture
   robot_collision_detector_->SetRobotNamedAngle(request.initial_config);
   robot_model_->SetNamedAngle(request.initial_config);
-  // Robot position posture setting
+  // Set position and posture of the robot
   robot_collision_detector_->SetRobotTransform(request.origin_to_basejoint);
   robot_model_->SetRobotTransform(request.origin_to_basejoint);
   Terminate terminate(params.timeout);
@@ -838,16 +938,16 @@ ErrorCode RobotCBiRrtPlanner::PlanPath(
   Config base_min(base_dof);
   Config config_max(dof);
   Config config_min(dof);
-    // Joint's min and MAX acquisition
+    // Retrieve min and max of joint
   robot_model_->GetMinMax(request.use_joints, joint_min, joint_max);
   GetBaseMinMax(request.base_type, params.base_translation_max, base_min, base_max);
   config_min.head(joint_dof) = joint_min;
   config_min.tail(base_dof) = base_min;
   config_max.head(joint_dof) = joint_max;
   config_max.tail(base_dof) = base_max;
-  // Creating a configuration space
+  // Create configuration space
   const auto space = std::make_shared<ConfigurationSpace>(dof);
-  // Sunpla settings
+  // Set sampler
   space->set_random_config(std::bind(RandomConfig, config_min, config_max, std::ref(random_engine_)));
 
   tmc_rplanner::CheckFeasibilityFunc check_feasibility =
@@ -882,7 +982,7 @@ ErrorCode RobotCBiRrtPlanner::PlanPath(
   space->set_constrain_config(constrain_config);
   space->set_constrain_start_config(constrain_start_config);
   space->set_constrain_goal_config(constrain_goal_config);
-  // Set Weighted Distance
+  // Set weighted distance
   tmc_rplanner::DistanceFunc weighted_distance =
       std::bind(CalcWeightedDistance, std::placeholders::_1, std::placeholders::_2, weight_config);
   space->set_distance(weighted_distance);
@@ -894,9 +994,9 @@ ErrorCode RobotCBiRrtPlanner::PlanPath(
                 check_feasibility_impl, weighted_distance, params.sub_delta);
   space->set_check_transferability(check_transferability);
 
-  // Random function used for GENERATE
+  // Random function to use for generate
   tmc_rplanner::RandomConfigFunc random_config_for_generate;
-  // Sampling from Initial posture when specified
+  // Sample from initial posture if specified
   Config config_sigma = weight_config_ik.cwiseInverse();
   Config joint_ref = ExtractConfig(request.initial_config, request.use_joints);
   Config config_ref;
@@ -919,21 +1019,21 @@ ErrorCode RobotCBiRrtPlanner::PlanPath(
     random_config_for_generate = std::bind(RandomConfig, config_min, config_max, std::ref(random_engine_));
   }
 
-  // Set Generate_start_config
+  // Set generate_start_config
   tmc_rplanner::GenerateStartConfigFunc generate_start_config =
       std::bind(SampleFromTsr,
                 random_engine_, request, request.start_tsrs, request.start_no_ik_joint_state,
                 ik_solver_, random_config_for_generate,
                 std::placeholders::_1);
   space->set_generate_start_config(generate_start_config);
-  // Set Generate_goal_config
+  // Set generate_goal_config
   tmc_rplanner::GenerateGoalConfigFunc generate_goal_config =
       std::bind(SampleFromTsr,
                 random_engine_, request, request.goal_tsrs, request.goal_no_ik_joint_state,
                 ik_solver_, random_config_for_generate,
                 std::placeholders::_1);
   space->set_generate_goal_config(generate_goal_config);
-  // Added if you have a debugging callback
+  // Add if there are debugging callbacks
   if (check_feasibility_callback_) {
     space->set_check_feasibility_callback(check_feasibility_callback_);
   }
@@ -949,7 +1049,7 @@ ErrorCode RobotCBiRrtPlanner::PlanPath(
   if (constrain_config_callback_) {
     space->set_constrain_config_callback(constrain_config_callback_);
   }
-  // Planna parameter settings
+  // Set planner parameters
   MultiBirrtPlannerParam planner_param;
   planner_param.delta = params.delta;
   planner_param.max_itr = params.max_itr;
@@ -957,7 +1057,7 @@ ErrorCode RobotCBiRrtPlanner::PlanPath(
   planner_param.probability_goal_generate = params.probability_goal_generate;
   planner_param.max_connect = params.max_connect;
   planner_param.is_terminate = std::bind(&Terminate::IsTerminate, &terminate);
-  // 2 -point combined planna by CBirrt
+  // Path planner using CBiRrt for connecting two points
   MultiBirrtPlanner::Ptr planner(new MultiBirrtPlanner(space, planner_param));
   terminate.Reset();
 
@@ -1000,7 +1100,7 @@ ErrorCode RobotCBiRrtPlanner::PlanPath(
     goal_configs.push_back(goal_config);
   }
 
-  // Pass generation
+  // Generate path
   tmc_rplanner::Path path;
   plan_ret = planner->PlanPath(start_configs, goal_configs, path);
 
@@ -1008,10 +1108,10 @@ ErrorCode RobotCBiRrtPlanner::PlanPath(
   switch (plan_ret) {
     case tmc_rplanner::kSuccess: {
       // terminate.Reset();
-      // Pass shortcut
+      // Shortcut the path
       tmc_rplanner::Path opt_path;
       if (params.do_shortcut) {
-        // Bead 2-PASS shortcut
+        // Exhaustive 2-pass shortcut
         tmc_rplanner::RoundRobinShortCutter short_cutter(
             space, planner_param.delta, true, 1, std::bind(&Terminate::IsTerminate, &terminate));
         if (!short_cutter.ShortCut(path, opt_path)) {

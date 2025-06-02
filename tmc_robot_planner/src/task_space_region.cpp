@@ -25,7 +25,9 @@ LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT
 OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH
 DAMAGE.
 */
+/// @file     task_space_region.cpp
 /// @brief    TSR(Task Space Region)
+/// @author   Koji Terada
 
 #include <string>
 #include <vector>
@@ -39,8 +41,8 @@ using tmc_manipulation_types::TaskSpaceRegion;
 
 namespace tmc_robot_planner {
 
-/// Convert RegionValues ​​to Pose
-/// @param region_vals X, Y, Z, Roll, Pitch, Yaw value
+/// Convert RegionValues to Pose
+/// @param region_vals Values for x, y, z, roll, pitch, yaw
 Pose RegionValuesToPose(const RegionValues& region_vals) {
   Eigen::Vector3d pos = region_vals.segment<3>(0);
   Eigen::Vector3d rpy = region_vals.segment<3>(3);
@@ -48,7 +50,9 @@ Pose RegionValuesToPose(const RegionValues& region_vals) {
   return Eigen::Translation3d(pos) * tmc_eigen_utils::RPYToQuaternion(rpy);
 }
 
+
 /// Convert Pose to RegionValues
+/// @param region_vals Values for x, y, z, roll, pitch, yaw
 RegionValues PoseToRegionValues(const Pose& pose) {
   Eigen::Vector3d pos = pose.translation();
   Eigen::Vector3d rpy = tmc_eigen_utils::QuaternionToRPY(
@@ -58,37 +62,45 @@ RegionValues PoseToRegionValues(const Pose& pose) {
   return region_val;
 }
 
-/// Returns Frame, the closest to the argument in TSR
+/// Return the frame closest to the argument within TSR
+/// @param tsr task_space_region
+/// @param origin_to_frame Frame given as reference
+/// @return Frame closest to origin_to_frame based on origin
 Pose CalcClosestPose(const TaskSpaceRegion& tsr,
                      const Pose& origin_to_sample) {
   Pose origin_to_sample_dash = origin_to_sample * tsr.tsr_to_end.inverse();
   Pose tsr_to_sample_dash = tsr.origin_to_tsr.inverse() * origin_to_sample_dash;
   RegionValues sample_dash = PoseToRegionValues(tsr_to_sample_dash);
-  // Calculate the distance between Sample and TSR
+  // Calculate the distance between sample and TSR
   RegionValues distance = CalcDistanceToTsr(tsr, origin_to_sample);
   return tsr.origin_to_tsr * RegionValuesToPose(sample_dash - distance)
       * tsr.tsr_to_end;
 }
 
-/// Sampling one random from inside TSR
+/// Randomly sample one from TSR
+/// @param tsr task_space_region
+/// @return Random end_effector values on TSR
 Pose GenerateSample(const TaskSpaceRegion& tsr) {
   RegionValues random = (tsr.max_bounds - tsr.min_bounds).array() *
       RegionValues::Random().array().abs() + tsr.min_bounds.array();
   return tsr.origin_to_tsr * RegionValuesToPose(random) * tsr.tsr_to_end;
 }
 
-/// Calculate the distance from the given Sample (coordinates of Endeffector) to TSR
+/// Calculate the distance from the given sample (endeffector coordinates) to TSR
+/// @param tsr task_space_region
+/// @param origin_to_sample Sample coordinates as seen from the reference coordinate system
+/// @return How far x, y, z, roll, pitch, yaw are from TSR
 RegionValues CalcDistanceToTsr(
     const TaskSpaceRegion& tsr,
     const Pose& origin_to_sample) {
-  // Sample value without offset as seen from Origin
+  // Values of sample without offset as seen from origin
   Pose origin_to_sample_dash = origin_to_sample * tsr.tsr_to_end.inverse();
   Pose tsr_to_sample_dash = tsr.origin_to_tsr.inverse() * origin_to_sample_dash;
   Eigen::Vector3d disp_pos = tsr_to_sample_dash.translation();
   Eigen::Vector3d disp_rot = tmc_eigen_utils::QuaternionToRPY(
       Eigen::Quaterniond(tsr_to_sample_dash.linear()));
   Eigen::Vector3d distance_pos;
-  // The position is simply compared to Bounds
+  // Position is simply compared with bounds
   for (int32_t i = 0; i < 3; ++i) {
     if (disp_pos(i) < tsr.min_bounds(i)) {
       distance_pos(i) = disp_pos(i) - tsr.min_bounds(i);
@@ -98,7 +110,7 @@ RegionValues CalcDistanceToTsr(
       distance_pos(i) = 0.0;
     }
   }
-  // RPY is compared with the expression of 8 patterns
+  // RPY is compared with 8 patterns of representation
   Eigen::Vector3d temp_distance_rot;
   for (int32_t i = 0; i < 3; ++i) {
     if (disp_rot(i) < tsr.min_bounds(i + 3)) {

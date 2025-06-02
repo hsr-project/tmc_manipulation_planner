@@ -25,7 +25,12 @@ LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT
 OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH
 DAMAGE.
 */
-/// @brief    Birrt has been extended to be added to the initial value, the terminal value of multiple and added.
+/// @file     multi_birrt_planner.hpp
+/// @brief    Extended version of birrt for use with multiple and added initial and terminal values.
+/// @author   Koji Terada
+/// @version  1.0.0
+/// @date     2012.03.28
+/// @note     [1.0.0] 2012.03.28 Newly created
 
 #ifndef TMC_MANIPULATION_TMC_RPLANNER_MULTI_BIRRT_PLANNER_HPP_
 #define TMC_MANIPULATION_TMC_RPLANNER_MULTI_BIRRT_PLANNER_HPP_
@@ -37,35 +42,35 @@ DAMAGE.
 
 namespace tmc_rplanner {
 
-/// Multibirrtplanner search parameter
+/// Exploration parameters for MultiBirrtPlanner
 struct MultiBirrtPlannerParam {
-  /// Exploration
+  /// Exploration width
   double delta;
-  /// Maximum number of repeated times
+  /// Maximum number of iterations
   int32_t max_itr;
-  /// Initial configuration generation probability [0.0 ~ 1.0]
+  /// Probability of initial configuration generation [0.0~1.0]
   double probability_start_generate;
-  /// End configuration generation probability [0.0 ~ 1.0]
+  /// Probability of goal configuration generation [0.0~1.0]
   double probability_goal_generate;
-  /// End condition function
+  /// Termination condition function
   TerminateConditionFunc is_terminate;
-  /// Maximum number of Connect operation
+  /// Maximum number of Connect actions
   boost::optional<int32_t> max_connect;
 };
 
 /// @class MultiBirrtPlanner
-/// @brief Different from the plunner Birlt with Birlt extended in the following points
-///        1. Has multiple initial and terminal values.However, with the Generate function
-///          If it is added, 0 may be.
-///        2. Initial values ​​with the Generate function defined in ConfigurationSpace
-///          And the terminal value is Probavility_start_generate,
-///          And the probability_goal_generate probability is added.
-///        Birrt is upward compatible and basically you can use this.
+/// @brief Planner extended from BiRRT differs from birrt in the following points
+///        1. Possesses multiple initial and terminal values. However, in the generate function,
+///          zero is acceptable in case of additions.
+///        2. Initial and terminal values are added at the probabilities of
+///           probability_start_generate and probability_goal_generate respectively,
+///           by the generate function defined in ConfigurationSpace.
+///        It is a backward-compatible version of BiRRT and should generally be used.
 class MultiBirrtPlanner : public IMultiPlanner {
  public:
-  /// @brief Pass the planner space and the termination conditions
-  /// @param space Configuration space
-  /// @param Param Search parameter
+  /// @brief Pass the planner space and the end condition.
+  /// @param space Pointer to the planner space
+  /// @param param Search parameters
   MultiBirrtPlanner(const ConfigurationSpace::Ptr space,
                     const MultiBirrtPlannerParam& param) :
       space_(space), delta_(param.delta), max_itr_(param.max_itr),
@@ -76,18 +81,28 @@ class MultiBirrtPlanner : public IMultiPlanner {
   virtual ~MultiBirrtPlanner() {}
 
   /// Path generation.
-  /// @param start_configs Initial configuration set
-  /// @param goal_configs Goal configuration set
+  /// @param start_configs Collection of initial configurations (not required)
+  /// @param goal_configs Collection of goal configurations (not required)
   /// @param path_out Generated path
+  /// @retval kSuccess: Success
+  /// @retval kTerminate: Termination
+  /// @retval kInitConfigFail: No feasible initial value and generation also impossible
+  /// @retval kGoalConfigFail: No feasible goal value and generation also impossible
+  /// @retval kMaxItr: Maximum number of repetitions reached/// Path creation
   virtual PlanRet PlanPath(const std::vector<Config>& start_configs,
                            const std::vector<Config>& goal_configs,
                            Path& path_out);
 
-  /// Production of paths. Until the number of passes is available
-  /// @param start_configs Initial configuration set
-  /// @param goal_configs Goal configuration set
-  /// @param max_paths Maximum number of paths
-  /// @param paths_out Generated paths
+  /// Path generation. Until the specified number of paths is created
+  /// @param[in] start_configs Collection of initial configurations (not required)
+  /// @param[in] goal_configs Collection of goal configurations (not required)
+  /// @param[in] max_paths Finishes when this number of paths are created. 0 for indefinite
+  /// @param[out] paths_out Generated paths (multiple)
+  /// @retval kSuccess: Success
+  /// @retval kTerminate: Termination
+  /// @retval kInitConfigFail: No feasible initial value and generation also impossible
+  /// @retval kGoalConfigFail: No feasible goal value and generation also impossible
+  /// @retval kMaxItr: Maximum number of repetitions reached
   virtual PlanRet PlanPaths(const std::vector<Config>& start_configs,
                             const std::vector<Config>& goal_configs,
                             uint32_t max_paths,
@@ -102,7 +117,10 @@ class MultiBirrtPlanner : public IMultiPlanner {
   MultiBirrtPlanner(const MultiBirrtPlanner&);
   MultiBirrtPlanner& operator=(const MultiBirrtPlanner&);
 
-  /// Callback called when a path is generated
+  /// Callback called when the path is generated
+  /// @param[in] path Passes the generated path to the callback
+  /// Behavior: Calls the callback set by SetPathCallBack.
+  /// Does nothing if not set.
   virtual void PathCallBack_(const Path& path);
 
   const ConfigurationSpace::Ptr space_;

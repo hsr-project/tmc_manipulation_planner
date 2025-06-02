@@ -25,7 +25,12 @@ LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT
 OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH
 DAMAGE.
 */
-/// @brief    The interface of the planna connecting the goal state
+/// @file     point_to_condition_planner.hpp
+/// @brief Interface for planners connecting a point and a goal state
+/// @author   Koji Terada
+/// @version  1.0.0
+/// @date     2011.10.25
+/// @note     [1.0.0] 2011.10.19 Newly created
 
 #ifndef TMC_MANIPULATION_TMC_RPLANNER_POINT_TO_CONDITION_PLANNER_HPP_
 #define TMC_MANIPULATION_TMC_RPLANNER_POINT_TO_CONDITION_PLANNER_HPP_
@@ -37,14 +42,14 @@ DAMAGE.
 namespace tmc_rplanner {
 
 /// @class IPointToConditionPlanner
-/// @brief Planner interface that connects two points
+/// @brief Interface for planners connecting two points
 class IPointToConditionPlanner {
  public:
   using Ptr = std::shared_ptr<IPointToConditionPlanner>;
   using ConstPtr = std::shared_ptr<const IPointToConditionPlanner>;
 
   virtual ~IPointToConditionPlanner() {}
-  /// Creating paths
+  /// Path creation
   virtual PlanRet PlanPath(const Config& init_config,
                            Path& path_out) = 0;
 };

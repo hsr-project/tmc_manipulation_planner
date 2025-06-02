@@ -25,15 +25,20 @@ LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT
 OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH
 DAMAGE.
 */
-/// @brief    In the configuration space used in the planna
-///           Classes that summarize wood structure and operation
+/// @file     configuration_tree.cpp
+/// @brief Configuration space used by the planner
+///           Class summarizing the tree structure and operations
+/// @author   Koji Terada
+/// @version  1.0.0
+/// @date     2011.10.25
+/// @note     [1.0.0] 2011.10.19 Newly created
 
 #include <float.h>
 #include <iostream>
 #include <tmc_rplanner/configuration_tree.hpp>
 
 namespace {
-// Maximum to continue EXTEND
+// Maximum continuation of Extend
 int32_t kMaxConnect = 10;
 }
 
@@ -47,8 +52,14 @@ ConfigurationTree::ConfigurationTree(ConfigurationSpace::Ptr configuration_space
       configuration_space_(configuration_space), delta_(delta), max_connect_(max_connect) {}
 
 /// @func Extend
+/// @brief Add a new state to the tree
+/// @param dst_config Target state
+/// @param tree State tree
+/// @retval kReached Reached the target state
+/// @retval kAdvanced Approached the target state
+/// @retval kTrapped Unable to approach the target state
 ExtendRet ConfigurationTree::Extend(const Config& dst_config) {
-  // Configuration size is correct
+  // Ensure the size of Configuration is correct
   if (configuration_space_->dof() != dst_config.size()) {
     throw DimensionMismatch("Configuration size mismatch.");
   }
@@ -60,7 +71,7 @@ ExtendRet ConfigurationTree::Extend(const Config& dst_config) {
   if (!configuration_space_->ConstrainConfig(new_config, next_config)) {
     return kTrapped;
   }
-  // Delta_ Don't let it be above
+  // Prevent exceeding delta_ limit
   bool is_constrained_reached(false);
   next_config = configuration_space_->
       NewConfig(nearest.lock()->data, next_config,
@@ -75,7 +86,7 @@ ExtendRet ConfigurationTree::Extend(const Config& dst_config) {
     if (is_reached) {
       ret = kReached;
     } else {
-      // If Nearest is closer, Advensed if you don't return Trapped
+      // Return trapped if nearest is closer, otherwise Advanced
       if ((nearest.lock()->data - dst_config).norm() <
           (next_config - dst_config).norm()) {
         return kTrapped;
@@ -91,15 +102,25 @@ ExtendRet ConfigurationTree::Extend(const Config& dst_config) {
 
 
 /// @func Connect
-/// @brief Continue Extend until you reach the specified state from the tree
+/// @brief Continue Extend until reaching the specified state from the tree
+/// @param dst_config Target state
+/// @param tree State tree
+/// @retval kReached Reached the target state
+/// @retval kAdvanced Approached the target state
+/// @retval kTrapped Unable to approach the target state
 ExtendRet ConfigurationTree::Connect(const Config& dst_config) {
   return Connect(dst_config, TerminateConditionFunc());
 }
 
 
 /// @func Connect
-/// @brief Continue Extend until you reach the specified state from the tree
-///        However, with the end conditions
+/// @brief Continue Extend until reaching the specified state from the tree
+///        With termination condition
+/// @param dst_config Target state
+/// @param terminate Termination condition function
+/// @retval kReached Reached the target state
+/// @retval kAdvanced Approached the target state
+/// @retval kTrapped Unable to approach the target state
 ExtendRet ConfigurationTree::Connect(const Config& dst_config,
                                      TerminateConditionFunc terminate) {
   if (max_connect_ == 0) {
@@ -124,7 +145,10 @@ ExtendRet ConfigurationTree::Connect(const Config& dst_config,
 }
 
 /// @func FetchNearestNeighbor_
-/// @brief Recently acquired nearby from the tree
+/// @brief Retrieve the nearest neighbor from the tree
+/// @param tree State tree
+/// @param config State to target for nearest neighbor
+/// @retval Nearest neighbor node
 Node::WeakPtr ConfigurationTree::FetchNearestNeighbor_(const Config& config) {
   double min = DBL_MAX;
   Node::WeakPtr nearest_node;
@@ -139,7 +163,7 @@ Node::WeakPtr ConfigurationTree::FetchNearestNeighbor_(const Config& config) {
 }
 
 /// @func PrintTree
-/// @brief Output the tree to the storm.Mainly for Debug
+/// @brief Output tree to storm, mainly for debugging
 void ConfigurationTree::PrintTree() const {
   for (Tree::const_iterator node = tree_.begin(); node != tree_.end(); ++node) {
     if (!(*node)->parent.expired()) {
@@ -152,13 +176,14 @@ void ConfigurationTree::PrintTree() const {
 }
 
 /// @func TrackBackPath
-/// @brief Get a pass from the tree
+/// @brief Retrieve path from the tree
+/// @param path_out Output path
 void ConfigurationTree::TrackBackPath(Path& path_out) const {
   TreeToPath(tree_, path_out);
 }
 
 /// @func RemoveLastBranch
-/// @brief Delete branches connected to the latest configuration
+/// @brief Delete the branch connected to the latest configuration
 void ConfigurationTree::RemoveLastBranch() {
   if (tree_.empty()) {
     return;
@@ -170,7 +195,7 @@ void ConfigurationTree::RemoveLastBranch() {
       break;
     }
   }
-  // In the case of root, the leftmost is the last added, so erase it and end it.
+  // If all are Root, the leftmost is the last added Root, so delete it and finish
   if (root_node_num == tree_.size()) {
     tree_.pop_front();
     return;
@@ -186,8 +211,8 @@ void ConfigurationTree::RemoveLastBranch() {
       break;
     }
   }
-  // Tree_ adds rootnode from the left and the extended node from the right
-  // Therefore, there is a child node on the right side of the thing that has been erased, so if you erase it in order, you can erase it all.
+  // tree_ adds RootNode from left, extended Node from right
+  // Therefore, there is always a child Node on the right of the deleted one, so delete sequentially
   for (auto it = tree_.begin() + root_node_num - 1; it != tree_.end(); ) {
     if ((*it)->parent.expired()) {
       it = tree_.erase(it);

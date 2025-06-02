@@ -1,45 +1,43 @@
-'''
-Copyright (c) 2024 TOYOTA MOTOR CORPORATION
-All rights reserved.
-Redistribution and use in source and binary forms, with or without
-modification, are permitted (subject to the limitations in the disclaimer
-below) provided that the following conditions are met:
-* Redistributions of source code must retain the above copyright notice, this
-  list of conditions and the following disclaimer.
-* Redistributions in binary form must reproduce the above copyright notice,
-  this list of conditions and the following disclaimer in the documentation
-  and/or other materials provided with the distribution.
-* Neither the name of the copyright holder nor the names of its contributors may be used
-  to endorse or promote products derived from this software without specific
-  prior written permission.
-NO EXPRESS OR IMPLIED LICENSES TO ANY PARTY'S PATENT RIGHTS ARE GRANTED BY THIS
-LICENSE. THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
-"AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO,
-THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
-ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE
-LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR
-CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE
-GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION)
-HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT
-LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT
-OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH
-DAMAGE.
-'''
 # !/usr/bin/env python
+# Copyright (c) 2024 TOYOTA MOTOR CORPORATION
+# All rights reserved.
+# Redistribution and use in source and binary forms, with or without
+# modification, are permitted (subject to the limitations in the disclaimer
+# below) provided that the following conditions are met:
+# * Redistributions of source code must retain the above copyright notice, this
+#   list of conditions and the following disclaimer.
+# * Redistributions in binary form must reproduce the above copyright notice,
+#   this list of conditions and the following disclaimer in the documentation
+#   and/or other materials provided with the distribution.
+# * Neither the name of the copyright holder nor the names of its contributors may be used
+#   to endorse or promote products derived from this software without specific
+#   prior written permission.
+# NO EXPRESS OR IMPLIED LICENSES TO ANY PARTY'S PATENT RIGHTS ARE GRANTED BY THIS
+# LICENSE. THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
+# "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO,
+# THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
+# ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE
+# LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR
+# CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE
+# GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION)
+# HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT
+# LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT
+# OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH
+# DAMAGE.
 # -*- coding: utf-8 -*-
-u"""Module that specifies the vocation point and generates a space/time orbit.
+u"""A module for generating spatial/temporal trajectories by specifying waypoints.
 
-Subsection points are expressed as POINT = [0,0,0] as an array, and the number of differentiated floors is different.
-Point [0] is displaced, POINT [1] is on the first floor, POINT [2] is different
+Waypoints are represented as an array like point=[0,0,0], with the index being the order of derivative.
+point[0] is displacement, point[1] is first derivative, point[2] is second derivative.
 """
 
 import bisect
 
 import matplotlib
-# Change AGG to TKAGG when Debug
+# Change Agg to tkAgg for debugging
 matplotlib.use('Agg')
 
-# Subsequent IMPORT is written after matplotlib.use, so pass through with noqa.
+# Subsequent imports are written after matplotlib.use, so pass with noqa
 import matplotlib.pyplot as plt  # noqa
 
 import numpy as np  # noqa
@@ -59,17 +57,17 @@ else:
 
 
 class TrajectoryDict(dict):
-    u"""Trajectory management class."""
+    u"""Class for managing trajectories."""
 
     def __init__(self, length, items={}):
-        u"""Give the length and initialize."""
+        u"""Initialization by providing length."""
         super(TrajectoryDict, self).__init__()
         self.length = length
         for (name, traj) in items.items():
             self[name] = traj(length)
 
     def __call__(self, x):
-        u"""Returns DICT at the interpotation."""
+        u"""Returns a dict of interpolation points."""
         if not isinstance(x, (int, float)):
             raise KeyError('must be a number')
         y = {}
@@ -82,14 +80,14 @@ class TrajectoryDict(dict):
 
 
 class Trajectory(dict):
-    u"""DICT class of (x0, x1, x2) with parameters as key."""
+    u"""A class that acts like a dict with key as parameter and (x0, x1, x2)."""
 
     def __init__(self, length, scale=3):
-        u"""Initialize.
+        u"""Perform initialization.
 
         Args:
-           length FLOAT: Parameter range
-           scale INT: Resolution up to a few points n
+           length float : Range of the parameter.
+           scale int : Resolution up to n decimal places.
         """
         super(Trajectory, self).__init__()
         self.length = length
@@ -98,7 +96,7 @@ class Trajectory(dict):
         self[0] = [0.0, 0.0, 0.0]
 
     def __setitem__(self, x, point):
-        u"""Settings via points."""
+        u"""Set waypoints."""
         if not isinstance(x, (int, float)):
             raise KeyError('must be a number')
         if x > self.length:
@@ -110,12 +108,12 @@ class Trajectory(dict):
         return super(Trajectory, self).__setitem__(key, list(point))
 
     def __getitem__(self, x):
-        u"""Acquisition of voting points."""
+        u"""Get waypoints."""
         key = np.round(x * float(self.scale)) / float(self.scale)
         return super(Trajectory, self).__getitem__(key)
 
     def __call__(self, x):
-        u"""Returns the interpolation point."""
+        u"""Return interpolation points."""
         if not isinstance(x, (int, float)):
             raise ValueError('must be a number')
         if x < 0:
@@ -125,7 +123,7 @@ class Trajectory(dict):
                 'x=%f must be in the length %f' % (x, self.length))
         if not self.sorted_keys:
             self.update()
-        # Search by two -part search algorithm
+        # Search using binary search algorithm
         key = bisect.bisect_right(self.sorted_keys, x)
         if key:
             return list(super(Trajectory, self).__getitem__(
@@ -136,7 +134,7 @@ class Trajectory(dict):
         self.sorted_keys = sorted(self.keys())
 
     def calc(self, seq, step):
-        u"""Calculate the interpolation point together."""
+        u"""Calculate interpolation points in bulk."""
         if not self.sorted_keys:
             self.update()
         lst = [self[key] for key in self.sorted_keys]
@@ -152,7 +150,7 @@ class LinearTrajectory(Trajectory):
         self.a = {}
 
     def __call__(self, x):
-        u"""Returns the interpolation point."""
+        u"""Return interpolation points."""
         if not isinstance(x, (int, float)):
             raise ValueError('must be a number')
         if x < 0:
@@ -161,16 +159,16 @@ class LinearTrajectory(Trajectory):
             raise ValueError('must be in the length %f' % self.length)
         if not self.sorted_keys:
             self.update()
-        # Search by two -part search algorithm
+        # Search using binary search algorithm
         key = bisect.bisect_right(self.sorted_keys, x)
         if key:
             key = self.sorted_keys[key - 1]
             return [self.a[key][0] + self.a[key][1] * (x - key), self.a[key][1], 0]
 
     def update(self):
-        u"""Calculate the interpolation parameter."""
+        u"""Calculate interpolation parameters."""
         super(LinearTrajectory, self).update()
-        # If there is only 0 via points
+        # When there is only waypoint 0
         if len(self.sorted_keys) == 1:
             x0 = self.sorted_keys[0]
             self.a[x0] = [self[x0][0], self[x0][1]]
@@ -183,14 +181,14 @@ class LinearTrajectory(Trajectory):
             elif self.level == 1:
                 self.a[x0] = [0, self[x0][1]]
             else:
-                raise(ValueError, 'Invalid interpolation level')
+                raise ValueError('Invalid interpolation level')
         (x0, x1) = (self.sorted_keys[-2], self.sorted_keys[-1])
-        # Make the inclination of the end of the end to 0
+        # Set the slope of the last point to 0
         self.a[x1] = [self[x1][0], self.a[x0][1]]
         self[x1][1] = 0
 
     def calc(self, seq, step):
-        u"""Calculate the interpolation point together."""
+        u"""Calculate interpolation points in bulk."""
         if not self.sorted_keys:
             self.update()
         idx = [int(round(x / step)) for x in seq]
@@ -202,8 +200,8 @@ class LinearTrajectory(Trajectory):
             return [self._interpolate(x) for x in seq]
 
     def _interpolate(self, x):
-        u"""Linear interpolation calculation, assumption that Update () is called"""
-        # IF statement for guarding the case that is 0 with bisect.bisect_left
+        u"""Linear interpolation calculation, assuming update() has been called."""
+        # If statement to guard against cases resulting in 0 using bisect.bisect_left
         if x < self.sorted_keys[0]:
             return [self.a[self.sorted_keys[0]], 0, 0]
         else:
@@ -213,14 +211,14 @@ class LinearTrajectory(Trajectory):
 
 
 class Poly3Trajectory(Trajectory):
-    u"""Tertiary polymorphism."""
+    u"""Interpolation trajectory by cubic polynomial."""
 
     def __init__(self, length, scale=3):
         super(Poly3Trajectory, self).__init__(length, scale)
         self.a = {}
 
     def __call__(self, x):
-        u"""Calculate the interpolation point and return it"""
+        u"""Calculate and return interpolation points."""
         if not isinstance(x, (int, float)):
             raise ValueError('must be a number')
         if x < 0:
@@ -239,7 +237,7 @@ class Poly3Trajectory(Trajectory):
                 return [y0, y1, y2]
 
     def update(self):
-        u"""Calculate the interpolation parameter."""
+        u"""Calculate interpolation parameters."""
         super(Poly3Trajectory, self).update()
         if len(self.sorted_keys) == 1:
             x0 = self.sorted_keys[0]
@@ -254,19 +252,19 @@ class Poly3Trajectory(Trajectory):
                           -(3 * d0 - 3 * d1 + (2 * v0 + v1) * xd) / (xd ** 2),
                           -(-2 * d0 + 2 * d1 - (v0 + v1) * xd) / (xd ** 3)]
         (x0, x1) = (self.sorted_keys[-2], self.sorted_keys[-1])
-        # The inclination of the end is adjusted to the last
+        # The slope of the last point is adjusted to the previous one.
         self.a[x1] = [self[x1][0], self[x1][1], 0, 0]
 
 
 class Poly5Trajectory(Trajectory):
-    u"""5th interpolation orbital according to the fifth polyal"""
+    u"""Interpolation trajectory by quintic polynomial."""
 
     def __init__(self, length, scale=3):
         super(Poly5Trajectory, self).__init__(length, scale)
         self.a = {}
 
     def __call__(self, x):
-        u"""Calculate the interpolation point and return it"""
+        u"""Calculate and return interpolation points."""
         if not isinstance(x, (int, float)):
             raise ValueError('must be a number')
         if x < 0:
@@ -285,7 +283,7 @@ class Poly5Trajectory(Trajectory):
                 return [y0, y1, y2]
 
     def update(self):
-        u"""Calculate the interpolation parameters"""
+        u"""Calculate interpolation parameters."""
         super(Poly5Trajectory, self).update()
         if len(self.sorted_keys) == 1:
             x0 = self.sorted_keys[0]
@@ -303,12 +301,12 @@ class Poly5Trajectory(Trajectory):
                           (30 * d0 - 30 * d1 + (14 * v1 + 16 * v0) * xd + (3 * a0 - 2 * a1) * xd ** 2) / (2 * xd ** 4),
                           (12 * d1 - 12 * d0 - (6 * v1 + 6 * v0) * xd - (a0 - a1) * xd ** 2) / (2 * xd ** 5)]
         (x0, x1) = (self.sorted_keys[-2], self.sorted_keys[-1])
-        # The inclination of the end is adjusted to the last
+        # The slope of the last point is adjusted to the previous one.
         self.a[x1] = [self[x1][0], self[x1][1], self[x1][2] / 2, 0, 0, 0]
 
 
 class NaturalCubicSplineTrajectory(Trajectory):
-    u"""3rd natural spline interpolation orbit."""
+    u"""Trajectory by cubic natural spline interpolation."""
 
     def __init__(self, length):
         super(NaturalCubicSplineTrajectory, self).__init__(length)
@@ -316,7 +314,7 @@ class NaturalCubicSplineTrajectory(Trajectory):
         self.memo = {}
 
     def __call__(self, x):
-        u"""Calculate the interpolation point and return it."""
+        u"""Calculate and return interpolation points."""
         if x in self.memo:
             return self.memo[x]
 
@@ -334,10 +332,10 @@ class NaturalCubicSplineTrajectory(Trajectory):
         return self.memo[x]
 
     def update(self):
-        u"""Calculate the interpolation parameter."""
+        u"""Calculate interpolation parameters."""
         super(NaturalCubicSplineTrajectory, self).update()
 
-        # Some joints do not set up scores, but two are set.
+        # Some joints may not have waypoints set, but set two waypoints.
         if len(self.sorted_keys) == 1:
             x = [self.sorted_keys[0], self.length]
             y = [self[x[0]][0], self[x[0]][0]]
@@ -354,7 +352,7 @@ class NaturalCubicSplineTrajectory(Trajectory):
         self.memo = {}
 
     def calc(self, seq, step):
-        u"""Calculate the interpolation point together."""
+        u"""Calculate interpolation points in bulk."""
         if not self.sorted_keys:
             self.update()
         if _NEW_SCIPY:

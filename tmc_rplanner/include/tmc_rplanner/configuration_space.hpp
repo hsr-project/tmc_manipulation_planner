@@ -25,7 +25,13 @@ LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT
 OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH
 DAMAGE.
 */
-/// @brief    Configuration space basic operation for planning
+/// @file     configuration_space.hpp
+/// @brief    Basic operations in configuration space for planning
+/// @author   Koji Terada
+/// @version  1.0.0
+/// @date     2011.10.25
+/// @note     [1.0.0] 2011.10.19 Newly created
+
 
 #ifndef TMC_MANIPULATION_TMC_RPLANNER_CONFIGURATION_SPACE_HPP_
 #define TMC_MANIPULATION_TMC_RPLANNER_CONFIGURATION_SPACE_HPP_
@@ -37,7 +43,7 @@ DAMAGE.
 
 namespace tmc_rplanner {
 
-/// @brief Most basic checktransferabilityFunc
+/// @brief The most basic CheckTransferabilityFunc
 bool CheckTransferabilityByDividing(
      const Config& src_config,
      const Config& dst_config,
@@ -116,89 +122,89 @@ class ConfigurationSpace {
     constrain_config_callback_ = constrain_config_callback;
   }
 
-  /// Return one step from SRC_CONFIG to DST_CONFIG
+  /// Returns a configuration advanced one step from src_config to dst_config
   Config NewConfig(const Config& src_config, const Config& dst_config,
                    double delta,  bool& is_reached_out) const;
-  /// Check a straight line
+  /// Check the straight line
   bool CheckLine(const Config& src_conifg, const Config& dst_config,
                  double delta, Path& path_out) const;
-  /// Check the straight line (with Termite)
+  /// Check the straight line (with termite)
   bool CheckLine(const Config& src_conifg, const Config& dst_config,
                  double delta, TerminateConditionFunc terminate,
                  Path& path_out) const;
-  /// Configuration is valid
+  /// Check if the configuration is valid required: check_feasibility
   bool CheckFeasibility(const Config& config) const;
-  /// Transition potential check Required: check_fease or check_transferability
+  /// Transitionability check required: check_feasibility or check_transferability
   bool CheckTransferability(const Config& src_config,
                             const Config& dst_config) const;
-  /// Random configuration generation Required: Random_config
+  /// Random configuration generation required: random_config
   Config GenerateRandomConfig() const;
-  /// Measure the distance between configurations Optional: Distance
+  /// Measure the distance between configurations optional: distance
   double CalcDistance(const Config& config1, const Config& config2) const;
-  /// Configuration evaluation Required: EVALUATE_CONFIG
+  /// Configuration evaluation required: evaluate_config
   double EvaluateConfig(const Config& config) const;
-  /// Goal generation function Required: Generate_goal_config
+  /// Goal generation function required: generate_goal_config
   bool GenerateGoalConfig(Config& config) const;
-  /// Start generation function Required: Generate_start_config
+  /// Start generation function required: generate_start_config
   bool GenerateStartConfig(Config& config) const;
-  /// Check if the configuration is included in the termination conditions
+  /// Check if the configuration is in the termination condition
   /// required: check_goal_config
   bool CheckConfigInGoal(const Config& config) const;
-  /// Required: Constrain_config to restrain configuration
+  /// Constrain the configuration required: constrain_config
   bool ConstrainConfig(const Config& config_in, Config& config_out) const;
-  /// Required: constrain_config_goal to restrain the configuration of START
+  /// Constrain the start configuration required: constrain_config_goal
   bool ConstrainStartConfig(const Config& config_in, Config& config_out) const;
-  /// REQUIRED: constrain_config_goal to restrain Goal configuration
+  /// Constrain the goal configuration required: constrain_config_goal
   bool ConstrainGoalConfig(const Config& config_in, Config& config_out) const;
-  /// For debugging the function of the function called when checking the configuration
+  /// Function called during configuration check Mainly for debugging
   void CheckFeasibilityCallBack(const Config& config,  bool success) const;
-  /// For debugging the function of the function called when node is added
+  /// Function called when adding a node Mainly for debugging
   void AddNodeCallBack(const Config& parent, const Config& child) const;
-  /// For debugging the function called at the time of start generation
+  /// Function called when generating start Mainly for debugging
   void AddStartCallBack(const Config& config) const;
-  /// For debugging the function of the function called when GOAL is generated
+  /// Function called when generating goal Mainly for debugging
   void AddGoalCallBack(const Config& config) const;
-  /// For debugging mainly callbacks called at ConstraintConfig
+  /// Callback called during ConstraintConfig Mainly for debugging
   void ConstrainConfigCallBack(const Config& config_in,
                                const Config& config_out, bool success) const;
 
  private:
-  // Copies are prohibited
+  // Copying is prohibited
   ConfigurationSpace(const ConfigurationSpace&);
   ConfigurationSpace& operator = (const ConfigurationSpace&);
-  /// Status space freedom
+  /// Degrees of freedom of the state space
   const int32_t dof_;
-  /// A function that returns a rander state
+  /// Function that returns a random state
   RandomConfigFunc generate_random_config_;
-  /// A function that returns whether the current configuration is possible
+  /// Function that returns whether the current configuration is feasible
   CheckFeasibilityFunc check_feasibility_;
-  /// Check if you can transition two configurations
+  /// Check if transition is possible between two configurations
   CheckTransferabilityFunc check_transferability_;
   /// Distance between two configurations
   DistanceFunc calc_distance_;
-  /// Compatibility evaluation function
+  /// Configuration evaluation function
   EvaluateConfigFunc evaluate_config_;
-  /// Check if the configuration is included in the termination conditions
+  /// Check if the configuration is in the termination condition
   CheckConfigInGoalFunc check_goal_config_;
-  /// Configuration restraint function
+  /// Configuration constraint function
   ConstraintFunc constrain_config_;
-  /// Start configuration restraint function
+  /// Start configuration constraint function
   ConstraintFunc constrain_start_config_;
-  /// GOAL configuration restraint function
+  /// Goal configuration constraint function
   ConstraintFunc constrain_goal_config_;
-  /// START creation function
+  /// Start creation function
   GenerateStartConfigFunc generate_start_config_;
   /// Goal creation function
   GenerateGoalConfigFunc generate_goal_config_;
-  /// For debugging the function of the function called when checking the configuration
+  /// Function called during configuration check Mainly for debugging
   CheckFeasibilityCallBackFunc check_feasibility_callback_;
-  /// For debugging the function of the function called when node is added
+  /// Function called when adding a node Mainly for debugging
   AddNodeCallBackFunc add_node_callback_;
-  /// For debugging the function of the function called at the time of START
+  /// Function called when generating start Mainly for debugging
   AddStartCallBackFunc add_start_callback_;
-  /// For debugging the function of the function called when GOAL is generated
+  /// Function called when generating goal Mainly for debugging
   AddGoalCallBackFunc add_goal_callback_;
-  /// For debugging mainly callbacks called at ConstraintConfig
+  /// Callback called during ConstraintConfig Mainly for debugging
   ConstrainConfigCallBackFunc constrain_config_callback_;
 };
 }  // namespace tmc_rplanner
