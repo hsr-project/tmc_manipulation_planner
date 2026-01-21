@@ -41,7 +41,7 @@ DAMAGE.
 namespace tmc_rplanner {
 
 /// @class IConfigOoptimizer
-/// @brief Optimization interface
+/// @brief Interface for optimization
 class  IConfigOptimizer {
  public:
   using Ptr = std::shared_ptr<IConfigOptimizer>;

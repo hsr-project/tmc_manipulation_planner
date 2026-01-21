@@ -43,9 +43,9 @@ namespace tmc_rplanner {
 /// @brief Advance tree a one step towards a random configuration,
 ///        and attempt to connect from tree b to tree a
 /// @param space Configuration space
-/// @param tree_a Exploration side tree
-/// @param tree_b Connection side tree
-/// @return true: Connection successful false: Connection unsuccessful
+/// @param tree_a Exploration tree
+/// @param tree_b Connection tree
+/// @return true: Connection successful false: Connection failed
 bool BuildOneStep(ConfigurationSpace::Ptr space,
                   ConfigurationTree& tree_a,
                   ConfigurationTree& tree_b) {
@@ -64,7 +64,7 @@ bool BuildOneStep(ConfigurationSpace::Ptr space,
 /// @param goal_config Goal configuration
 /// @param path_out Generated trajectory
 /// @return kSucess: Success
-/// @return kTerminate: Terminated
+/// @return kTerminate: Termination
 /// @return kMaxItr: Maximum iteration count reached
 PlanRet BiRrtPlanner::PlanPath(const Config& init_config,
                         const Config& goal_config,
@@ -87,7 +87,7 @@ PlanRet BiRrtPlanner::PlanPath(const Config& init_config,
   tree_s.SetRootConfig(init_config);
   tree_g.SetRootConfig(goal_config);
   for (int32_t i = 0; i < max_itr_; ++i)  {
-    // Check termination conditions (timeout, etc.)
+    // Check termination conditions (e.g., timeout)
     if (is_terminate_ && is_terminate_()) {
       return kTerminate;
     }
@@ -104,7 +104,7 @@ PlanRet BiRrtPlanner::PlanPath(const Config& init_config,
       }
     }
   }
-  // Merge the trees in case of success
+  // Integrate trees in case of success
   if (is_success == true) {
     Path start_path;
     Path goal_path;

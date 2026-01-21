@@ -25,19 +25,19 @@
 # OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH
 # DAMAGE.
 # -*- coding: utf-8 -*-
-u"""A module for generating spatial/temporal trajectories by specifying waypoints.
+u"""Module to generate spatial/temporal trajectories by specifying waypoints.
 
-Waypoints are represented as an array like point=[0,0,0], with the index being the order of derivative.
-point[0] is displacement, point[1] is first derivative, point[2] is second derivative.
+Waypoints are represented as an array like point=[0,0,0], where the index is the order of differentiation.
+point[0] is displacement, point[1] is the first derivative, point[2] is the second derivative.
 """
 
 import bisect
 
 import matplotlib
-# Change Agg to tkAgg for debugging
+# Change Agg to tkAgg for debugging.
 matplotlib.use('Agg')
 
-# Subsequent imports are written after matplotlib.use, so pass with noqa
+# Subsequent imports are written after matplotlib.use, so pass with noqa.
 import matplotlib.pyplot as plt  # noqa
 
 import numpy as np  # noqa
@@ -57,10 +57,10 @@ else:
 
 
 class TrajectoryDict(dict):
-    u"""Class for managing trajectories."""
+    u"""Class for trajectory management."""
 
     def __init__(self, length, items={}):
-        u"""Initialization by providing length."""
+        u"""Initialize with a given length."""
         super(TrajectoryDict, self).__init__()
         self.length = length
         for (name, traj) in items.items():
@@ -80,13 +80,13 @@ class TrajectoryDict(dict):
 
 
 class Trajectory(dict):
-    u"""A class that acts like a dict with key as parameter and (x0, x1, x2)."""
+    u"""A class that acts like a dict with parameters as keys for (x0, x1, x2)."""
 
     def __init__(self, length, scale=3):
         u"""Perform initialization.
 
         Args:
-           length float : Range of the parameter.
+           length float : Range of parameters.
            scale int : Resolution up to n decimal places.
         """
         super(Trajectory, self).__init__()
@@ -96,7 +96,7 @@ class Trajectory(dict):
         self[0] = [0.0, 0.0, 0.0]
 
     def __setitem__(self, x, point):
-        u"""Set waypoints."""
+        u"""Setting waypoints."""
         if not isinstance(x, (int, float)):
             raise KeyError('must be a number')
         if x > self.length:
@@ -108,12 +108,12 @@ class Trajectory(dict):
         return super(Trajectory, self).__setitem__(key, list(point))
 
     def __getitem__(self, x):
-        u"""Get waypoints."""
+        u"""Getting waypoints."""
         key = np.round(x * float(self.scale)) / float(self.scale)
         return super(Trajectory, self).__getitem__(key)
 
     def __call__(self, x):
-        u"""Return interpolation points."""
+        u"""Returns interpolation points."""
         if not isinstance(x, (int, float)):
             raise ValueError('must be a number')
         if x < 0:
@@ -123,7 +123,7 @@ class Trajectory(dict):
                 'x=%f must be in the length %f' % (x, self.length))
         if not self.sorted_keys:
             self.update()
-        # Search using binary search algorithm
+        # Search using binary search algorithm.
         key = bisect.bisect_right(self.sorted_keys, x)
         if key:
             return list(super(Trajectory, self).__getitem__(
@@ -134,7 +134,7 @@ class Trajectory(dict):
         self.sorted_keys = sorted(self.keys())
 
     def calc(self, seq, step):
-        u"""Calculate interpolation points in bulk."""
+        u"""Calculate interpolation points collectively."""
         if not self.sorted_keys:
             self.update()
         lst = [self[key] for key in self.sorted_keys]
@@ -150,7 +150,7 @@ class LinearTrajectory(Trajectory):
         self.a = {}
 
     def __call__(self, x):
-        u"""Return interpolation points."""
+        u"""Returns interpolation points."""
         if not isinstance(x, (int, float)):
             raise ValueError('must be a number')
         if x < 0:
@@ -159,7 +159,7 @@ class LinearTrajectory(Trajectory):
             raise ValueError('must be in the length %f' % self.length)
         if not self.sorted_keys:
             self.update()
-        # Search using binary search algorithm
+        # Search using binary search algorithm.
         key = bisect.bisect_right(self.sorted_keys, x)
         if key:
             key = self.sorted_keys[key - 1]
@@ -168,7 +168,7 @@ class LinearTrajectory(Trajectory):
     def update(self):
         u"""Calculate interpolation parameters."""
         super(LinearTrajectory, self).update()
-        # When there is only waypoint 0
+        # When there is only one waypoint.
         if len(self.sorted_keys) == 1:
             x0 = self.sorted_keys[0]
             self.a[x0] = [self[x0][0], self[x0][1]]
@@ -183,12 +183,12 @@ class LinearTrajectory(Trajectory):
             else:
                 raise ValueError('Invalid interpolation level')
         (x0, x1) = (self.sorted_keys[-2], self.sorted_keys[-1])
-        # Set the slope of the last point to 0
+        # Set the slope of the last point to 0.
         self.a[x1] = [self[x1][0], self.a[x0][1]]
         self[x1][1] = 0
 
     def calc(self, seq, step):
-        u"""Calculate interpolation points in bulk."""
+        u"""Calculate interpolation points collectively."""
         if not self.sorted_keys:
             self.update()
         idx = [int(round(x / step)) for x in seq]
@@ -201,7 +201,7 @@ class LinearTrajectory(Trajectory):
 
     def _interpolate(self, x):
         u"""Linear interpolation calculation, assuming update() has been called."""
-        # If statement to guard against cases resulting in 0 using bisect.bisect_left
+        # If statement to guard against cases where bisect.bisect_left results in 0.
         if x < self.sorted_keys[0]:
             return [self.a[self.sorted_keys[0]], 0, 0]
         else:
@@ -211,7 +211,7 @@ class LinearTrajectory(Trajectory):
 
 
 class Poly3Trajectory(Trajectory):
-    u"""Interpolation trajectory by cubic polynomial."""
+    u"""Interpolation trajectory using cubic polynomial."""
 
     def __init__(self, length, scale=3):
         super(Poly3Trajectory, self).__init__(length, scale)
@@ -252,12 +252,12 @@ class Poly3Trajectory(Trajectory):
                           -(3 * d0 - 3 * d1 + (2 * v0 + v1) * xd) / (xd ** 2),
                           -(-2 * d0 + 2 * d1 - (v0 + v1) * xd) / (xd ** 3)]
         (x0, x1) = (self.sorted_keys[-2], self.sorted_keys[-1])
-        # The slope of the last point is adjusted to the previous one.
+        # Match the slope of the last point to the one just before.
         self.a[x1] = [self[x1][0], self[x1][1], 0, 0]
 
 
 class Poly5Trajectory(Trajectory):
-    u"""Interpolation trajectory by quintic polynomial."""
+    u"""Interpolation trajectory using quintic polynomial."""
 
     def __init__(self, length, scale=3):
         super(Poly5Trajectory, self).__init__(length, scale)
@@ -301,12 +301,12 @@ class Poly5Trajectory(Trajectory):
                           (30 * d0 - 30 * d1 + (14 * v1 + 16 * v0) * xd + (3 * a0 - 2 * a1) * xd ** 2) / (2 * xd ** 4),
                           (12 * d1 - 12 * d0 - (6 * v1 + 6 * v0) * xd - (a0 - a1) * xd ** 2) / (2 * xd ** 5)]
         (x0, x1) = (self.sorted_keys[-2], self.sorted_keys[-1])
-        # The slope of the last point is adjusted to the previous one.
+        # Match the slope of the last point to the one just before.
         self.a[x1] = [self[x1][0], self[x1][1], self[x1][2] / 2, 0, 0, 0]
 
 
 class NaturalCubicSplineTrajectory(Trajectory):
-    u"""Trajectory by cubic natural spline interpolation."""
+    u"""Trajectory using cubic natural spline interpolation."""
 
     def __init__(self, length):
         super(NaturalCubicSplineTrajectory, self).__init__(length)
@@ -335,7 +335,7 @@ class NaturalCubicSplineTrajectory(Trajectory):
         u"""Calculate interpolation parameters."""
         super(NaturalCubicSplineTrajectory, self).update()
 
-        # Some joints may not have waypoints set, but set two waypoints.
+        # Some joints may not have waypoints set, but set two.
         if len(self.sorted_keys) == 1:
             x = [self.sorted_keys[0], self.length]
             y = [self[x[0]][0], self[x[0]][0]]
@@ -352,7 +352,7 @@ class NaturalCubicSplineTrajectory(Trajectory):
         self.memo = {}
 
     def calc(self, seq, step):
-        u"""Calculate interpolation points in bulk."""
+        u"""Calculate interpolation points collectively."""
         if not self.sorted_keys:
             self.update()
         if _NEW_SCIPY:

@@ -61,12 +61,12 @@ class RobotRrtPlannerNode : public rclcpp::Node {
   /// Destructor
   virtual ~RobotRrtPlannerNode() = default;
 
-  /// Separate the constructor and Init to use shared_from_this
+  /// Separate constructor and Init to use shared_from_this
   bool Init();
 
  private:
   // TODO(Takeshita) 外部障害物，把持物の利用
-  // /// Retrieve all joint angles
+  // /// Extract all joint angles
   // tmc_manipulation_types::JointState FetchAllJoints_(
   //     const tmc_manipulation_types::JointState& partial_joint_state);
 
@@ -92,35 +92,35 @@ class RobotRrtPlannerNode : public rclcpp::Node {
       const tmc_planning_msgs::srv::PlanWithHandLine::Request::SharedPtr req,
       tmc_planning_msgs::srv::PlanWithHandLine::Response::SharedPtr res);
 
-  /// Load the plugin that constrains joints
+  /// Load plugin to constrain joints
   pluginlib::ClassLoader<tmc_robot_planner::IConfigurationConstraint> constraint_plugin_loader_;
-  /// Loaded plugin that constrains joints
+  /// Loaded plugin to constrain joints
   std::map<std::string, tmc_robot_planner::IConfigurationConstraint::Ptr> constraint_plugin_cache_;
   /// Load inverse kinematics plugin
   pluginlib::ClassLoader<tmc_robot_kinematics_model::IKSolver> ik_plugin_loader_;
   /// Load forward kinematics plugin
   pluginlib::ClassLoader<tmc_robot_kinematics_model::IRobotKinematicsModel> fk_loader_;
 
-  /// Exploration width
+  /// Search width
   double delta_;
-  /// Collision check width should be delta_ >= sub_delta_
+  /// Interference check width delta_ should be >= sub_delta_
   double sub_delta_;
-  /// Maximum translational value of the base [m]
+  /// Maximum value of base translation direction [m]
   double base_translation_max_;
 
   double increase_sampling_deviation_;
   double step_sampling_deviation_;
 
-  /// Class that saves the request
+  /// Class to save request
   tmc_utils::MessageLogger::Ptr request_logger_;
-  /// Flag for whether to publish for debugging
+  /// Flag to publish for debugging
   bool publish_debug_info_;
-  /// Flag for whether to print debugging information
+  /// Flag to print information for debugging
   tmc_utils::DynamicParameter<bool>::Ptr print_debug_info_;
   /// Enable step execution mode
   bool step_mode_;
 
-  /// Set up a callback for debugging
+  /// Set callback for debugging
   void SetDebugCallBacks_(const std::vector<std::string>& joint_names);
       // const tmc_manipulation_types::AttachedObjectSeq& attached_objects,
       // const tmc_manipulation_msgs::CollisionEnvironment& environment);
@@ -129,35 +129,35 @@ class RobotRrtPlannerNode : public rclcpp::Node {
       // const tmc_manipulation_types::AttachedObjectSeq& attached_objects,
       // const tmc_manipulation_msgs::CollisionEnvironment& environment);
 
-  /// Joint names weighted by the planner
+  /// Joint names to weight in planner
   std::vector<std::string> weight_names_;
-  /// Weights of the planner
+  /// Weights in planner
   std::vector<double> weights_;
-  /// Joint names weighted by IK
+  /// Joint names to weight in IK
   std::vector<std::string> ik_weight_names_;
-  /// Weights of IK
+  /// Weights in IK
   std::vector<double> ik_weights_;
-  /// Translational weight
+  /// Weights in translation direction
   double weight_linear_base_;
-  /// Rotational weight
+  /// Weights in rotation direction
   double weight_rotational_base_;
-  /// Translational IK weight
+  /// IK weights in translation direction
   double weight_linear_base_ik_;
-  /// Rotational IK weight
+  /// IK weights in rotation direction
   double weight_rotational_base_ik_;
 
-  /// Interference checker for the robot
+  /// Interference checker for robot
   tmc_robot_collision_detector::RobotCollisionDetector::Ptr robot_collision_detector_;
   /// CBiRRT2 planner
   tmc_robot_planner::RobotCBiRrtPlanner::Ptr planner_;
 
-  /// Joint state publisher for debugging
+  /// Debug joint_state_publisher
   rclcpp::Publisher<sensor_msgs::msg::JointState>::SharedPtr debug_joint_state_pub_;
-  // /// Marker publisher for debugging
+  // /// Debug marker publisher
   // ros::Publisher debug_environment_pub_;
-  // /// Pose publisher for debugging
+  // /// Debug pose publisher
   // ros::Publisher debug_pose_pub_;
-  /// tf for debugging
+  /// Debug tf
   std::unique_ptr<tf2_ros::TransformBroadcaster> debug_tf_broadcaster_;
 
   /// Service for PlanWithTsrConstraints

@@ -125,7 +125,7 @@ bool VerifyVelocityLimit(const ITrajectoryFilter& trajectory,
   for (double t = 0.0; t < trajectory.GetDuration(); t += kTimeStep) {
     auto velocities = trajectory.GetVelocity(t);
     for (uint32_t i = 0; i < limits.size(); ++i) {
-      // Since it's a comparison of floating point numbers, the test won't be stable without a margin
+      // Since it is a comparison of floating-point numbers, the test will not be stable without a margin
       if (fabs(velocities[i]) > limits[i] + kEpsilon) {
         std::cerr << t << ": " << velocities.transpose() << std::endl;
         return false;
@@ -197,7 +197,7 @@ class TrajectoryFilterCommonTest : public ::testing::Test {};
 
 TYPED_TEST_SUITE_P(TrajectoryFilterCommonTest);
 
-// Test to see if it fails when the speed limit includes non-positive values
+// Test to see if it fails when non-positive values are included in the speed limit
 TYPED_TEST_P(TrajectoryFilterCommonTest, MaxVelocityNotPositive) {
   std::vector<std::array<double, 2>> test_cases = {
       {1.0, 0.0}, {0.0, 0.5}, {0.0, 0.0}, {1.0, -0.5}, {-1.0, 0.5}, {-1.0, -0.5}};
@@ -211,7 +211,7 @@ TYPED_TEST_P(TrajectoryFilterCommonTest, MaxVelocityNotPositive) {
   }
 }
 
-// Test to see if it fails when the acceleration limit includes non-positive values
+// Test to see if it fails when non-positive values are included in the acceleration limit
 TYPED_TEST_P(TrajectoryFilterCommonTest, MaxAccelarationNotPositive) {
   std::vector<std::array<double, 2>> test_cases = {
       {0.5, 0.0}, {0.0, 1.0}, {0.0, 0.0}, {0.5, -1.0}, {-0.5, 1.0}, {-0.5, -1.0}};
@@ -225,7 +225,7 @@ TYPED_TEST_P(TrajectoryFilterCommonTest, MaxAccelarationNotPositive) {
   }
 }
 
-// Test of freedom degree mismatch
+// Test for degree of freedom mismatch
 TYPED_TEST_P(TrajectoryFilterCommonTest, DofMismatch) {
   std::vector<std::array<uint32_t, 6>> test_cases = {
       {3, 2, 2, 2, 2, 2}, {2, 3, 2, 2, 2, 2}, {2, 2, 3, 2, 2, 2},
@@ -247,7 +247,7 @@ TYPED_TEST_P(TrajectoryFilterCommonTest, DofMismatch) {
   }
 }
 
-// Test for an empty path
+// Test for empty path
 TYPED_TEST_P(TrajectoryFilterCommonTest, EmptyWayPoints) {
   auto input = TestInput();
   input.way_points.clear();
@@ -257,7 +257,7 @@ TYPED_TEST_P(TrajectoryFilterCommonTest, EmptyWayPoints) {
   EXPECT_FALSE(trajectory.IsValid());
 }
 
-// Optimization of a 1-degree-of-freedom trajectory
+// Optimization of a single degree of freedom trajectory
 TYPED_TEST_P(TrajectoryFilterCommonTest, OneDofTrajectory) {
   auto input = TestInput();
   input.initial_positions.resize(1);
@@ -272,7 +272,7 @@ TYPED_TEST_P(TrajectoryFilterCommonTest, OneDofTrajectory) {
   EXPECT_FALSE(trajectory.IsValid());
 }
 
-// Interruption test
+// Test for interruption
 TYPED_TEST_P(TrajectoryFilterCommonTest, Interrupt) {
   auto input = TestInput();
   InterruptionMock return_false_mock(-1);
@@ -290,7 +290,7 @@ TYPED_TEST_P(TrajectoryFilterCommonTest, Interrupt) {
   EXPECT_FALSE(trajectory.IsValid());
 }
 
-// Optimization of a trajectory that includes the same point at consecutive waypoints
+// Optimization of a trajectory that includes the same point in consecutive waypoints
 TYPED_TEST_P(TrajectoryFilterCommonTest, SeriallySameWayPoint) {
   auto input = TestInput();
   input.way_points.insert(input.way_points.begin(), input.way_points.front());
@@ -308,7 +308,7 @@ TYPED_TEST_P(TrajectoryFilterCommonTest, SeriallySameWayPoint) {
   EXPECT_TRUE(VerifyAccelarationLimit(trajectory, input.max_accelerations));
 }
 
-// Optimization when the initial posture and the first waypoint are the same point
+// Optimization where the initial posture and the first waypoint are the same point
 TYPED_TEST_P(TrajectoryFilterCommonTest, SameInitialPositionAndFirstWayPoint) {
   auto input = TestInput();
   input.way_points.insert(input.way_points.begin(), input.initial_positions);

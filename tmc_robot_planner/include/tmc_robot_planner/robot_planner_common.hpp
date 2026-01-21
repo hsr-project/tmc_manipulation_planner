@@ -26,7 +26,7 @@ OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH
 DAMAGE.
 */
 /// @file     robot_rplanner_common.hpp
-/// @brief Common definitions for robot planners
+/// @brief    Common definitions for robot planner
 /// @author   Koji Terada
 
 #ifndef TMC_ROBOT_RPLANNER_ROBOT_RPLANNER_COMMON_HPP_
@@ -51,7 +51,7 @@ using NameSeq = std::vector<std::string>;
 
 using Config = Eigen::VectorXd;
 
-// The numbers are aligned in cases where the meaning overlaps with moveit_msgs/msg/MoveItErrorCodes
+// In cases where it overlaps with moveit_msgs/msg/MoveItErrorCodes, the numbers are aligned
 enum ErrorCode {
   kSuccess = 1,
   kPlanningFailed = -1,

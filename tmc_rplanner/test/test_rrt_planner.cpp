@@ -48,9 +48,9 @@ using tmc_rplanner::RrtPlanner;
 namespace {
 // Dimension of the state space used in the test
 int32_t kDim = 2;
-// Exploration width
+// Search width
 double kDelta = 0.2;
-// Tolerance for floating-point equivalence
+// Tolerance for floating-point equality
 double kDoubleEps = 1e-5;
 
 
@@ -68,12 +68,12 @@ Config RandomConfig() {
 
 
 bool CheckFeasibility(const Config& config) {
-  // Rectangular prism of [0.5 3.5] , [0.5 1.0]
+  // Cuboid [0.5 3.5], [0.5 1.0]
   if (((config(0) > 0.5) && (config(0) < 3.5))
       && ((config(1) > 0.5) && (config(1) < 1.0))) {
     return false;
   }
-  // Rectangular prism of [1.5 2.5] , [1.0 4.0]
+  // Cuboid [1.5 2.5], [1.0 4.0]
   if (((config(0) > 1.5) && (config(0) < 2.5))
       && ((config(1) > 1.0) && (config(1) < 4.0))) {
     return false;
@@ -95,12 +95,12 @@ bool GenerateGoal(Config& v) {
 }
 
 bool IsGoal(const Config& config) {
-  // Rectangular prism of (0.9 1.1) , (3.4 3.6)
+  // Cuboid (0.9 1.1), (3.4 3.6)
   if (((config(0) > 0.9) && (config(0) < 1.1)) &&
       ((config(1) > 3.4) && (config(1) < 3.6))) {
     return true;
   }
-  // Rectangular prism of (2.9 3.1) , (3.4 3.6)
+  // Cuboid (2.9 3.1), (3.4 3.6)
   if (((config(0) > 2.9) && (config(0) < 3.1)) &&
       ((config(1) > 3.4) && (config(1) < 3.6))) {
     return true;
@@ -140,12 +140,12 @@ TEST_F(RrtPlannerTest, plan) {
   Path path;
   ASSERT_EQ(kSuccess, planner_->PlanPath(init, path));
 
-  // Check of path
+  // Check of the path
   // Initial value is init
   ASSERT_DOUBLE_EQ(init(0), path.front()(0));
   ASSERT_DOUBLE_EQ(init(1), path.front()(1));
 
-  // Goal is included in the conditions
+  // Goal is included in the condition
   ASSERT_TRUE(IsGoal(path.back()));
   // Distance is always less than or equal to kDelta
   Config old_config = init;
@@ -156,7 +156,7 @@ TEST_F(RrtPlannerTest, plan) {
   }
 }
 
-// End with maximum number of iterations
+// End by maximum number of iterations
 TEST(RrtPlanner, max_itr) {
   ConfigurationSpace::Ptr cspace(new ConfigurationSpace(kDim));
   cspace->set_random_config(RandomConfig);

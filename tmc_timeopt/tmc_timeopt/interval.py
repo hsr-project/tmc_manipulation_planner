@@ -87,7 +87,7 @@ class Interval(object):
         return self.list
 
     def set_list(self, lst):
-        u"""Set as a list."""
+        u"""Set with a list."""
         if isinstance(lst[0], list):
             self.list = lst
         else:

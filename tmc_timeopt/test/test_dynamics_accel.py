@@ -73,7 +73,7 @@ class DummyTarget(Target):
 class DynamicsTestCase(unittest.TestCase):
 
     def setUp(self):
-        # Test logic only with dummy target
+        # Test only the logic with a dummy target
         self.target = DummyTarget()
         self.dynamics = Dynamics(self.target)
         self.dynamics.get_mvc = self.dynamics.get_mvc_accel

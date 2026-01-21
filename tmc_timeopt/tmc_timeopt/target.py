@@ -28,10 +28,10 @@
 """Target Interface."""
 
 import matplotlib
-# Change Agg to TkAgg when debugging
+# Change Agg to tkAgg for debugging
 matplotlib.use('Agg')
 
-# Subsequent imports are written after matplotlib.use, so use noqa to skip
+# Subsequent imports are written after matplotlib.use, so pass with noqa
 import matplotlib.pyplot as plt  # noqa
 
 
@@ -43,7 +43,7 @@ class Target(object):
         self.point = point
 
     def update_point(self, point):
-        u"""Update the kinematics of the target using the calculated point."""
+        u"""Update the target kinematics using the calculated point."""
         self.point = point
 
     def update_dynamics(self):
@@ -53,7 +53,7 @@ class Target(object):
     def get_dynamics(self):
         u"""Return dynamics parameters (a,b,c,d).
 
-        (a,b,c,d) each becomes a dict with ('variable name', 'constraint type') as key and value as value.
+        (a,b,c,d) each become a dict with ('variable name', 'constraint type') as the key and the value as the value.
         """
         pass
 

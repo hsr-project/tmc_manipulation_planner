@@ -33,7 +33,7 @@ from math import sqrt
 def solve_equality(a):
     u"""Solve the quadratic equation a[0]+a[1]x+a[2]x^2==0 and return the solutions.
 
-    Solutions like [0,2]. If there are no solutions, return []
+    Solutions are like [0,2]. If there are no solutions, return [].
     Args:
         a [double]: Coefficients of the quadratic equation
     Return:
@@ -50,8 +50,8 @@ def solve_equality(a):
 def solve_inequality(a, s):
     u"""Solve the quadratic inequality a[0]+a[1]x+a[2]x^2 <> 0.
 
-    s is an inequality sign '>' or '<'. Solutions like [0,2](0<x<2), [[-inf, 0], [2,inf]](x<0, x>2), etc.
-    If there are no solutions, return []
+    s is the inequality sign '>' or '<'. Solutions are like [0,2](0<x<2), [[-inf, 0], [2,inf]](x<0, x>2), etc.
+    If there are no solutions, return [].
     Args:
         a [double]: Coefficients of the quadratic equation
         s string: Inequality sign '>' or '<'
@@ -65,7 +65,7 @@ def solve_inequality(a, s):
                 return [float('-inf'), float('inf')]
             else:
                 return []
-        # Case of linear inequality
+        # Case of a linear inequality
         if (s == '>' and a[1] > 0) or (s == '<' and a[1] < 0):
             return [-a[0] / a[1], float('inf')]
         if (s == '<' and a[1] > 0) or (s == '>' and a[1] < 0):

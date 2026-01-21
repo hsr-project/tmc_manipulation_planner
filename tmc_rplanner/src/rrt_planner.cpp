@@ -43,9 +43,9 @@ DAMAGE.
 
 namespace tmc_rplanner {
 
-/// @brief Extend one-step RRT
+/// @brief Extend 1-step RRT
 /// @param tree State space tree
-/// @return true: Reached goal false: Not reached
+/// @return true: reached goal false: not reached
 bool RrtPlanner::BuildOneStep_(ConfigurationTree& tree) {
   Config random_config;
   bool to_goal = false;
@@ -61,8 +61,8 @@ bool RrtPlanner::BuildOneStep_(ConfigurationTree& tree) {
   } else {
     random_config = space_->GenerateRandomConfig();
   }
-  // If greedy is true, proceed towards the goal anyway
-  // If greedy is false, one-step
+  // If greedy is true, proceed to the goal anyway
+  // If greedy is false, 1-step
   if (greedy_) {
     ret = tree.Connect(random_config);
   } else {
@@ -71,9 +71,9 @@ bool RrtPlanner::BuildOneStep_(ConfigurationTree& tree) {
   return ((ret == kReached) && (to_goal));
 }
 
-/// @brief Plan the path
+/// @brief Perform path planning
 /// @param inti_config Initial configuration
-/// @param path_out Result path
+/// @param path_out Resulting path
 /// @return Planning result
 PlanRet RrtPlanner::PlanPath(const Config& init_config,
                              Path& path_out) {
@@ -87,23 +87,23 @@ PlanRet RrtPlanner::PlanPath(const Config& init_config,
   }
   tree.SetRootConfig(init_config);
   for (int32_t i = 0; i < max_itr_; ++i)  {
-    // Check termination conditions (e.g., timeout)
+    // Check termination conditions (timeout, etc.)
     if (is_terminate_ && is_terminate_()) {
       return kTerminate;
     }
-    // Extend the tree
+    // Extend Tree
     if (BuildOneStep_(tree)) {
       is_success = true;
       break;
     } else {
-      // Check if it is a goal
+      // Determine if it is the Goal
       if (space_->CheckConfigInGoal(tree.GetLastConfig())) {
         is_success = true;
         break;
       }
     }
   }
-  // Integrate the tree if successful
+  // If successful, integrate the tree
   if (is_success == true) {
     Path path;
     tree.TrackBackPath(path_out);

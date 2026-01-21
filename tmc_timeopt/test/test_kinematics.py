@@ -53,7 +53,7 @@ class DummyTarget(Target):
 class KinematicsTestCase(unittest.TestCase):
 
     def setUp(self):
-        # Test only the logic with a dummy target.
+        # Test only the logic with a dummy target
         self.target = DummyTarget()
         self.kinematics = Kinematics(self.target)
 
@@ -101,17 +101,17 @@ class KinematicsTestCase(unittest.TestCase):
 
     def test_get_vlc(self):
         self.kinematics.update(0.0)
-        # Obtain the first derivative with respect to s as it's difficult to predict.
+        # Obtain the first derivative with respect to s of the trajectory as prediction is difficult
         current = self.kinematics.get_current_point()
         fds = (current['JOINT1'][1], current['JOINT2'][1],
                current['JOINT3'][1])
         vlc = self.kinematics.get_vlc()
-        # JOINT3 is the tightest, so vlc should be that.
+        # JOINT3 is the toughest, so vlc should be for that
         assert_almost_equal(2.0 / fds[2], vlc)
 
-    # Almost a pointless test as it is a mere reversal of reality.
+    # Almost a reversal of reality, so not a very meaningful test
     def test_get_state(self):
-        # This does not normally need to be called, but call it once for the test.
+        # Normally, there is no need to call this, but call it once for testing
         self.kinematics.update(5.0)
         current = self.kinematics.get_current_point()
         f = (current['JOINT1'][0], current['JOINT2'][0],
@@ -133,7 +133,7 @@ class KinematicsTestCase(unittest.TestCase):
         assert_almost_equals(state['JOINT3'][1], fds[2] * 1.0)
         assert_almost_equals(state['JOINT3'][2], fds[2] * 1.0 + fdds[2] * 1.0)
 
-    # A tentative test as predictions are difficult.
+    # Prediction is difficult, so a tentative test
     def test_calc_accel_limit(self):
         self.kinematics.update(5.0)
         (sa_min, sa_max) = self.kinematics.calc_accel_limit(1.0)

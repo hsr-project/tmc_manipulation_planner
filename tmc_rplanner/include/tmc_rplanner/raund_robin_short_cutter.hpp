@@ -46,9 +46,9 @@ class RoundRobinShortCutter : public IPathShortCutter {
  public:
   /// @brief Pass the planner space
   /// @param space Pointer to the planner space
-  /// @param delta Search increment width
-  /// @param bidirectional Shortcut bidirectionally
-  /// @param skip Skip nodes by this value when doing shortcuts.
+  /// @param delta Exploration step width
+  /// @param bidirectional Whether to shortcut bidirectionally
+  /// @param skip Perform shortcutting by skipping nodes by this value.
   /// @param is_terminate Termination condition
   RoundRobinShortCutter(ConfigurationSpace::Ptr space,
                         double delta,
@@ -60,9 +60,9 @@ class RoundRobinShortCutter : public IPathShortCutter {
       is_terminate_(is_terminate) {}
   /// @brief Pass the planner space
   /// @param space Pointer to the planner space
-  /// @param delta Search increment width
-  /// @param bidirectional Shortcut bidirectionally
-  /// @param skip Skip nodes by this value when doing shortcuts.
+  /// @param delta Exploration step width
+  /// @param bidirectional Whether to shortcut bidirectionally
+  /// @param skip Perform shortcutting by skipping nodes by this value.
   RoundRobinShortCutter(ConfigurationSpace::Ptr space,
                         double delta,
                         bool bidirectional,
@@ -75,7 +75,7 @@ class RoundRobinShortCutter : public IPathShortCutter {
   virtual bool ShortCut(const Path& path_in, Path& path_out);
 
  private:
-  // Prohibition of copying
+  // Prohibit copying
   RoundRobinShortCutter(const RoundRobinShortCutter&);
   RoundRobinShortCutter& operator=(const RoundRobinShortCutter&);
   bool ShortCutOnce_(int32_t skip, const Path& path_in, Path& path_out) const;

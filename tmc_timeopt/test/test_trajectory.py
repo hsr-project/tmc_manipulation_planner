@@ -55,16 +55,16 @@ class TrajectoryTestCase(unittest.TestCase):
             self.assertEqual(point[name][0], 0)
 
     def test_trajectory(self):
-        u"""Trajectory test."""
+        u"""Test of Trajectory."""
         traj = self.traj['Trajectory']
         # Initial state
         self.assertPointEqual(traj[0], [0, 0, 0])
-        # An exception occurs when accessing a non-existent waypoint
+        # Exception when accessing a non-existent waypoint
         with self.assertRaises(KeyError):
             traj[1.0]
         with self.assertRaises(KeyError):
             traj[0.5]
-        # Waypoint setting
+        # Setting waypoints
         for i in range(11):
             s = 0.1 * i
             traj[s] = (s, s * 0.1, s * 0.01)
@@ -78,22 +78,22 @@ class TrajectoryTestCase(unittest.TestCase):
             s = 0.1 * i
             self.assertPointEqual(traj(s + 0.05), (s, s * 0.1, s * 0.01))
         self.assertPointEqual(traj(1), traj[1])
-        # An exception occurs when trying to interpolate points outside the range
+        # Exception when trying to interpolate out-of-range points
         with self.assertRaises(ValueError):
             traj(2)
         # Round negative values to 0
         self.assertPointEqual(traj(-1), [0.0, 0.0, 0.0])
 
     def test_linear_trajectory(self):
-        u"""LinearTrajectory test."""
+        u"""Test of LinearTrajectory."""
         traj = self.traj['LinearTrajectory']
         # Initial state
         self.assertPointEqual(traj[0], [0, 0, 0])
-        # Waypoint setting
+        # Setting waypoints
         traj[0.0] = (0, 0, 0)
         traj[0.5] = (0.5, 0, 0)
         traj[1.0] = (0, 0, 0)
-        # An exception occurs when accessing a non-existent waypoint
+        # Exception when accessing a non-existent waypoint
         with self.assertRaises(KeyError):
             traj[0.7]
         # Only tuple or list can be set
@@ -101,24 +101,24 @@ class TrajectoryTestCase(unittest.TestCase):
             traj[0.5] = 1.0
         with self.assertRaises(ValueError):
             traj[0.5] = 'hello'
-        # Confirm linear interpolation value
+        # Confirm linear interpolation values
         self.assertPointEqual(traj(0.0), [0.0, 1.0])
         self.assertPointEqual(traj(0.2), [0.2, 1.0])
         self.assertPointEqual(traj(0.5), [0.5, -1.0])
         self.assertPointEqual(traj(0.7), [0.3, -1.0])
         self.assertPointEqual(traj(1.0), [0.0, -1.0])
-        # An exception occurs when trying to interpolate points outside the range
+        # Exception when trying to interpolate out-of-range points
         with self.assertRaises(ValueError):
             traj(2)
         # Round negative values to 0
         self.assertPointEqual(traj(-1), [0.0, 1.0])
 
     def test_poly3_trajectory(self):
-        u"""Poly3Trajectory test."""
+        u"""Test of Poly3Trajectory."""
         traj = self.traj['Poly3Trajectory']
         # Initial state
         self.assertPointEqual(traj[0], [0, 0, 0])
-        # Waypoint setting
+        # Setting waypoints
         traj[0.0] = (0.0, 1.0, 0.0)
         traj[0.5] = (0.5, -1.0, 0.0)
         traj[1.0] = (0.0, 1.0, 0.0)
@@ -131,11 +131,11 @@ class TrajectoryTestCase(unittest.TestCase):
             self.assertPointEqual(traj.a[x], a_ans[x])
 
     def test_poly5_trajectory(self):
-        u"""Poly5Trajectory test."""
+        u"""Test of Poly5Trajectory."""
         traj = self.traj['Poly5Trajectory']
         # Initial state
         self.assertPointEqual(traj[0], [0, 0, 0])
-        # Waypoint setting
+        # Setting waypoints
         traj[0.0] = (0.0, 1.0, 0.0)
         traj[0.5] = (0.5, -1.0, 0.0)
         traj[1.0] = (0.0, 1.0, 0.0)

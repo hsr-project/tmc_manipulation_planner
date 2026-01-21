@@ -26,7 +26,7 @@ OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH
 DAMAGE.
 */
 /// @file     multi_planner.hpp
-/// @brief    Interface for multiple planners with initial and terminal values
+/// @brief Interface for multiple planners with initial and terminal values
 /// @author   Koji Terada
 /// @version  1.0.0
 /// @date     2012.03.28

@@ -51,8 +51,8 @@ namespace tmc_rplanner {
 /// @brief Advance tree a one step towards a random configuration,
 ///        and attempt to connect from tree b to tree a
 /// @param space Configuration space
-/// @param tree_a Exploring tree
-/// @param tree_b Connecting tree
+/// @param tree_a Exploration side tree
+/// @param tree_b Connection side tree
 /// @return true: Connection successful false: Connection failed
 static bool BuildOneStepM(ConfigurationSpace::Ptr space,
                           ConfigurationTree& tree_a,
@@ -89,7 +89,7 @@ void MultiBirrtPlanner::PathCallBack_(const Path& path) {
 }
 
 
-// Path generation. Until the specified number of paths is made
+// Path generation. Until the specified number of paths is created
 PlanRet MultiBirrtPlanner::PlanPaths(const std::vector<Config>& start_configs,
                                      const std::vector<Config>& goal_configs,
                                      uint32_t max_paths,
@@ -117,7 +117,7 @@ PlanRet MultiBirrtPlanner::PlanPaths(const std::vector<Config>& start_configs,
   bool start_config_obtained = false;
   bool goal_config_obtained = false;
 
-  // Check the initial value given by the argument and then add
+  // Add after checking the initial value given as an argument
   for (std::vector<Config>::const_iterator config = start_configs.begin();
        config != start_configs.end(); ++config) {
     Config constrained_config;
@@ -131,7 +131,7 @@ PlanRet MultiBirrtPlanner::PlanPaths(const std::vector<Config>& start_configs,
     }
   }
 
-  // Check the terminal value given by the argument and then add
+  // Add after checking the terminal value given as an argument
   for (std::vector<Config>::const_iterator config = goal_configs.begin();
        config != goal_configs.end(); ++config) {
     Config constrained_config;
@@ -148,7 +148,7 @@ PlanRet MultiBirrtPlanner::PlanPaths(const std::vector<Config>& start_configs,
   // Main loop
   for (int32_t i = 0; i < max_itr_; ++i)  {
     is_success = false;
-    // Check exit condition (timeout, etc.)
+    // Check termination conditions (timeout, etc.)
     if (is_terminate_ && is_terminate_()) {
       if (!paths_out.empty()) {
         return kSuccess;
@@ -161,8 +161,8 @@ PlanRet MultiBirrtPlanner::PlanPaths(const std::vector<Config>& start_configs,
       }
     }
 
-    // Add initial value with probability of probability_start_generate
-    // Add even if initial value does not exist yet
+    // Add initial value with probability_start_generate probability
+    // Add even if the initial value does not exist yet
     if (!start_config_obtained || randf(eng) < probability_start_generate_) {
       Config config;
       if (space_->GenerateStartConfig(config)) {
@@ -181,8 +181,8 @@ PlanRet MultiBirrtPlanner::PlanPaths(const std::vector<Config>& start_configs,
       continue;
     }
 
-    // Add terminal value with probability of probability_start_generate
-    // Add even if terminal value does not exist yet
+    // Add terminal value with probability_start_generate probability
+    // Add even if the terminal value does not exist yet
     if (!goal_config_obtained || randf(eng) < probability_goal_generate_) {
       Config config;
       if (space_->GenerateGoalConfig(config)) {
@@ -219,7 +219,7 @@ PlanRet MultiBirrtPlanner::PlanPaths(const std::vector<Config>& start_configs,
       tree_s->TrackBackPath(start_path);
       tree_g->TrackBackPath(goal_path);
 
-      // If the combination of start and goal is unique
+      // If the combination of start and goal is new
       // Add to start_goal_pair_set and add path to paths_out
       StartGoalPair new_pair(start_path.front(), goal_path.front());
 
@@ -228,7 +228,7 @@ PlanRet MultiBirrtPlanner::PlanPaths(const std::vector<Config>& start_configs,
                     new_pair) == start_goal_pair_set.end()) {
         start_goal_pair_set.push_back(new_pair);
         Path path;
-        /// Path from goal is added in reverse order
+        /// Paths from the goal are added in reverse order
         path = start_path;
         path.insert(path.end(), goal_path.rbegin(), goal_path.rend());
         paths_out.push_back(path);

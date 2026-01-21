@@ -26,7 +26,7 @@ OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH
 DAMAGE.
 */
 /// @file     random_optimizer.hpp
-/// @brief    Optimization using the Monte Carlo method
+/// @brief Optimization using the Monte Carlo method
 /// @author   Koji Terada
 /// @version  1.0.0
 /// @date     2011.10.25
@@ -41,8 +41,8 @@ DAMAGE.
 namespace tmc_rplanner {
 
 /// @class Random_Optimizer
-/// @brief Implementation using ConfigOptimizer's random_optimizer
-/// @note Only returns the best value among random configurations
+/// @brief Implementation by ConfigOptimizer's random_optimizer
+/// @note Only returns the optimal value among random configurations
 class RandomOptimizer : public IConfigOptimizer {
  public:
   /// @brief Pass the planner space and termination conditions

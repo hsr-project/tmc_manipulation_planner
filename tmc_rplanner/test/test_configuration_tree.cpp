@@ -48,7 +48,7 @@ using tmc_rplanner::kTrapped;
 using tmc_rplanner::kFailed;
 
 namespace {
-// Dimension of the state space used in the test
+// Dimension of state space used in the test
 int32_t kDim = 2;
 
 
@@ -74,20 +74,20 @@ bool CheckConfig(const Config& config) {
   return true;
 }
 
-// Configuration transition for testing
+// Transition between configurations for testing
 bool CheckTrans(const Config& src_config, const Config& dst_config) {
   return CheckTransferabilityByDividing(
       src_config, dst_config, CheckConfig, DistanceFunc(), 0.01);
 }
 
 // Check function for CheckTransferabilityByDividingTest
-// Function that returns true for (0,0), (1,1) and false for ([0.4~0.6],[0.4~0.6])
+// Function that returns true for (0,0), (1,1) and false for ([0.4〜0.6],[0.4〜0.6])
 bool TestDividingFunc(const Config& config) {
   return (!(((config(0) > 0.4) && (config(0) < 0.6))
             && ((config(1) > 0.4) && (config(1) < 0.6))));
 }
 
-// Distance between configurations for testing Weighted distance
+// Distance between configurations for testing, weighted distance
 double CalcDistance(const Config& src_config, const Config& dst_config) {
   return sqrt(1.0 * pow(src_config(0) - dst_config(0), 2.0) +
               1.0 * pow(src_config(1) - dst_config(1), 2.0));
@@ -168,7 +168,7 @@ TEST_F(ConfigurationTreeTest, Extend) {
   EXPECT_EQ(kReached, ctree_->Extend(new_goal));
   EXPECT_EQ(9, ctree_->GetNumNode());
 
-  // Dimension error Exception
+  // Dimension error exception
   Config inval_goal(kDim+1);
   inval_goal(0) = 0.5;
   inval_goal(1) = 0.4;
@@ -182,19 +182,19 @@ TEST_F(ConfigurationTreeTest, Connect) {
   start(1) = 0.0;
   ctree_->SetRootConfig(start);
 
-  // Extend towards 3.5,0.5. Does not reach
+  // Extend towards 3.5,0.5. Not reachable
   Config goal(kDim);
   goal(0) = 3.5;
   goal(1) = 0.5;
   EXPECT_EQ(kAdvanced, ctree_->Connect(goal));
 
-  // Extend towards 4.0, 4.0. Should not reach.
+  // Extend towards 4.0, 4.0. Should not be reachable.
   Config new_goal(kDim);
   new_goal(0) = 4.0;
   new_goal(1) = 4.0;
   EXPECT_EQ(kTrapped, ctree_->Connect(new_goal));
 
-  // Dimension error Exception
+  // Dimension error exception
   Config inval_goal(kDim+1);
   inval_goal(0) = 0.5;
   inval_goal(1) = 0.4;
@@ -214,14 +214,14 @@ TEST_F(ConfigurationTreeTest, SetMaxConnect) {
   ResetTree(14);
   EXPECT_EQ(kAdvanced, ctree_->Connect(goal));
 
-  // In case of negative numbers, attempt to extend as much as possible
+  // For negative numbers, try to extend as much as possible
   ResetTree(-1);
   EXPECT_EQ(kReached, ctree_->Connect(goal));
 
-  // In case of 0, check only if it is possible to connect without extending the tree
+  // In case of 0, check only if connectable without extending the tree
   ResetTree(0);
 
-  // If the tree has been extended, it should be Reached on the second attempt, so perform twice to check if it has not been extended
+  // If the tree is extended, it should be Reached on the second attempt, so perform twice to check that it is not extended
   goal(0) = 0.21;
   EXPECT_EQ(kFailed, ctree_->Connect(goal));
   EXPECT_EQ(kFailed, ctree_->Connect(goal));
@@ -231,7 +231,7 @@ TEST_F(ConfigurationTreeTest, SetMaxConnect) {
 }
 
 TEST_F(ConfigurationTreeTest, RemoveLastBranch) {
-  // Build the tree, the index and value of each Node should be as follows
+  // Construct the tree, the index and value of each Node should be as follows
   // 3 (0.0, 0.0) - 4 (0.0, 0.2) - 7 (0.0, 0.4)
   // 2 (1.0, 0.0) - 5 (1.0, 0.2) - 6 (1.0, 0.4)
   //                |- 8 (1.2, 0.2)
@@ -287,11 +287,11 @@ TEST_F(ConfigurationTreeTest, RemoveLastBranch) {
   EXPECT_EQ(1, ctree_->GetNumNode());
   EXPECT_DOUBLE_EQ(2.0, ctree_->GetLastConfig()[0]);
 
-  // 1 disappears leaving it empty
+  // 1 disappears and becomes empty
   ctree_->RemoveLastBranch();
   EXPECT_EQ(0, ctree_->GetNumNode());
 
-  // No exception occurs even when attempting to delete in an empty state
+  // No exception occurs when trying to delete in an empty state
   ctree_->RemoveLastBranch();
 }
 

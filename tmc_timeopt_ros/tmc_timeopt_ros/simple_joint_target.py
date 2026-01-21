@@ -36,7 +36,7 @@ class SimpleJointTarget(Target):
         self.point = {}
 
     def update_kinematics(self, point):
-        u"""Updating kinematics.
+        u"""Update of kinematics.
 
         Args:
             point: dict of state quantities
@@ -44,11 +44,11 @@ class SimpleJointTarget(Target):
         self.point = point
 
     def update_dynamics(self):
-        u"""Do nothing because it's acceleration level constraints."""
+        u"""Do nothing because it is an acceleration level constraint."""
         pass
 
     def get_dynamics(self):
-        u"""Returns dynamic parameters (a,b,c,d).
+        u"""Return dynamic parameters (a, b, c, d).
 
         Returns:
             (a, b, c, d): dict with ('variable name', 'constraint type') as key and value as value

@@ -2,6 +2,11 @@
 Changelog for package tmc_timeopt
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+2.0.2 (2025-12-04)
+-------------------
+* Fix issue where IK initial state sampling range was not expanding as expected.
+* Contributors: Keisuke Takeshita
+
 2.0.1 (2025-04-22)
 -------------------
 * Fix cylinder params

@@ -25,7 +25,7 @@
 # OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH
 # DAMAGE.
 # -*- coding: utf-8 -*-
-u"""Geometric calculation module."""
+u"""Geometry calculation module."""
 
 import sys
 
@@ -34,7 +34,7 @@ if sys.version_info.major == 2:
 
 
 class Kinematics(object):
-    u"""Base class for dealing with kinematics constrained to orbits."""
+    u"""Base class for handling kinematics constrained to an orbit."""
 
     def __init__(self, target):
         u"""Initialize with a given target.
@@ -76,23 +76,23 @@ class Kinematics(object):
             self.curr[name] = (0, 0, 0)
 
     def get_current_point(self):
-        u"""Return point of the current state.
+        u"""Return the current state point.
 
         Return:
-            curr (Point): Return the state of each joint currently
+            curr (Point): Return the current state of each joint
         """
         return self.curr
 
     def update(self, sd):
-        u"""Update kinematics with points sd on the trajectory. The current state of the target is updated.
+        u"""Update kinematics at point sd on the trajectory. The current state of the target is updated.
 
         Args:
-            sd(float): Position on the trajectory (specified with parameter s)
+            sd(float): Position on the trajectory (specified by parameter s)
         """
-        # sd > self.traj.length may occur due to calculation errors
+        # Due to calculation errors, sd may become greater than self.traj.length
         sd = min(sd, self.traj.length)
 
-        # Get interpolation point on the trajectory
+        # Obtain interpolation point on the trajectory
         if sd in self.traj_memo:
             self.curr = self.traj_memo[sd]
             self.target.update_point(self.traj_memo[sd])
@@ -103,7 +103,7 @@ class Kinematics(object):
                                   for name in self.traj}
 
     def pre_calc_traj(self, sd_seq, step):
-        u"""Pre-computation of traj"""
+        u"""Pre-calculation of traj"""
         temp = [self.traj[name].calc(sd_seq, step) for name in self.traj]
         self.traj_memo = {x[0]: {y[0]: y[1] for y in zip(self.traj, x[1:])}
                           for x in zip(sd_seq, *temp)}
@@ -112,7 +112,7 @@ class Kinematics(object):
             self.target.update_kinematics(self.curr)
 
     def get_vlc(self):
-        u"""Return a point on the curve VLC (Velocity Limit Curve) due to velocity constraints. Need to call update first.
+        u"""Return a point on the curve VLC (Velocity Limit Curve) due to velocity constraints. It is necessary to call update first.
 
         Return sv_max(float): s velocity of the point on VLC
         """
@@ -127,14 +127,14 @@ class Kinematics(object):
         return sv_max
 
     def get_state(self, sd, sv, sa):
-        u"""Return point of the current state.
+        u"""Return the current state point.
 
         Args:
             sd (float): s on the trajectory
-            sv (float): Velocity of s on the trajectory
-            sa (float): Acceleration of s on the trajectory
+            sv (float): s velocity on the trajectory
+            sa (float): s acceleration on the trajectory
         Return:
-            state (dict): [Position, Velocity, Acceleration] of each joint; the derivative values are time derivatives
+            state (dict): [Position, Velocity, Acceleration] of each joint, derivatives are time derivatives
         """
         state = {}
         self.update(sd)
@@ -151,7 +151,7 @@ class Kinematics(object):
         Args:
             sv (float): s velocity of the point to be calculated
         Return:
-            [sa_min, sa_max] : Lower and upper limits of s acceleration
+            [sa_min, sa_max] : Lower limit, upper limit of s acceleration
         """
         (sa_min, sa_max) = (float('-inf'), float('inf'))
         accel_limits = [

@@ -64,10 +64,10 @@ QuickTrajectoryFilter::QuickTrajectoryFilter(const Eigen::VectorXd& initial_posi
     return;
   }
 
-  // The behavior of normalized when initial_velocities is a zero vector
-  // Depends on the version of Eigen
-  // Older (3.3~beta1-2) returns a vector with nan elements, newer (3.3.4-4) returns a zero vector
-  // To support both, process branches using isZero()
+  // Behavior of normalized when initial_velocities is a zero vector
+  // Varies depending on the version of Eigen
+  // Returns a vector with nan elements in older versions (3.3~beta1-2) and a zero vector in newer versions (3.3.4-4)
+  // To accommodate both, process by branching with isZero()
   Eigen::VectorXd init_vel_normalized;
   if (initial_velocities.isZero()) {
     init_vel_normalized = Eigen::VectorXd::Zero(initial_velocities.size());
@@ -81,11 +81,11 @@ QuickTrajectoryFilter::QuickTrajectoryFilter(const Eigen::VectorXd& initial_posi
       CONSOLE_BRIDGE_logInform("Otimization interrupted");
       break;
     }
-    // Place waypoints from initial_positions in the direction of initial velocity to accommodate any initial velocity
+    // Place waypoints in the direction of initial velocity from initial_positions to accommodate any initial velocity
     //
-    // The part extending from point 1 in the path from point 1 to point 2 becomes a straight segment
+    // Of the path from the first point to the second point, the part extending from the first point becomes a straight segment
     // If the direction of the straight segment is the direction of initial velocity, the given initial velocity can be achieved
-    // It's better if the length of the straight segment is short, but since the formula to derive the minimum value is unknown, it will be explored
+    // The length of the straight segment should be shorter, but since the formula to derive the minimum value is unknown, it will be explored
     std::list<Eigen::VectorXd> way_points_impl;
     way_points_impl.push_back(initial_positions);
     way_points_impl.push_back(initial_positions +
@@ -113,7 +113,7 @@ Eigen::VectorXd QuickTrajectoryFilter::GetPosition(
   }
 }
 
-// Obtain the joint velocity at time_from_start
+// Obtain joint velocity at time_from_start
 // @param[in] time_from_start  Time [sec] at which joint velocity is to be obtained
 // @return Eigen::VectorXd  Joint velocity
 Eigen::VectorXd QuickTrajectoryFilter::GetVelocity(
@@ -126,7 +126,7 @@ Eigen::VectorXd QuickTrajectoryFilter::GetVelocity(
 }
 
 // Obtain the playback time of the trajectory
-// @return double  Playback time of trajectory [sec]
+// @return double  Playback time of the trajectory [sec]
 double QuickTrajectoryFilter::GetDuration() const {
   if (IsValid()) {
     return trajectory_->getDuration();

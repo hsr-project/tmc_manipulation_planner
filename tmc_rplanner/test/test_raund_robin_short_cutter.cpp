@@ -26,7 +26,7 @@ OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH
 DAMAGE.
 */
 /// @file     test_raund_robin_short_cutter.cpp
-/// @brief Test of raund_robin_short_cutter
+/// @brief    Test of raund_robin_short_cutter
 /// @author   Koji Terada
 /// @version  1.0.0
 /// @date     2011.12.01
@@ -51,9 +51,9 @@ namespace {
 int32_t kDim = 2;
 // Search width
 double kDelta = 0.2;
-// Tolerance for floating-point equality
+// Tolerance value for floating-point identity
 double kDoubleEps = 1e-5;
-// Acceptable post-shortcut trajectory length
+// Acceptable trajectory length after shortcutting
 double kLengthAcceptable = 16.0;
 
 static double Randd() {
@@ -97,7 +97,7 @@ double CalcLength(const Path& path) {
 /// raund_robin_short_cutter
 ///////////////////////////////////////////
 
-// Check if the trajectory created by birrt becomes shorter
+// Check that the trajectory created by birrt becomes shorter
 TEST(RaundRobinShortCutterTest, simple_shortcut) {
   ConfigurationSpace::Ptr cspace(new ConfigurationSpace(kDim));
   cspace->set_random_config(RandomConfig);
@@ -125,7 +125,7 @@ TEST(RaundRobinShortCutterTest, simple_shortcut) {
   double bi_length = CalcLength(bi_path);
   double mono_length = CalcLength(mono_path);
 
-  // Order of lengths: rough > mono > bi
+  // Length becomes rough > mono > bi
   EXPECT_TRUE(rough_length >= mono_length);
   EXPECT_TRUE(mono_length >= bi_length);
   // Length of bi is within kLengthAcceptable
@@ -148,7 +148,7 @@ TEST(RaundRobinShortCutterTest, simple_shortcut) {
   }
 }
 
-// Test of empty exception throw
+// Empty exception throw test
 TEST(RaundRobinShortCutterTest, short_cut_empty_exceptional) {
   ConfigurationSpace::Ptr cspace(new ConfigurationSpace(kDim));
   cspace->set_random_config(RandomConfig);
@@ -173,7 +173,7 @@ TEST(RaundRobinShortCutterTest, short_cut_negative_skip_exceptional) {
                std::invalid_argument);
 }
 
-// Termination by the termination condition function
+// Termination by termination condition function
 TEST(RaundRobinShortCutterTest, terminate) {
   ConfigurationSpace::Ptr cspace(new ConfigurationSpace(kDim));
   cspace->set_random_config(RandomConfig);

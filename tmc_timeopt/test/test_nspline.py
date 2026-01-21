@@ -25,7 +25,7 @@
 # OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH
 # DAMAGE.
 # -*- coding: utf-8 -*-
-u"""Unit tests for nspline."""
+u"""Unit test for nspline."""
 
 import unittest
 
@@ -50,7 +50,7 @@ class NaturalCubicSplineTestCase(unittest.TestCase):
 
     def test_nspline(self):
         u"""Check with a simple example."""
-        # Check coefficients
+        # Verify coefficients
         ok_(np.allclose(
             self.f,
             self.spline._a[0],
@@ -92,7 +92,7 @@ class NaturalCubicSplineTestCase(unittest.TestCase):
 
         assert_almost_equal(0.53, self.spline(1.0, der=1), places=2)
 
-        # Acceleration is zero at the ends for a natural spline
+        # Since it's a natural spline, acceleration is 0 at the ends
         assert_almost_equal(0.0, self.spline(self.x[0], der=2))
         assert_almost_equal(-0.149, self.spline(1.0, der=2), places=2)
         assert_almost_equal(0.0, self.spline(self.x[-1], der=2))

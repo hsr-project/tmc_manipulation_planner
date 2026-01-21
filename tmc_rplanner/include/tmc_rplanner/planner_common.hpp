@@ -26,7 +26,7 @@ OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH
 DAMAGE.
 */
 /// @file     planner_common.hpp
-/// @brief    Definition of basic data structures used in planner
+/// @brief Definition of basic data structures used in the planner
 /// @author   Koji Terada
 /// @version  1.0.0
 /// @date     2011.10.25
@@ -48,7 +48,7 @@ DAMAGE.
 
 namespace tmc_rplanner {
 
-/// planner base exception class
+/// Base exception class for planner
 class PlannerException : public std::exception {
  public:
   PlannerException() {}
@@ -70,7 +70,7 @@ class LackRequiredFunc : public PlannerException {
   std::string msg_;
 };
 
-/// Exception thrown when configuration dimensions differ
+/// Exception thrown when the configuration dimensions differ
 class DimensionMismatch : public PlannerException {
  public:
   DimensionMismatch() {}
@@ -95,8 +95,8 @@ class TreeLoop : public PlannerException {
 /// Return value of tree extension
 enum ExtendRet {
   kReached,   /// Reached
-  kAdvanced,  /// Extended
-  kTrapped,   /// Unable to extend
+  kAdvanced,  /// Advanced
+  kTrapped,   /// Trapped
   kFailed     /// Failed
 };
 
@@ -128,27 +128,27 @@ struct Node {
   Node::WeakPtr parent;
 };
 
-/// Tree structure of node
+/// Tree structure of the node
 using Tree = std::deque<Node::Ptr>;
-/// Path in configuration space
+/// Path in the configuration space
 using Path = std::deque<Config>;
 
 
-////////// using function = these are used for the problem /////////
+////////// function's using = these are used in the problem /////////
 /// Returns a random configuration
 using RandomConfigFunc = std::function<Config ()>;
 /// Configuration check
 using CheckFeasibilityFunc = std::function<bool(const Config&)>;
 /// Transition check between configurations
 using CheckTransferabilityFunc = std::function<bool(const Config&, const Config&)>;
-/// Function for calculating distance between configurations
+/// Function to calculate distance between configurations
 using DistanceFunc = std::function<double(const Config&, const Config&)>;
 /// Evaluation function of configuration
 using EvaluateConfigFunc = std::function<double(const Config&)>;
-/// Configuration constraint condition function (subject to constraints
-/// Takes configuration, returns constrained configuration)
+/// Constraint condition function of configuration (subject to constraints
+/// Takes a configuration and returns the constrained configuration)
 using ConstraintFunc = std::function<bool(const Config&, Config&)>;
-/// Check if configuration is in termination condition
+/// Check if the configuration meets the termination condition
 using CheckConfigInGoalFunc = std::function<bool(const Config&)>;
 /// Temporary goal creation function
 using GenerateGoalConfigFunc = std::function<bool(Config&)>;
@@ -157,48 +157,48 @@ using GenerateStartConfigFunc = std::function<bool(Config&)>;
 /// Termination condition
 using TerminateConditionFunc = std::function<bool()>;
 
-/// Function called during configuration check Mainly for debugging
+/// Function called during configuration check, mainly for debugging
 using CheckFeasibilityCallBackFunc = std::function<void(const Config&, bool)>;
-/// Function called during node addition Mainly for debugging
+/// Function called when adding a node, mainly for debugging
 using AddNodeCallBackFunc = std::function<void(const Config&, const Config&)>;
-/// Function called during start generation Mainly for debugging
+/// Function called during start generation, mainly for debugging
 using AddStartCallBackFunc = std::function<void(const Config&)>;
-/// Function called during goal generation Mainly for debugging
+/// Function called during goal generation, mainly for debugging
 using AddGoalCallBackFunc = std::function<void(const Config&)>;
-/// Callback called during ConstraintConfig Mainly for debugging
+/// Callback called during ConstraintConfig, mainly for debugging
 using ConstrainConfigCallBackFunc = std::function<void(const Config&, const Config&, bool)>;
 /// Function called during path generation
 using PathCallBackFunc = std::function<void(const Path&)>;
 
 
 /// @func TreeToPath
-/// @brief Extract trajectory from state tree
-///        Assume end of state tree is goal
-///        If path becomes larger than tree size
-///        Looping occurs, so throw exception
+/// @brief Extract trajectory from the state tree
+///        Assume the end of the state tree is the goal
+///        If the path becomes larger than the size of the tree
+///        Throw an exception as it is looping
 /// @param tree State tree
 /// @param path_out Output trajectory
-/// @note Loop in tree leads to infinite loop.
-/// @exception tmc_rplanner::TreeLoop Detect tree loop
+/// @note If there is a loop in the tree, it will result in an infinite loop.
+/// @exception tmc_rplanner::TreeLoop Detection of loop in the tree
 void TreeToPath(const Tree& tree, Path& path_out);
 
 /// @func TreeToPath
-/// @brief Extract trajectory from state tree
-///        Assume end of state tree is goal
-///        If path becomes larger than tree size
-///        Looping occurs, so throw exception
+/// @brief Extract trajectory from the state tree
+///        Assume the end of the state tree is the goal
+///        If the path becomes larger than the size of the tree
+///        Throw an exception as it is looping
 /// @param tree State tree
 /// @param path_out Output trajectory
-/// @param goal_index Index of final state in state tree
-/// @note Loop in tree leads to infinite loop.
-/// @exception tmc_rplanner::TreeLoop Detect tree loop
-/// @exception std::invalid_argument goal_index larger than tree size
+/// @param goal_index Index of the final state in the state tree
+/// @note If there is a loop in the tree, it will result in an infinite loop.
+/// @exception tmc_rplanner::TreeLoop Detection of loop in the tree
+/// @exception std::invalid_argument goal_index is larger than the size of the tree
 void TreeToPath(const Tree& tree, uint32_t goal_index, Path& path_out);
 
 
-/// @brief Change state tree root to specified one
+/// @brief Change the root of the state tree to the specified one
 /// @param tree State tree
-/// @param root Node to become new root
+/// @param root Node to be newly set as root
 void ChangeTreeRoot(Tree& tree, const Node::WeakPtr& root);
 
 }  // namespace tmc_rplanner

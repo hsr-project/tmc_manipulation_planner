@@ -35,7 +35,7 @@ DAMAGE.
 
 #include "../src/robot_rrt_planner_node.hpp"
 
-// pinocchio outputs an error "You should include pinocchio before the Boost headers"
+// pinocchio gives an error saying "You should include pinocchio before the Boost headers"
 #include <geometric_shapes/shape_operations.h>  // NOLINT
 
 namespace {
@@ -86,7 +86,7 @@ sensor_msgs::msg::JointState CreateInitialJointState() {
 }
 
 /*
-/// @param[out] map : Map for collision detection
+/// @param[out] map : map for collision detection
 void CreateCollisionMap(
     tmc_mapping_msgs::CollisionMap& collision_map_out) {
   for (int32_t i = 0; i < 10; ++i) {
@@ -106,7 +106,7 @@ void CreateCollisionMap(
 }
 */
 
-/// @param[out] environment_out : Environment for collision detection
+/// @param[out] environment_out : environment for collision detection
 void CreateKnownObjects(
     moveit_msgs::msg::PlanningSceneWorld& environment_out) {
   environment_out.collision_objects.resize(2);

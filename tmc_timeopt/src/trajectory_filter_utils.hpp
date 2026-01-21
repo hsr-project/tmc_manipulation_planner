@@ -39,10 +39,10 @@ constexpr double kTimeStep = 0.001;
 constexpr double kMinPointsDistance = 1e-6;
 
 
-// Determine whether it is the same point
+// Determine whether they are the same point
 bool IsSameWayPoints(const Eigen::VectorXd& frist, const Eigen::VectorXd& second);
 
-// The algorithm becomes unstable when the same points are consecutive, so extract only valid points
+// Extract only valid points because consecutive identical points can cause instability in the algorithm
 bool ExtractValidWayPoints(const Eigen::VectorXd& initial_positions,
                            const std::vector<Eigen::VectorXd>& way_points_in,
                            std::vector<Eigen::VectorXd>& way_points_out);

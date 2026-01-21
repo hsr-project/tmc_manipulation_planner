@@ -42,7 +42,7 @@ class Dynamics(object):
         u"""Initialize this class.
 
         Args:
-            target(Target): Dynamics target.
+            target(Target): Target of dynamics
         """
         self.target = target
         self.limits = {}
@@ -54,14 +54,14 @@ class Dynamics(object):
         u"""Set constraints such as torque.
 
         Args:
-            name (str): Name of the output variable.
-            limit_type (str): Type of limit ('effort', 'ZMP', etc).
-            limit (tuple): (lower limit, upper limit).
+            name (str): Name of the output variable
+            limit_type (str): Type of limit ('effort', 'ZMP', etc)
+            limit (tuple): (lower limit, upper limit)
         """
         self.limits[name, limit_type] = limit
 
     def update(self):
-        u"""Obtain dynamics parameters (a,b,c,d) of Target and update member variables."""
+        u"""Obtain the dynamics parameters (a,b,c,d) of Target and update member variables."""
         self.target.update_dynamics()
         (self.a, self.b, self.c, self.d) = self.target.get_dynamics()
 
@@ -69,13 +69,13 @@ class Dynamics(object):
         u"""Calculate the upper and lower bounds of trajectory acceleration under Dynamics constraints.
 
         Args:
-            sv (float): Velocity of s on the trajectory.
+            sv (float): Velocity of s on the trajectory
         Return:
-            (l, u): (lower limit, upper limit) of acceleration.
+            (l, u): (lower limit, upper limit) of acceleration
         """
         (sa_min, sa_max) = ({}, {})
 
-        # If sv is a significantly large value, inf should be used to prevent exception in sv**2.
+        # If sv is an extremely large value, it must be set to inf to avoid exceptions with sv**2
         try:
             sv ** 2
         except OverflowError:
@@ -96,7 +96,7 @@ class Dynamics(object):
                     pair] * sv - self.d[pair]) / self.a[pair]
                 sa_max[pair] = (limit[0] - self.b[pair] * sv ** 2 - self.c[
                     pair] * sv - self.d[pair]) / self.a[pair]
-        # Return the intersection of upper and lower limits.
+        # Return the intersection of upper and lower bounds
         (lst, u) = (float('-inf'), float('inf'))
         for pair in self.limits:
             lst = max(lst, sa_min[pair])
@@ -104,23 +104,23 @@ class Dynamics(object):
         return (lst, u)
 
     def get_mvc_accel(self):
-        u"""Return the point on MVC (Maximum Velocity Curve) calculated from acceleration constraints.
+        u"""Return the point on the MVC (Maximum Velocity Curve) calculated from acceleration constraints.
 
-        update() must be called to set the points.
+        Need to call update() to set the point.
 
-        The original constraints of get_mvc_accel_effort are limited to acceleration constraints.
-        In acceleration control, ci == 0, di == 0, allowing for fast computation.
+        Limited the original get_mvc_accel_effort constraint to acceleration constraints.
+        In acceleration control, ci == 0, di == 0, so it can be calculated quickly.
 
         Return:
-            mvc (float): Velocity of s (sv) at a point on MVC.
+            mvc (float): Velocity of s (sv) at the point on MVC
         """
         (u, l) = ({}, {})
         cond = [pair for pair in self.limits
                 if pair[1] == 'acceleration']
-        non_zero = []  # List of conditions where a!=0.
+        non_zero = []  # List of conditions where a!=0
         rlst = []
 
-        # Check the sign of a in each condition and classify.
+        # Check the sign of a for each condition and distribute
         for pair in cond:
             limit = self.limits[pair]
             if self.a[pair] > sys.float_info.epsilon:
@@ -129,7 +129,7 @@ class Dynamics(object):
             elif self.a[pair] < - sys.float_info.epsilon:
                 (l[pair], u[pair]) = (limit[1], limit[0])
                 non_zero.append(pair)
-            # If a==0, add to zero list and exclude from conditions.
+            # If a==0, add to zero list and exclude from cond
             else:
                 l[pair] = limit[0]
                 u[pair] = limit[1]
@@ -138,7 +138,7 @@ class Dynamics(object):
                 r = [self.d[pair] - l[pair], self.c[pair], self.b[pair]]
                 rlst.append(r)
 
-        # Calculate parameters of the quadratic inequality.
+        # Calculate parameters of quadratic inequality
         p = {pair: [(l[pair] - self.d[pair]) / self.a[pair],
                     -self.c[pair] / self.a[pair],
                     -self.b[pair] / self.a[pair]]
@@ -147,8 +147,8 @@ class Dynamics(object):
                     -self.c[pair] / self.a[pair],
                     -self.b[pair] / self.a[pair]]
              for pair in non_zero}
-        # Determine the solution space for all combinations.
-        # Permutations arise as it also depends on the positional relationship of two conditions (q-p or p-q).
+        # Determine the solution space for all combinations
+        # Depends on the positional relationship of two conditions (q-p or p-q), so it becomes permutations
         for pair_1, pair_2 in itertools.permutations(non_zero, 2):
             r = [q[pair_1][i] - p[pair_2][i] for i in range(3)]
             rlst.append(r)
@@ -172,9 +172,9 @@ class Dynamics(object):
         return self.mvc
 
     def get_mvc_accel_effort(self):
-        u"""Return the point on MVC (Maximum Velocity Curve) calculated from torque constraints.
+        u"""Return the point on the MVC (Maximum Velocity Curve) calculated from torque constraints.
 
-        update() must be called to set the points.
+        Need to call update() to set the point.
 
         when ai > 0
         sa_min_i < (l_limit_i - bi * sv**2 - ci * sv - di) / ai
@@ -185,25 +185,25 @@ class Dynamics(object):
         sa_max_i < (l_limit_i - bi * sv**2 - ci * sv - di) / ai
 
         However, sa_min_i <= sa_max_i
-        satisfy all, and
+        satisfying all,
 
         when ai == 0
         l_limit_i < bi * sv**2 + ci * sv + di
         u_limit_i > bi * sv**2 + ci * sv + di
 
-        one maximum value of the area of sv is MVC
-        It can sometimes theoretically become Inf.
+        the maximum value of the first region of sv is MVC
+        It may be defined as Inf.
 
         Return:
-            mvc (float): Velocity of s (sv) at a point on MVC.
+            mvc (float): Velocity of s (sv) at the point on MVC
         """
         (u, l, p, q) = ({}, {}, {}, {})
         cond = [pair for pair in self.limits
                 if pair[1] == 'effort' or pair[1] == 'acceleration']
-        non_zero = []  # List of conditions where a!=0.
-        zero = []  # List of conditions where a==0.
+        non_zero = []  # List of conditions where a!=0
+        zero = []  # List of conditions where a==0
         ans = {}
-        # Check the sign of a in each condition and classify.
+        # Check the sign of a for each condition and distribute
         for pair in cond:
             limit = self.limits[pair]
             if self.a[pair] > sys.float_info.epsilon:
@@ -212,12 +212,12 @@ class Dynamics(object):
             elif self.a[pair] < - sys.float_info.epsilon:
                 (l[pair], u[pair]) = (limit[1], limit[0])
                 non_zero.append(pair)
-            # If a==0, add to zero list and exclude from conditions.
+            # If a==0, add to zero list and exclude from cond
             else:
                 l[pair] = limit[0]
                 u[pair] = limit[1]
                 zero.append(pair)
-        # Calculate parameters of the quadratic inequality.
+        # Calculate parameters of quadratic inequality
         for pair in non_zero:
             (p[pair], q[pair]) = ([0] * 3, [0] * 3)
             p[pair][0] = (l[pair] - self.d[pair]) / self.a[pair]
@@ -226,20 +226,20 @@ class Dynamics(object):
             q[pair][0] = (u[pair] - self.d[pair]) / self.a[pair]
             q[pair][1] = -self.c[pair] / self.a[pair]
             q[pair][2] = -self.b[pair] / self.a[pair]
-        # Determine the solution space for all combinations.
-        # Permutations arise as it also depends on the positional relationship of two conditions (q-p or p-q).
+        # Determine the solution space for all combinations
+        # Depends on the positional relationship of two conditions (q-p or p-q), so it becomes permutations
         for pair_1, pair_2 in itertools.permutations(non_zero, 2):
-            # Set and solve the quadratic inequality.
+            # Set and solve quadratic inequality
             r = [0] * 3
             for i in range(3):
                 r[i] = q[pair_1][i] - p[pair_2][i]
             ans[pair_1, pair_2] = Interval()
             ans_of_inequality = poly2.solve_inequality(r, '>')
-            # If there is a constraint with no solution.
+            # If there is a constraint with no solution
             if not ans_of_inequality:
                 raise ValueError('Too tight constraint %s, %s' % pair)
             ans[pair_1, pair_2].set_list(ans_of_inequality)
-        # When a==0, the problem to be solved is different (candidate for zero-inertia switching point).
+        # If a==0, the problem to solve is different (candidate for zero-inertia switching point)
         ans_zero = {}
         for pair in zero:
             r = [0] * 3
@@ -252,14 +252,14 @@ class Dynamics(object):
             tmp_l = Interval()
             tmp_l.set_list(poly2.solve_inequality(r, '>'))
             ans_zero[pair] = tmp_l * tmp_u
-        # Take the intersection of the solution spaces.
+        # Take the intersection of the solution space
         final = Interval([float('-inf'), float('inf')])
         for pair_1 in non_zero:
             for pair_2 in non_zero:
                 if pair_1 == pair_2:
                     continue
                 final = final * ans[pair_1, pair_2]
-        # Intersection of the solution spaces when a==0.
+        # Intersection of solution space when a==0
         for pair in zero:
             final = final * ans_zero[pair]
         lst = final.get_list()
@@ -267,12 +267,12 @@ class Dynamics(object):
         return self.mvc
 
     def calc_zero_inertia_sv(self, pair):
-        u"""Assume the current state (sd,sv) updated by update() is a zero-inertia sp and return the sv of the constraint.
+        u"""Assume the current state (sd,sv) updated with update() is zero inertia sp and return the constraint sv.
 
         Args:
-            pair (tuple): Pair of constraints (name, type).
+            pair (tuple): Pair of constraints (name, type)
         Return:
-            sv (float): Maximum possible value of sv.
+            sv (float): Maximum value of possible sv
         """
         r = [self.d[pair] - self.limits[pair][1], self.c[pair], self.b[pair]]
         tmp_u = Interval()

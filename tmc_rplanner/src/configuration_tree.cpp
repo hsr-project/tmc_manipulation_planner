@@ -26,8 +26,8 @@ OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH
 DAMAGE.
 */
 /// @file     configuration_tree.cpp
-/// @brief Configuration space used by the planner
-///           Class summarizing the tree structure and operations
+/// @brief    In the configuration space used by the planner
+///           A class that summarizes tree structures and operations
 /// @author   Koji Terada
 /// @version  1.0.0
 /// @date     2011.10.25
@@ -59,7 +59,7 @@ ConfigurationTree::ConfigurationTree(ConfigurationSpace::Ptr configuration_space
 /// @retval kAdvanced Approached the target state
 /// @retval kTrapped Unable to approach the target state
 ExtendRet ConfigurationTree::Extend(const Config& dst_config) {
-  // Ensure the size of Configuration is correct
+  // Ensure the size of the Configuration is correct
   if (configuration_space_->dof() != dst_config.size()) {
     throw DimensionMismatch("Configuration size mismatch.");
   }
@@ -71,7 +71,7 @@ ExtendRet ConfigurationTree::Extend(const Config& dst_config) {
   if (!configuration_space_->ConstrainConfig(new_config, next_config)) {
     return kTrapped;
   }
-  // Prevent exceeding delta_ limit
+  // Ensure it does not exceed delta
   bool is_constrained_reached(false);
   next_config = configuration_space_->
       NewConfig(nearest.lock()->data, next_config,
@@ -86,7 +86,7 @@ ExtendRet ConfigurationTree::Extend(const Config& dst_config) {
     if (is_reached) {
       ret = kReached;
     } else {
-      // Return trapped if nearest is closer, otherwise Advanced
+      // If nearest is closer, return trapped, otherwise return Advanced
       if ((nearest.lock()->data - dst_config).norm() <
           (next_config - dst_config).norm()) {
         return kTrapped;
@@ -115,7 +115,7 @@ ExtendRet ConfigurationTree::Connect(const Config& dst_config) {
 
 /// @func Connect
 /// @brief Continue Extend until reaching the specified state from the tree
-///        With termination condition
+///        However, with termination conditions
 /// @param dst_config Target state
 /// @param terminate Termination condition function
 /// @retval kReached Reached the target state
@@ -147,8 +147,8 @@ ExtendRet ConfigurationTree::Connect(const Config& dst_config,
 /// @func FetchNearestNeighbor_
 /// @brief Retrieve the nearest neighbor from the tree
 /// @param tree State tree
-/// @param config State to target for nearest neighbor
-/// @retval Nearest neighbor node
+/// @param config State to be the nearest neighbor target
+/// @retval Nearest node
 Node::WeakPtr ConfigurationTree::FetchNearestNeighbor_(const Config& config) {
   double min = DBL_MAX;
   Node::WeakPtr nearest_node;
@@ -163,7 +163,7 @@ Node::WeakPtr ConfigurationTree::FetchNearestNeighbor_(const Config& config) {
 }
 
 /// @func PrintTree
-/// @brief Output tree to storm, mainly for debugging
+/// @brief Output the tree to storm. Mainly for debugging
 void ConfigurationTree::PrintTree() const {
   for (Tree::const_iterator node = tree_.begin(); node != tree_.end(); ++node) {
     if (!(*node)->parent.expired()) {
@@ -176,14 +176,14 @@ void ConfigurationTree::PrintTree() const {
 }
 
 /// @func TrackBackPath
-/// @brief Retrieve path from the tree
+/// @brief Retrieve the path from the tree
 /// @param path_out Output path
 void ConfigurationTree::TrackBackPath(Path& path_out) const {
   TreeToPath(tree_, path_out);
 }
 
 /// @func RemoveLastBranch
-/// @brief Delete the branch connected to the latest configuration
+/// @brief Remove the branch connected to the latest configuration
 void ConfigurationTree::RemoveLastBranch() {
   if (tree_.empty()) {
     return;
@@ -195,7 +195,7 @@ void ConfigurationTree::RemoveLastBranch() {
       break;
     }
   }
-  // If all are Root, the leftmost is the last added Root, so delete it and finish
+  // If all are Root, the leftmost one is the last added Root, so delete it and finish
   if (root_node_num == tree_.size()) {
     tree_.pop_front();
     return;
@@ -211,8 +211,8 @@ void ConfigurationTree::RemoveLastBranch() {
       break;
     }
   }
-  // tree_ adds RootNode from left, extended Node from right
-  // Therefore, there is always a child Node on the right of the deleted one, so delete sequentially
+  // tree_ adds RootNode from the left and extended Node from the right
+  // Therefore, there is always a child Node on the right side of the deleted one, so if you delete them in order, you can delete them all
   for (auto it = tree_.begin() + root_node_num - 1; it != tree_.end(); ) {
     if ((*it)->parent.expired()) {
       it = tree_.erase(it);
