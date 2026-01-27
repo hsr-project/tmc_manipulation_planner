@@ -26,7 +26,7 @@ OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH
 DAMAGE.
 */
 /// @file     robot_cbirrt_planner.hpp
-/// @brief Planner using CBIRRT for the robot
+/// @brief    Planner using robot's CBIRRT
 /// @author   Koji Terada
 
 #ifndef TMC_ROBOT_PLANNER_ROBOT_CBIRRT_PLANNER_HPP_
@@ -63,7 +63,7 @@ const double kDefaultStepSampling = 0.1;
 /// Limit of the cart's translation [m]
 const double kDefaultBaseTranslationMax = 10.0;
 
-/// Request to give to CBiRrt
+/// Request given to CBiRrt
 struct CBiRrtRequest {
   CBiRrtRequest() :
       use_joints(0),
@@ -90,57 +90,57 @@ struct CBiRrtRequest {
       extra_constraints(0),
       extra_start_constraints(0),
       extra_goal_constraints(0) {}
-  /// List of joint names to be used. Only the joints listed here will be explored.
+  /// List of joint names to be used. Only the joints listed here will be the target of exploration.
   std::vector<std::string> use_joints;
-  /// Motion of the base New in version 0.16.0
+  /// Base movement New in version 0.16.0
   tmc_manipulation_types::BaseMovementType base_type;
-  /// Initial values of all joints, including those not listed in use_joints.
+  /// Initial values for all joints, including those not listed in use_joints.
   tmc_manipulation_types::JointState initial_config;
   /// Set of initial joint angles. Specified in configuration space.
   std::vector<Config> start_configs;
-  /// Initial value of the base when base_movement is other than kNone New in version 0.16.0
+  /// Initial value of Base, specify if base_movement is other than kNone New in version 0.16.0
   tmc_manipulation_types::PoseSeq start_basejoint_to_bases;
   /// Set of terminal joint angles. Specified in configuration space.
   std::vector<Config> goal_configs;
-  /// Terminal value of the base when base_movement is other than kNone New in version 0.16.0
+  /// Terminal value of Base, specify if base_movement is other than kNone New in version 0.16.0
   tmc_manipulation_types::PoseSeq goal_basejoint_to_bases;
-  /// Set of initial TSRs. Initial values are added by sampling from here.
+  /// Set of initial TSRs. Sample from here to add initial values.
   tmc_manipulation_types::TaskSpaceRegionSeq start_tsrs;
   /// Set of constraint TSRs. The entire trajectory is constrained by this.
   tmc_manipulation_types::TaskSpaceRegionSeq constraint_tsrs;
-  /// Set of terminal TSRs. Initial values are added by sampling from here.
+  /// Set of terminal TSRs. Sample from here to add initial values.
   tmc_manipulation_types::TaskSpaceRegionSeq goal_tsrs;
-  /// Specify target values for joints unaffected by IK when specified with Start in TSR
+  /// Specify target values for joints not affected by IK when Start is specified with TSR
   tmc_manipulation_types::JointState start_no_ik_joint_state;
-  /// Specify target values for joints unaffected by IK when specified with Start in TSR
+  /// Specify target values for joints not affected by IK when Start is specified with TSR
   tmc_manipulation_types::JointState goal_no_ik_joint_state;
-  /// Robot reference position (this becomes the base reference when other than kNone)
+  /// Robot reference position (this becomes the base reference when not kNone)
   Eigen::Affine3d origin_to_basejoint;
-  /// Known objects to check for interference
+  /// Known objects for interference check
   tmc_manipulation_types::OuterObjectParametersSeq known_objects;
-  /// Environment to check for interference
+  /// Environment for interference check
   tmc_manipulation_types::CuboidSeq collision_map;
-  /// Collection of items held by the robot
+  /// Set of items held by the robot
   tmc_manipulation_types::AttachedObjectSeq attached_objects;
-  /// Weights for each joint, positive value. Usually set to 1 for joints you don't want to move much.
-  /// Set to a large value like 2 for those you really don't want to move.
+  /// Weight of each joint Positive value Usually set to 1 for joints you don't want to move much
+  /// Set to a large value like 2 for joints you don't want to move much
   Config weight_config;
-  /// Weights for each joint for IK, positive value. Usually set to 1 for joints you don't want to move much.
-  /// Set to a large value like 100 for those you really don't want to move.
+  /// Weight of each joint for IK Positive value Usually set to 1 for joints you don't want to move much
+  /// Set to a large value like 100 for joints you don't want to move much
   Config weight_config_ik;
-  /// Linear direction weight concerning the base, about 0.1 is recommended.
+  /// Linear direction weight for base Set to about 0.1
   double weight_linear_base;
-  /// Rotational direction weight concerning the base, about 0.1 is recommended.
+  /// Rotational direction weight for base Set to about 0.1
   double weight_rotational_base;
-  /// Linear direction IK weight concerning the base, about 0.1 is recommended.
+  /// Linear direction IK weight for base Set to about 0.1
   double weight_linear_base_ik;
-  /// Rotational direction IK weight concerning the base, about 0.1 is recommended.
+  /// Rotational direction IK weight for base Set to about 0.1
   double weight_rotational_base_ik;
-  /// Overall trajectory constraint, constrained from the first element after TSR constraints
+  /// Overall trajectory constraint Constrained from the 0th element after TSR constraint
   std::vector<IConfigurationConstraint::Ptr> extra_constraints;
-  /// Start constraint, constrained from the first element after TSR constraints
+  /// Start constraint Constrained from the 0th element after TSR constraint
   std::vector<IConfigurationConstraint::Ptr> extra_start_constraints;
-  /// Goal constraint, constrained from the first element after TSR constraints
+  /// Goal constraint Constrained from the 0th element after TSR constraint
   std::vector<IConfigurationConstraint::Ptr> extra_goal_constraints;
   // For eigen fixed-length members
   EIGEN_MAKE_ALIGNED_OPERATOR_NEW
@@ -157,34 +157,34 @@ struct CBiRrtParameters {
                        increase_sampling_deviation(true),
                        step_sampling_deviation(kDefaultStepSampling),
                        base_translation_max(kDefaultBaseTranslationMax) {}
-  /// Width of exploration. Distance based on calc_ditance_ in configuration space.
+  /// Width of exploration. Distance based on calc_distance_criterion in configuration space.
   /// Default is Euclidean distance
   double delta;
-  /// Width for interference check, with delta >= sub_delta. Units are consistent with delta.
+  /// Width of interference check Ensure delta >= sub_delta. Unit follows delta
   double sub_delta;
-  /// Probability of generating the initial position using start_tsrs
+  /// Probability of generating initial position using start_tsrs
   double probability_start_generate;
-  /// Probability of generating the initial position using goal_tsrs
+  /// Probability of generating initial position using goal_tsrs
   double probability_goal_generate;
   /// Maximum number of iterations
   int32_t max_itr;
   /// Timeout [s]
   double timeout;
-  /// Whether to shortcut
+  /// Whether to perform a shortcut
   bool do_shortcut;
-  /// Whether to perform biased sampling when sampling goals and starts?
-  /// Exclusive to when initial and terminal values are sampled using TSR
+  /// Whether to perform biased sampling when sampling goal and start?
+  /// Limited to when you want to sample initial and terminal values with TSR
   bool sampling_around_initial;
   /// Standard deviation for biased sampling
   double sampling_distribution;
   /// Whether to start sampling from zero during biased sampling
   bool increase_sampling_deviation;
-  /// Increase in sampling with each IK solution when increase_sampling_deviation is applied
-  /// Specify in the range (0.0, 1.0]. The smaller the value, the more time spent exploring around the initial value.
+  /// Increase in sampling per IK solution when increase_sampling_deviation is performed
+  /// Specify in the range of (0.0, 1.0]. The smaller, the more time is spent exploring around the initial value
   double step_sampling_deviation;
-  /// Maximum translation value of base movement [m]
+  /// Maximum translation value for base movement [m]
   double base_translation_max;
-  /// Maximum number of Connect actions
+  /// Maximum number of Connect operations
   boost::optional<int32_t> max_connect;
 };
 
@@ -232,22 +232,22 @@ class RobotCBiRrtPlanner {
   /// Interference check model
   tmc_robot_collision_detector::RobotCollisionDetector::Ptr
   robot_collision_detector_;
-  /// Solver for IK
+  /// IK solver
   tmc_robot_kinematics_model::IKSolver::Ptr ik_solver_;
 
-  /// Function called when checking configuration, mainly for debugging
+  /// Function called during configuration check Mainly for debugging
   tmc_rplanner::CheckFeasibilityCallBackFunc check_feasibility_callback_;
-  /// Function called when adding a node, mainly for debugging
+  /// Function called when adding a node Mainly for debugging
   tmc_rplanner::AddNodeCallBackFunc add_node_callback_;
-  /// Function called when generating start, mainly for debugging
+  /// Function called when generating start Mainly for debugging
   tmc_rplanner::AddStartCallBackFunc add_start_callback_;
-  /// Function called when generating goal, mainly for debugging
+  /// Function called when generating goal Mainly for debugging
   tmc_rplanner::AddGoalCallBackFunc add_goal_callback_;
-  /// Callback called during ConstraintConfig, mainly for debugging
+  /// Callback called during ConstraintConfig Mainly for debugging
   tmc_rplanner::ConstrainConfigCallBackFunc constrain_config_callback_;
-  /// Record the pair that collided in interference check
+  /// Record the pair that collided during interference check
   std::vector<tmc_robot_collision_detector::PairString> last_contact_pair_;
-  /// Record joints that hit the limit
+  /// Record the joint that hit the limit
   std::string limit_joint_;
   /// Random number generator using mt19937
   std::mt19937 random_engine_;

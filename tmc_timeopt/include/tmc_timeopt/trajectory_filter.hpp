@@ -40,22 +40,22 @@ class ITrajectoryFilter {
 
   virtual ~ITrajectoryFilter() = default;
 
-  // Get joint position at the time time_from_start
+  // Get joint position at time_from_start
   // @param[in] time_from_start  Time [sec] at which joint position is desired
   // @return Eigen::VectorXd  Joint position
   virtual Eigen::VectorXd GetPosition(double time_from_start) const = 0;
 
-  // Get joint velocity at the time time_from_start
+  // Get joint velocity at time_from_start
   // @param[in] time_from_start  Time [sec] at which joint velocity is desired
   // @return Eigen::VectorXd  Joint velocity
   virtual Eigen::VectorXd GetVelocity(double time_from_start) const = 0;
 
-  // Get trajectory playback time
-  // @return double  Trajectory playback time [sec]
+  // Get playback time of the trajectory
+  // @return double  Playback time of the trajectory [sec]
   virtual double GetDuration() const = 0;
 
-  // Get whether optimization was successful
-  // @return bool  true if optimization was successful and Get functions are available
+  // Check if optimization was successful
+  // @return bool  Returns true if optimization was successful and Get functions are available
   virtual bool IsValid() const = 0;
 };
 

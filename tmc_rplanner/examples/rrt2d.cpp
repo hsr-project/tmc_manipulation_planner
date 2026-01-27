@@ -58,11 +58,11 @@ Eigen::VectorXd RandomConfig() {
 }
 
 bool FeasibilityCheck(const Config& config) {
-  // A cuboid with [0.5 3.5], [0.5 1.0]
+  // Cuboid [0.5 3.5] , [0.5 1.0]
   if (((config(0) > 0.5) && (config(0) < 3.5)) && ((config(1) > 0.5) && (config(1) < 1.0))) {
     return false;
   }
-  // A cuboid with [1.5 2.5], [1.0 4.0]
+  // Cuboid [1.5 2.5] , [1.0 4.0]
   if (((config(0) > 1.5) && (config(0) < 2.5)) && ((config(1) > 1.0) && (config(1) < 4.0))) {
     return false;
   }
@@ -83,11 +83,11 @@ bool GenerateGoal(Config v) {
 }
 
 bool IsGoal(const Config& config) {
-  // A cuboid with (0.9 1.1), (3.4 3.6)
+  // Cuboid (0.9 1.1) , (3.4 3.6)
   if (((config(0) > 0.9) && (config(0) < 1.1)) && ((config(1) > 3.4) && (config(1) < 3.6))) {
     return true;
   }
-  // A cuboid with (2.9 3.1), (3.4 3.6)
+  // Cuboid (2.9 3.1) , (3.4 3.6)
   if (((config(0) > 2.9) && (config(0) < 3.1)) && ((config(1) > 3.4) && (config(1) < 3.6))) {
     return true;
   }

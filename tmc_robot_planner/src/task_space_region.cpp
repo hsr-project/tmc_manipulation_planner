@@ -42,7 +42,7 @@ using tmc_manipulation_types::TaskSpaceRegion;
 namespace tmc_robot_planner {
 
 /// Convert RegionValues to Pose
-/// @param region_vals Values for x, y, z, roll, pitch, yaw
+/// @param region_vals Values of x, y, z, roll, pitch, yaw
 Pose RegionValuesToPose(const RegionValues& region_vals) {
   Eigen::Vector3d pos = region_vals.segment<3>(0);
   Eigen::Vector3d rpy = region_vals.segment<3>(3);
@@ -52,7 +52,7 @@ Pose RegionValuesToPose(const RegionValues& region_vals) {
 
 
 /// Convert Pose to RegionValues
-/// @param region_vals Values for x, y, z, roll, pitch, yaw
+/// @param region_vals Values of x, y, z, roll, pitch, yaw
 RegionValues PoseToRegionValues(const Pose& pose) {
   Eigen::Vector3d pos = pose.translation();
   Eigen::Vector3d rpy = tmc_eigen_utils::QuaternionToRPY(
@@ -79,21 +79,21 @@ Pose CalcClosestPose(const TaskSpaceRegion& tsr,
 
 /// Randomly sample one from TSR
 /// @param tsr task_space_region
-/// @return Random end_effector values on TSR
+/// @return Random end_effector value on TSR
 Pose GenerateSample(const TaskSpaceRegion& tsr) {
   RegionValues random = (tsr.max_bounds - tsr.min_bounds).array() *
       RegionValues::Random().array().abs() + tsr.min_bounds.array();
   return tsr.origin_to_tsr * RegionValuesToPose(random) * tsr.tsr_to_end;
 }
 
-/// Calculate the distance from the given sample (endeffector coordinates) to TSR
+/// Calculate the distance from the given sample (coordinates of endeffector) to TSR
 /// @param tsr task_space_region
-/// @param origin_to_sample Sample coordinates as seen from the reference coordinate system
+/// @param origin_to_sample Sample coordinates viewed from the reference coordinate system
 /// @return How far x, y, z, roll, pitch, yaw are from TSR
 RegionValues CalcDistanceToTsr(
     const TaskSpaceRegion& tsr,
     const Pose& origin_to_sample) {
-  // Values of sample without offset as seen from origin
+  // Value of sample without offset viewed from origin
   Pose origin_to_sample_dash = origin_to_sample * tsr.tsr_to_end.inverse();
   Pose tsr_to_sample_dash = tsr.origin_to_tsr.inverse() * origin_to_sample_dash;
   Eigen::Vector3d disp_pos = tsr_to_sample_dash.translation();

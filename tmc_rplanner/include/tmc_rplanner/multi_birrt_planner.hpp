@@ -26,7 +26,7 @@ OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH
 DAMAGE.
 */
 /// @file     multi_birrt_planner.hpp
-/// @brief    Extended version of birrt for use with multiple and added initial and terminal values.
+/// @brief Extended version of birrt for multiple initial and terminal values with additions
 /// @author   Koji Terada
 /// @version  1.0.0
 /// @date     2012.03.28
@@ -42,34 +42,34 @@ DAMAGE.
 
 namespace tmc_rplanner {
 
-/// Exploration parameters for MultiBirrtPlanner
+/// Search parameters for MultiBirrtPlanner
 struct MultiBirrtPlannerParam {
-  /// Exploration width
+  /// Search width
   double delta;
   /// Maximum number of iterations
   int32_t max_itr;
-  /// Probability of initial configuration generation [0.0~1.0]
+  /// Probability of generating initial configuration [0.0~1.0]
   double probability_start_generate;
-  /// Probability of goal configuration generation [0.0~1.0]
+  /// Probability of generating terminal configuration [0.0~1.0]
   double probability_goal_generate;
   /// Termination condition function
   TerminateConditionFunc is_terminate;
-  /// Maximum number of Connect actions
+  /// Maximum number of Connect operations
   boost::optional<int32_t> max_connect;
 };
 
 /// @class MultiBirrtPlanner
 /// @brief Planner extended from BiRRT differs from birrt in the following points
-///        1. Possesses multiple initial and terminal values. However, in the generate function,
-///          zero is acceptable in case of additions.
-///        2. Initial and terminal values are added at the probabilities of
-///           probability_start_generate and probability_goal_generate respectively,
-///           by the generate function defined in ConfigurationSpace.
-///        It is a backward-compatible version of BiRRT and should generally be used.
+///        1. Has multiple initial and terminal values. However, it can be zero if added by the generate function.
+///          It can be zero if added by the generate function.
+///        2. Initial and terminal values are added with the probability of probability_start_generate,
+///          and probability_goal_generate in the generate function defined in ConfigurationSpace.
+///          and probability_goal_generate in the generate function defined in ConfigurationSpace.
+///        It is a superior version of BiRRT and generally recommended to use this one.
 class MultiBirrtPlanner : public IMultiPlanner {
  public:
-  /// @brief Pass the planner space and the end condition.
-  /// @param space Pointer to the planner space
+  /// @brief Pass planner space and termination condition
+  /// @param space Pointer to planner space
   /// @param param Search parameters
   MultiBirrtPlanner(const ConfigurationSpace::Ptr space,
                     const MultiBirrtPlannerParam& param) :
@@ -81,28 +81,28 @@ class MultiBirrtPlanner : public IMultiPlanner {
   virtual ~MultiBirrtPlanner() {}
 
   /// Path generation.
-  /// @param start_configs Collection of initial configurations (not required)
-  /// @param goal_configs Collection of goal configurations (not required)
-  /// @param path_out Generated path
-  /// @retval kSuccess: Success
+  /// @param start_configs Set of initial configurations (optional)
+  /// @param goal_configs Set of terminal configurations (optional)
+  /// @param path_out Generated trajectory
+  /// @retval kSucess: Success
   /// @retval kTerminate: Termination
-  /// @retval kInitConfigFail: No feasible initial value and generation also impossible
-  /// @retval kGoalConfigFail: No feasible goal value and generation also impossible
-  /// @retval kMaxItr: Maximum number of repetitions reached/// Path creation
+  /// @retval kInitConfigFail: No feasible initial value and generation is not possible
+  /// @retval kGoalConfigFail: No feasible terminal value and generation is not possible
+  /// @retval kMaxItr: Maximum number of iterations reached/// Path creation
   virtual PlanRet PlanPath(const std::vector<Config>& start_configs,
                            const std::vector<Config>& goal_configs,
                            Path& path_out);
 
   /// Path generation. Until the specified number of paths is created
-  /// @param[in] start_configs Collection of initial configurations (not required)
-  /// @param[in] goal_configs Collection of goal configurations (not required)
-  /// @param[in] max_paths Finishes when this number of paths are created. 0 for indefinite
-  /// @param[out] paths_out Generated paths (multiple)
-  /// @retval kSuccess: Success
+  /// @param[in] start_configs Set of initial configurations (optional)
+  /// @param[in] goal_configs Set of terminal configurations (optional)
+  /// @param[in] max_paths Terminate when this number of paths is created. Permanent if 0
+  /// @param[out] paths_out Generated trajectories (multiple)
+  /// @retval kSucess: Success
   /// @retval kTerminate: Termination
-  /// @retval kInitConfigFail: No feasible initial value and generation also impossible
-  /// @retval kGoalConfigFail: No feasible goal value and generation also impossible
-  /// @retval kMaxItr: Maximum number of repetitions reached
+  /// @retval kInitConfigFail: No feasible initial value and generation is not possible
+  /// @retval kGoalConfigFail: No feasible terminal value and generation is not possible
+  /// @retval kMaxItr: Maximum number of iterations reached
   virtual PlanRet PlanPaths(const std::vector<Config>& start_configs,
                             const std::vector<Config>& goal_configs,
                             uint32_t max_paths,
@@ -117,9 +117,9 @@ class MultiBirrtPlanner : public IMultiPlanner {
   MultiBirrtPlanner(const MultiBirrtPlanner&);
   MultiBirrtPlanner& operator=(const MultiBirrtPlanner&);
 
-  /// Callback called when the path is generated
-  /// @param[in] path Passes the generated path to the callback
-  /// Behavior: Calls the callback set by SetPathCallBack.
+  /// Callback called when a path is generated
+  /// @param[in] path Pass the generated path to the callback
+  /// Behavior: Calls the callback set with SetPathCallBack.
   /// Does nothing if not set.
   virtual void PathCallBack_(const Path& path);
 

@@ -25,7 +25,7 @@
 # DAMAGE.
 #!/usr/bin/python
 # -*- coding: utf-8 -*-
-u"""Sample of the TOPP class."""
+u"""Sample of TOPP class."""
 
 import time
 
@@ -63,9 +63,9 @@ class MyTarget(Target):
         pass
 
     def get_dynamics(self):
-        u"""Return dynamic parameters (a,b,c,d).
+        u"""Return the dynamic parameters (a,b,c,d).
 
-        (a,b,c,d) are dicts with ('variable name', 'constraint type') as keys and values as values.
+        (a,b,c,d) are each a dict with ('variable name', 'constraint type') as the key and the value as the value.
         """
         (a, b, c, d) = ({}, {}, {}, {})
         for name in self.names:

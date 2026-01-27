@@ -42,7 +42,7 @@ bool IsSameWayPoints(const Eigen::VectorXd& frist, const Eigen::VectorXd& second
   return (frist - second).norm() <= kMinPointsDistance;
 }
 
-// Extract only valid points as consecutive identical points may cause instability in the algorithm
+// Extract only valid points because consecutive identical points can cause instability in the algorithm
 bool ExtractValidWayPoints(const Eigen::VectorXd& initial_positions,
                            const std::vector<Eigen::VectorXd>& way_points_in,
                            std::vector<Eigen::VectorXd>& way_points_out) {

@@ -50,22 +50,22 @@ const double kDefaultWeightLinearBaseIK = 10.0;
 const double kDefaultWeightRotationalBaseIK = 10.0;
 const double kDefaultBaseTranslationMax = 10.0;
 
-// Maximum number of iterations for numerical IK
+// Numerical IK maximum number of iterations
 const int32_t kMaxItrIK = 1000;
-// Tolerance for numerical IK
+// Numerical IK allowable error
 const double kIKDelta = 1.0e-3;
-// Allowable variation for numerical IK
+// Numerical IK allowable variation
 const double kIKConvergeThreshold = 1.0e-10;
-// // Debug Frame ID
+// // Debug FrameID
 // const char* const kDebugFrameId = "/debug/robot_base";
 
-// /// List of marker IDs and object names on robot_collisin_detector
+// /// List of marker IDs and object names on robot_collision_detector
 // typedef std::map<string, visualization_msgs::Marker> AttachedMarkerList;
 
 /// @brief Extract joint angles specified by joint_names from initial_state
 /// @param [in] robot_collision_detector Robot collision detection model
 /// @param [in] initial_state Initial posture
-/// @param [in] joint_names List of joint names to be extracted
+/// @param [in] joint_names List of joint names to extract
 /// @return Extracted joint angle vector
 Eigen::VectorXd ExtractJoints(
     const tmc_robot_collision_detector::RobotCollisionDetector::Ptr& robot_collision_detector,
@@ -78,7 +78,7 @@ Eigen::VectorXd ExtractJoints(
 /// Extract all joint angles
 /// @param [in] robot_collision_detector Robot collision detection model
 /// @param [in] partial_joint_state Partial joint angles
-/// @return All joint angle vectors
+/// @return All joint angle vector
 tmc_manipulation_types::JointState FetchAllJoints(
     const tmc_robot_collision_detector::RobotCollisionDetector::Ptr& robot_collision_detector,
     const tmc_manipulation_types::JointState& partial_joint_state) {
@@ -96,9 +96,9 @@ void InitPoseMsg(geometry_msgs::msg::Pose& pose) {
   pose.orientation.w = 1.0;
 }
 
-/// @brief Calculate the simultaneous transformation where the x-axis faces the direction of axis
+/// @brief Calculate simultaneous transformation with x-axis pointing in the direction of axis
 /// @param [in] x_axis Direction of the x-axis
-/// @return Coordinate system where the x-axis faces the direction of x_axis
+/// @return Coordinate system with x-axis pointing in the direction of x_axis
 Eigen::Affine3d CalcPoseFromAxisX(const Eigen::Vector3d& x_axis) {
   Eigen::Vector3d x_axis_n(x_axis);
   x_axis_n.normalize();
@@ -113,8 +113,8 @@ Eigen::Affine3d CalcPoseFromAxisX(const Eigen::Vector3d& x_axis) {
 }
 
 /// @brief Construct a chain of responsibility for IK ending with numerical IK.
-/// @param[in] ik_plugins IK plugin names arranged in order of low priority
-/// @param[in] robot_model Robot model passed to numerical IK
+/// @param[in] ik_plugins IK plugin names ordered by low priority
+/// @param[in] robot_model Robot model to pass to numerical IK
 /// @param[in] ik_plugin_loader Plugin loader
 /// @return Chain of responsibility for IK ending with numerical IK
 tmc_robot_kinematics_model::IKSolver::Ptr LoadIKSolver(
@@ -152,9 +152,9 @@ tmc_robot_kinematics_model::IKSolver::Ptr LoadIKSolver(
 }
 
 /// @brief Create weight_config by overwriting original_weight_config with weights
-/// @param [in] use_joints List of joints to be used
+/// @param [in] use_joints List of joints to use
 /// @param [in] original_weights Original joint angle weights
-/// @param [in] weighted_joints List of joints to be weighted
+/// @param [in] weighted_joints List of joints to weight
 /// @param [in] weights Weights for each joint
 /// @param [in] base_type Type of base movement
 /// @param [in] weight_linear_base Translational weight of the base cart
@@ -228,10 +228,10 @@ tmc_robot_planner::Config CalculateWeightConfig(
 }
 
 /// @brief Extract weight of target_name
-/// @param [in] joint_names List of joint names
+/// @param [in] joint_names List of joints
 /// @param [in] weights Weights for each joint
-/// @param [in] target_name Target to be extracted
-/// @param [in] default_value Value if the target to be extracted does not exist
+/// @param [in] target_name Target to extract
+/// @param [in] default_value Value if the target to extract does not exist
 /// @retval Joint weight
 double ExtractWeight(const std::vector<std::string>& joint_names,
                      const std::vector<double>& weights,
@@ -245,7 +245,7 @@ double ExtractWeight(const std::vector<std::string>& joint_names,
   }
 }
 
-/// @brief Load plugins that constrain joints
+/// @brief Load plugin to constrain joints
 /// @param[in] name Plugin name
 /// @param[in] loader Plugin loader
 /// @param[in/out] cache Plugins managed by name
@@ -321,13 +321,13 @@ bool RobotRrtPlannerNode::Init() {
 
   planner_ = std::make_shared<tmc_robot_planner::RobotCBiRrtPlanner>(robot, robot_collision_detector_, ik_solver);
 
-  // Whether to output the trajectory planning request to a file or not
+  // Whether to output trajectory planning requests to a file
   const auto save_request = tmc_utils::GetParameter<bool>(node, "save_request", false);
   if (save_request) {
     request_logger_ = std::make_shared<tmc_utils::MessageLogger>(tmc_utils::GetLogDirectory() + "/plan_");
   }
 
-  // Get weight parameters
+  // Retrieve weight parameters
   weight_names_ = tmc_utils::GetParameter<std::vector<std::string>>(node, "weight_names", {});
   weights_ = tmc_utils::GetParameter<std::vector<double>>(node, "weights", {});
   if (weight_names_.size() != weights_.size()) {
@@ -454,8 +454,8 @@ void RobotRrtPlannerNode::PlanWithTsrConstraints(
       get_logger(), req->use_joints, Eigen::VectorXd::Ones(req->use_joints.size() + base_dof),
       ik_weight_names_, ik_weights_, weight_linear_base_ik_, weight_rotational_base_ik_, planning_request.base_type);
   // Overwrite ik weights with weighting in request
-  // If '_linear_base' is in weighted_joints, overwrite linear_base_ik
-  // If '_rotational_base' is in weighted_joints, overwrite rotational_base_ik
+  // Overwrite linear_base_ik if '_linear_base' is in weighted_joints
+  // Overwrite rotational_base_ik if '_rotational_base' is in weighted_joints
   if (req->weighted_joints.size() != req->weight.size()) {
     RCLCPP_ERROR(get_logger(), "Mismatch weight joint size and weights size.");
     res->error_code.val = moveit_msgs::msg::MoveItErrorCodes::INVALID_MOTION_PLAN;
@@ -502,7 +502,7 @@ void RobotRrtPlannerNode::PlanWithTsrConstraints(
     planning_request.extra_goal_constraints.push_back(constraint);
   }
 
-  // Use external obstacles and objects being grasped
+  // Use external obstacles and grasped objects
   tmc_manipulation_types_bridge::ConvertSequenceWithEigenOut<moveit_msgs::msg::CollisionObject,
                                                              tmc_manipulation_types::OuterObjectParameters>(
       req->environment_before_planning.collision_objects,  planning_request.known_objects,
@@ -611,7 +611,7 @@ void RobotRrtPlannerNode::PlanWithJointGoals(
   res->error_code = tsr_res->error_code;
 }
 
-/// Motion planning with Hand position as the target
+/// Motion planning with Hand position as target value
 void RobotRrtPlannerNode::PlanWithHandGoals(
     const tmc_planning_msgs::srv::PlanWithHandGoals::Request::SharedPtr req,
     tmc_planning_msgs::srv::PlanWithHandGoals::Response::SharedPtr res) {
@@ -638,7 +638,7 @@ void RobotRrtPlannerNode::PlanWithHandGoals(
   tsr_req->extra_goal_constraints = req->extra_goal_constraints;
   tsr_req->goal_no_ik_joint_state = req->goal_no_ik_joint_state;
 
-  // Convert end-effector target to TSR
+  // Convert end-effector target value to TSR
   for (const auto& hand_goal : req->origin_to_hand_goals) {
     tmc_planning_msgs::msg::TaskSpaceRegion hand_goal_tsr;
     hand_goal_tsr.end_frame_id = req->ref_frame_id;
@@ -662,7 +662,7 @@ void RobotRrtPlannerNode::PlanWithHandGoals(
   res->origin_to_hand_after_planning = tf2::toMsg(robot_collision_detector_->GetObjectTransform(req->ref_frame_id));
 }
 
-/// Motion planning with Hand line as the target
+/// Motion planning with Hand line as target value
 void RobotRrtPlannerNode::PlanWithHandLine(
     const tmc_planning_msgs::srv::PlanWithHandLine::Request::SharedPtr req,
     tmc_planning_msgs::srv::PlanWithHandLine::Response::SharedPtr res) {
@@ -697,11 +697,11 @@ void RobotRrtPlannerNode::PlanWithHandLine(
   robot_collision_detector_->SetRobotNamedAngle(initial_config);
 
   const auto origin_to_hand = robot_collision_detector_->GetObjectTransform(req->ref_frame_id);
-  // Determine origin_to_hand so that the axis in req becomes the x-axis
+  // Determine origin_to_hand so that req's axis becomes the x-axis
   Eigen::Vector3d axis(req->axis.x, req->axis.y, req->axis.z);
   axis.normalize();
 
-  // Handle differently depending on whether the axis is local or global
+  // Process differently depending on whether the axis is local or global
   Eigen::Affine3d origin_to_tsr;
   Eigen::Affine3d tsr_to_hand;
   if (req->local_origin_of_axis) {
@@ -783,9 +783,9 @@ void RobotRrtPlannerNode::SetDebugCallBacks_(const std::vector<std::string>& joi
 }
 
 /// @brief For debugging
-///  Publish the given joint_state
-///  Update the marker position of the attached_object
-///  Display interfering pairs on the console
+///  Publish given joint_state
+///  Update marker position of attached_object
+///  Display interference pairs on console
 void RobotRrtPlannerNode::PublishJointStateAndAttachedObject_(
     const Eigen::VectorXd& config,
     bool feasible,

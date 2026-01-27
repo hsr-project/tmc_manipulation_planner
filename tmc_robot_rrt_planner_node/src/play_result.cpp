@@ -64,9 +64,9 @@ namespace {
 const double kDefaultWaitTime = 0.2;
 
 /// @brief For debugging
-///  Publish given joint_state
-///  Update marker position of attached_object
-///  Display interference pair on console
+/// Publish the given joint_state
+/// Update the marker position of the attached_object
+/// Display interference pairs on the console
 void PublishTrajectoryAndEvironment(
     bool step,
     double wait_time,
@@ -84,7 +84,7 @@ void PublishTrajectoryAndEvironment(
   Eigen::Affine3d robot_pose;
   tf::poseMsgToEigen(robot_pose_msg,
                      robot_pose);
-  // Set robot position and orientation
+  // Set the robot's position and orientation
   robot_collision_detector->SetRobotTransform(robot_pose);
   /// Known objects for interference check
   tmc_manipulation_types::OuterObjectParametersSeq known_objects;
@@ -208,13 +208,13 @@ int main(int argc, char* argv[]) {
           100);
 
   string robot_model("");
-  // Get robot model path from parameter server
+  // Get the robot model path from the parameter server
   if (!node.getParam("robot_description", robot_model)) {
     ROS_FATAL("cannot get paramter robot_description_file");
     exit(EXIT_FAILURE);
   }
   string robot_collision_pair("");
-  // Get interference settings file path from parameter server
+  // Get the interference settings file path from the parameter server
   if (!node.getParam("robot_collision_pair", robot_collision_pair)) {
     ROS_FATAL("cannot get paramter robot_collision_pair");
     exit(EXIT_FAILURE);

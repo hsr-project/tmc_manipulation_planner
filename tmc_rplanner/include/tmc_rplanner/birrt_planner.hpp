@@ -26,7 +26,7 @@ OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH
 DAMAGE.
 */
 /// @file     birrt_planner.hpp
-/// @brief    Implementation of PointToPointPlanner using birrt_planner
+/// @brief Implementation of PointToPointPlanner using birrt_planner
 /// @author   Koji Terada
 /// @version  1.0.0
 /// @date     2011.10.25
@@ -41,16 +41,16 @@ DAMAGE.
 namespace tmc_rplanner {
 
 /// @class Birrt_Planner
-/// @brief A point-to-point planner implementing BIRRT_PLANNER
+/// @brief Two-point planner implementing BIRRT_PLANNER
 /// @note See J.J. Kuffner and S.M. LaValle. RRT-Connect:
 ///       An efficient approach to single-query path planning.
 ///       In Proc. IEEE Int’l Conf. on Robotics and Automation (ICRA‘2000
 ///       pages 995-1001, San Francisco, CA, April 2000.
 class BiRrtPlanner : public IPointToPointPlanner {
  public:
-  /// @brief Pass planner space and termination conditions
+  /// @brief Pass the planner space and termination conditions
   /// @param space Pointer to the planner space
-  /// @param delta Search width for BiRRT. This width also becomes the width of the output trajectory.
+  /// @param delta Exploration width of BiRRT. This width also becomes the width of the output trajectory.
   /// @param max_itr Maximum number of iterations
   /// @param is_terminate Forced termination condition
   BiRrtPlanner(ConfigurationSpace::Ptr space,
@@ -59,7 +59,7 @@ class BiRrtPlanner : public IPointToPointPlanner {
                TerminateConditionFunc is_terminate) :
       space_(space), delta_(delta), max_itr_(max_itr),
       is_terminate_(is_terminate) {}
-  /// @brief Pass planner space and termination conditions
+  /// @brief Pass the planner space and termination conditions
   /// @param space Pointer to the planner space
   /// @param max_itr Maximum number of iterations
   BiRrtPlanner(ConfigurationSpace::Ptr space,
@@ -74,7 +74,7 @@ class BiRrtPlanner : public IPointToPointPlanner {
                            Path& path_out);
 
  private:
-  // Prohibit copying
+  // Prohibition of copying
   BiRrtPlanner(const BiRrtPlanner&);
   BiRrtPlanner& operator=(const BiRrtPlanner&);
   const ConfigurationSpace::Ptr space_;

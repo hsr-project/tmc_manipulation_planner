@@ -48,9 +48,9 @@ using tmc_rplanner::Path;
 namespace {
 // Dimension of the state space used in the test
 int32_t kDim = 2;
-// Exploration width
+// Search width
 double kDelta = 0.2;
-// Tolerance for floating point equality
+// Tolerance for floating-point identity
 double kDoubleEps = 1e-5;
 
 
@@ -117,7 +117,7 @@ TEST_F(BiRrtPlannerTest, plan) {
   ASSERT_DOUBLE_EQ(goal(0), path.back()(0));
   ASSERT_DOUBLE_EQ(goal(1), path.back()(1));
 
-  // Distance is always less than or equal to kDelta and feasible
+  // Distance is always less than or equal to kDelta and Feasible
   Config old_config = init;
   for (Path::iterator config = ++(path.begin()); config != path.end(); ++config) {
     EXPECT_LE((*config - old_config).norm(), kDelta + kDoubleEps);
@@ -126,7 +126,7 @@ TEST_F(BiRrtPlannerTest, plan) {
   }
 }
 
-// End with the maximum number of iterations
+// Termination at maximum number of iterations
 TEST(BiRrtPlanner, max_itr) {
   ConfigurationSpace::Ptr cspace(new ConfigurationSpace(kDim));
   cspace->set_random_config(RandomConfig);
@@ -141,7 +141,7 @@ TEST(BiRrtPlanner, max_itr) {
   EXPECT_EQ(kMaxItr, planner->PlanPath(init, goal, path));
 }
 
-// End by termination condition function
+// Termination by the termination condition function
 TEST(BiRrtPlanner, terminate) {
   ConfigurationSpace::Ptr cspace(new ConfigurationSpace(kDim));
   cspace->set_random_config(RandomConfig);

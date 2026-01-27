@@ -42,11 +42,11 @@ DAMAGE.
 using tmc_rplanner::Config;
 
 namespace {
-// Dimension of state space used in the test
+// Dimension of the state space used in the test
 int32_t kDim = 2;
-// Exploration width
+// Search width
 double kDelta = 0.02;
-// Permissible value for floating-point equivalence
+// Tolerance for floating-point identity
 double kDoubleEps = 1e-5;
 
 
@@ -134,7 +134,7 @@ TEST_F(MultiBirrtPlannerTest, plan) {
   Path path;
   ASSERT_EQ(kSuccess, planner_->PlanPath(starts, goals, path));
 
-  // Check path
+  // Check of the path
   // Initial value is init
   ASSERT_DOUBLE_EQ(starts[0](0), path.front()(0));
   ASSERT_DOUBLE_EQ(starts[0](1), path.front()(1));
@@ -143,7 +143,7 @@ TEST_F(MultiBirrtPlannerTest, plan) {
   ASSERT_DOUBLE_EQ(goals[0](0), path.back()(0));
   ASSERT_DOUBLE_EQ(goals[0](1), path.back()(1));
 
-  // Distance is always below kDelta and Feasible
+  // Distance is always less than or equal to kDelta and Feasible
   Config old_config = init;
   for (Path::iterator config = ++(path.begin());
        config != path.end();
@@ -193,7 +193,7 @@ TEST_F(MultiBirrtPlannerTest, multi_goal_test) {
 
     ASSERT_EQ(kSuccess, planner_->PlanPath(starts, goals, path));
 
-    // Check path
+    // Check of the path
     // Initial value is init
     // Terminal value is goal
     ASSERT_TRUE((path.front() == init1) || (path.front() == init2));
@@ -204,7 +204,7 @@ TEST_F(MultiBirrtPlannerTest, multi_goal_test) {
     if (path.back() == goal1) use_goal1 = true;
     if (path.back() == goal2) use_goal2 = true;
 
-    // Distance is always below kDelta and Feasible
+    // Distance is always less than or equal to kDelta and Feasible
     Config old_config = path.front();
     for (Path::iterator config = ++(path.begin());
          config != path.end();
@@ -214,7 +214,7 @@ TEST_F(MultiBirrtPlannerTest, multi_goal_test) {
       old_config = *config;
     }
   }
-  // Check if using init and goal for all patterns
+  // Check if all patterns use init and goal
   ASSERT_TRUE(use_init1 && use_init2 && use_goal1 && use_goal2);
 }
 
@@ -258,7 +258,7 @@ TEST_F(MultiBirrtPlannerTest, multi_path_test) {
   ASSERT_EQ(kSuccess, planner_->PlanPaths(starts, goals, 3, paths));
 
   EXPECT_EQ(3, paths.size());
-  // Check path
+  // Check of the path
 
   for (std::vector<Path>::iterator path = paths.begin();
        path != paths.end();
@@ -273,7 +273,7 @@ TEST_F(MultiBirrtPlannerTest, multi_path_test) {
     if (path->back() == goal1) use_goal1 = true;
     if (path->back() == goal2) use_goal2 = true;
     if (path->back() == goal3) use_goal3 = true;
-    // Distance is always below kDelta and Feasible
+    // Distance is always less than or equal to kDelta and Feasible
     Config old_config = path->front();
     for (Path::iterator config = ++(path->begin());
          config != path->end();
@@ -290,7 +290,7 @@ TEST_F(MultiBirrtPlannerTest, multi_path_test) {
 }
 
 
-// Test if planning with generate start and generate_goal
+// Can plan with generate start and generate_goal
 TEST_F(MultiBirrtPlannerTest, generate_test) {
   MultiBirrtPlannerParam param;
   param.delta = kDelta;
@@ -314,10 +314,10 @@ TEST_F(MultiBirrtPlannerTest, generate_test) {
 
     ASSERT_EQ(kSuccess, planner_->PlanPath(starts, goals, path));
 
-    // Verify that the path has a certain length
+    // Confirm that the path has a certain length
     EXPECT_LT(10, path.size());
 
-    // Confirm that start and goal are different from the previous plan
+    // Confirm that it is a different start, goal from the previous plan
     EXPECT_NE(old_init, path.front());
     EXPECT_NE(old_goal, path.back());
 
@@ -327,7 +327,7 @@ TEST_F(MultiBirrtPlannerTest, generate_test) {
     // std::cerr << "start = \n" << path.front() << std::endl;
     // std::cerr << "goal = \n" << path.back() << std::endl;
 
-    // Distance is always below kDelta and Feasible
+    // Distance is always less than or equal to kDelta and Feasible
     Config old_config = path.front();
     for (Path::iterator config = ++(path.begin());
          config != path.end();
@@ -351,7 +351,7 @@ TEST_F(MultiBirrtPlannerTest, max_connect) {
 
   planner_ = std::make_shared<MultiBirrtPlanner>(cspace_, param);
 
-  // config[0] is set without obstacles at (0.5, 2.0), so
+  // Since config[0] is set to have no obstacles at (0.5, 2.0),
   // Should be able to reach the goal almost straight
   Config start(kDim);
   start << 1.0, 0.0;
@@ -361,8 +361,8 @@ TEST_F(MultiBirrtPlannerTest, max_connect) {
   for (int32_t i = 0; i < 100; ++i) {
     Path path;
     ASSERT_EQ(kSuccess, planner_->PlanPath({start}, {goal}, path));
-    // In unrestricted connect operation, should connect to the other from the point where a branch was extended once from start or goal
-    // Therefore, config[0] enters 1.0±kDelta
+    // In unrestricted connect operation, should connect from the point where a branch is extended once from start or goal to the other side
+    // Therefore, config[0] falls within 1.0±kDelta
     for (const auto config : path) {
       EXPECT_LE(std::abs(config[0] - 1.0), kDelta);
     }
@@ -370,7 +370,7 @@ TEST_F(MultiBirrtPlannerTest, max_connect) {
 }
 
 
-// Ends with maximum iteration count
+// End with maximum number of iterations
 TEST_F(MultiBirrtPlannerTest, max_itr) {
   MultiBirrtPlannerParam param;
   param.delta = kDelta;
@@ -393,7 +393,7 @@ TEST_F(MultiBirrtPlannerTest, max_itr) {
   EXPECT_EQ(kMaxItr, planner_->PlanPath(starts, goals, path));
 }
 
-// Ends by the termination condition function
+// End by termination condition function
 TEST_F(MultiBirrtPlannerTest, terminate) {
   MultiBirrtPlannerParam param;
   param.delta = kDelta;

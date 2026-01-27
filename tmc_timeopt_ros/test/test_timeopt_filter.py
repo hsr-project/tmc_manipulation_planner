@@ -44,7 +44,7 @@ from trajectory_msgs.msg import (
 
 
 def test_ros_traj_from_timeopt_normal():
-    u"""Test if the basic transformation works"""
+    u"""Test if basic transformation is performed"""
     timeopt_traj = [(0.0, {'joint1': (0, 0, 0), 'joint2': (0, 0, 0)}),
                     (1.0, {'joint1': (1, 1, 1), 'joint2': (2, 2, 2)}),
                     (2.0, {'joint1': (2, 2, 2), 'joint2': (3, 3, 3)})]
@@ -74,7 +74,7 @@ def test_ros_traj_from_timeopt_normal():
 
 
 def test_ros_traj_from_timeopt_skip():
-    u"""Test skipping orbits with min_step"""
+    u"""Test skipping trajectory with min_step"""
     timeopt_traj = [(0.0, {'joint1': (0, 0, 0), 'joint2': (0, 0, 0)}),
                     (1.0, {'joint1': (1, 1, 1), 'joint2': (2, 2, 2)}),
                     (1.005, {'joint1': (2, 2, 2), 'joint2': (3, 3, 3)})]
@@ -140,7 +140,7 @@ def test_timeopt_traj_from_ros_decimate():
 
 
 def test_timeopt_traj_from_ros_decimate_no_point():
-    u"""No points after thinning"""
+    u"""Thinning results in no points"""
     start_state = JointState()
     start_state.name = ['joint1']
     start_state.position = [0.0]

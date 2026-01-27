@@ -26,7 +26,7 @@ OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH
 DAMAGE.
 */
 /// @file     random_optimizer.cpp
-/// @brief    Implementation of PointToPointPlanner using random_optimizer
+/// @brief Implementation of PointToPointPlanner using random_optimizer
 /// @author   Koji Terada
 /// @version  1.0.0
 /// @date     2011.10.25
@@ -36,8 +36,8 @@ DAMAGE.
 
 namespace tmc_rplanner {
 
-/// @brief Generate random configurations to seek the optimal solution
-/// @param config_out Configuration with maximum evaluation
+/// @brief Generate random configurations to find the optimal solution
+/// @param config_out Configuration with the highest evaluation
 /// @param value_out Evaluation value
 /// @return true: Success false: Failure
 bool RandomOptimizer::Optimize(Config& config_out, double& value_out) {
@@ -46,7 +46,7 @@ bool RandomOptimizer::Optimize(Config& config_out, double& value_out) {
   Config max_config;
 
   for (int32_t i = 0; i < max_itr_; ++i)  {
-    // Generate random configurations
+    // Generate random configuration
     Config new_config = space_->GenerateRandomConfig();
     /// Check if the configuration is valid
     if (space_->CheckFeasibility(new_config)) {
@@ -68,7 +68,7 @@ bool RandomOptimizer::Optimize(Config& config_out, double& value_out) {
       break;
     }
   }
-  // Fail if the number of evaluations is zero
+  // Failure if the number of evaluations is 0
   if (num_eval == 0) {
     return false;
   } else {

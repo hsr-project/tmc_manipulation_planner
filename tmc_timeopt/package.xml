@@ -1,7 +1,7 @@
 <package format="3">
   <name>tmc_timeopt</name>
-  <version>2.0.1</version>
-  <description>Time optimal trajectory parameterization.</description>
+  <version>2.0.2</version>
+  <description>時間最適軌道パラメータ化を解決するためのライブラリ。</description>
   <maintainer email="xr-hsr-support@mail.toyota.co.jp">HSR Support</maintainer>]
   <author>Koji Terada</author>
   <author>Keisuke Takeshita</author>

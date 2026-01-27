@@ -48,10 +48,10 @@ DAMAGE.
 
 namespace tmc_robot_rrt_planner_node {
 
-/// Convert CollisionObject to Marker
-/// @param [in] object Object of type CollisionObject
-/// @param [in] origin_to_object Position and orientation of the object from the reference coordinate
-/// @param [in] origin_to_robot Position and orientation of the robot from the reference coordinate
+/// Convert CollisionObject to marker
+/// @param [in] object An object of type CollisionObject
+/// @param [in] origin_to_object Position and orientation of the object from the reference coordinates
+/// @param [in] origin_to_robot Position and orientation of the robot from the reference coordinates
 visualization_msgs::MarkerArray ObjectToMarker(
     const std::vector<tmc_manipulation_msgs::CollisionObject>& objects,
     const std::vector<geometry_msgs::Pose>& origin_to_object,

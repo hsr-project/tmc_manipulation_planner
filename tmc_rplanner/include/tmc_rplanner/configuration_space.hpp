@@ -26,7 +26,7 @@ OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH
 DAMAGE.
 */
 /// @file     configuration_space.hpp
-/// @brief    Basic operations in configuration space for planning
+/// @brief Basic operations in configuration space for planning
 /// @author   Koji Terada
 /// @version  1.0.0
 /// @date     2011.10.25
@@ -122,32 +122,32 @@ class ConfigurationSpace {
     constrain_config_callback_ = constrain_config_callback;
   }
 
-  /// Returns a configuration advanced one step from src_config to dst_config
+  /// Returns a configuration one step advanced from src_config to dst_config
   Config NewConfig(const Config& src_config, const Config& dst_config,
                    double delta,  bool& is_reached_out) const;
-  /// Check the straight line
+  /// Check the line
   bool CheckLine(const Config& src_conifg, const Config& dst_config,
                  double delta, Path& path_out) const;
-  /// Check the straight line (with termite)
+  /// Check the line (with termite)
   bool CheckLine(const Config& src_conifg, const Config& dst_config,
                  double delta, TerminateConditionFunc terminate,
                  Path& path_out) const;
   /// Check if the configuration is valid required: check_feasibility
   bool CheckFeasibility(const Config& config) const;
-  /// Transitionability check required: check_feasibility or check_transferability
+  /// Transferability check required: check_feasibility or check_transferability
   bool CheckTransferability(const Config& src_config,
                             const Config& dst_config) const;
-  /// Random configuration generation required: random_config
+  /// Generate a random configuration required: random_config
   Config GenerateRandomConfig() const;
   /// Measure the distance between configurations optional: distance
   double CalcDistance(const Config& config1, const Config& config2) const;
-  /// Configuration evaluation required: evaluate_config
+  /// Evaluate the configuration required: evaluate_config
   double EvaluateConfig(const Config& config) const;
   /// Goal generation function required: generate_goal_config
   bool GenerateGoalConfig(Config& config) const;
   /// Start generation function required: generate_start_config
   bool GenerateStartConfig(Config& config) const;
-  /// Check if the configuration is in the termination condition
+  /// Check if the configuration meets the termination condition
   /// required: check_goal_config
   bool CheckConfigInGoal(const Config& config) const;
   /// Constrain the configuration required: constrain_config
@@ -160,9 +160,9 @@ class ConfigurationSpace {
   void CheckFeasibilityCallBack(const Config& config,  bool success) const;
   /// Function called when adding a node Mainly for debugging
   void AddNodeCallBack(const Config& parent, const Config& child) const;
-  /// Function called when generating start Mainly for debugging
+  /// Function called during start generation Mainly for debugging
   void AddStartCallBack(const Config& config) const;
-  /// Function called when generating goal Mainly for debugging
+  /// Function called during goal generation Mainly for debugging
   void AddGoalCallBack(const Config& config) const;
   /// Callback called during ConstraintConfig Mainly for debugging
   void ConstrainConfigCallBack(const Config& config_in,
@@ -172,19 +172,19 @@ class ConfigurationSpace {
   // Copying is prohibited
   ConfigurationSpace(const ConfigurationSpace&);
   ConfigurationSpace& operator = (const ConfigurationSpace&);
-  /// Degrees of freedom of the state space
+  /// Degrees of freedom in the state space
   const int32_t dof_;
   /// Function that returns a random state
   RandomConfigFunc generate_random_config_;
-  /// Function that returns whether the current configuration is feasible
+  /// Function that returns if the current configuration is feasible
   CheckFeasibilityFunc check_feasibility_;
-  /// Check if transition is possible between two configurations
+  /// Check if two configurations can transition
   CheckTransferabilityFunc check_transferability_;
   /// Distance between two configurations
   DistanceFunc calc_distance_;
   /// Configuration evaluation function
   EvaluateConfigFunc evaluate_config_;
-  /// Check if the configuration is in the termination condition
+  /// Check if the configuration meets the termination condition
   CheckConfigInGoalFunc check_goal_config_;
   /// Configuration constraint function
   ConstraintFunc constrain_config_;
@@ -200,9 +200,9 @@ class ConfigurationSpace {
   CheckFeasibilityCallBackFunc check_feasibility_callback_;
   /// Function called when adding a node Mainly for debugging
   AddNodeCallBackFunc add_node_callback_;
-  /// Function called when generating start Mainly for debugging
+  /// Function called during start generation Mainly for debugging
   AddStartCallBackFunc add_start_callback_;
-  /// Function called when generating goal Mainly for debugging
+  /// Function called during goal generation Mainly for debugging
   AddGoalCallBackFunc add_goal_callback_;
   /// Callback called during ConstraintConfig Mainly for debugging
   ConstrainConfigCallBackFunc constrain_config_callback_;

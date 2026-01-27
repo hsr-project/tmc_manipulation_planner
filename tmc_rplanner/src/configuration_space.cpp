@@ -26,7 +26,7 @@ OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH
 DAMAGE.
 */
 /// @file     rplanner_space.cpp
-/// @brief Basic operations in the configuration space for planning
+/// @brief Basic operations in configuration space for planning
 /// @author   Koji Terada
 /// @version  1.0.0
 /// @date     2011.10.25
@@ -36,20 +36,20 @@ DAMAGE.
 #include <tmc_rplanner/configuration_space.hpp>
 
 namespace {
-// If not progressed beyond, consider no progress
+// Considered as no progress if it doesn't advance further
 double kAdvancedEps = 1e-6;
 }
 
 namespace tmc_rplanner {
 
 /// @func CheckTransferabilityByDividing
-/// @brief Simply checks by dividing starting and ending points by division_num
-/// @param src_config Starting configuration
-/// @param dst_config Ending configuration
-/// @param check_feasibility Checks if the configuration is feasible
+/// @brief Simply check by dividing the start and end points by division_num
+/// @param src_config Start configuration
+/// @param dst_config End configuration
+/// @param check_feasibility Check if the configuration is feasible
 /// @param cacl_distance Distance calculation function
-/// @param sub_delta Granularity for checking transferability
-/// @retval true: transition possible, false: transition not possible
+/// @param sub_delta Granularity when checking transferability
+/// @retval true: Transferable, false: Not transferable
 /// @exception invalid_argument
 /// @exception DimensionMismatch
 bool CheckTransferabilityByDividing(
@@ -75,7 +75,7 @@ bool CheckTransferabilityByDividing(
 
   if (src_to_dst_norm <
       std::numeric_limits<double>::min()) {
-    // Judgment if extremely close
+    // Considered attached if extremely close
     return true;
   }
 
@@ -94,20 +94,20 @@ bool CheckTransferabilityByDividing(
 }
 
 /// @func NewConfig
-/// @brief Calculate new configuration progressed by delta based on distance from src to dst
-///        If the distance from src to dst is less than delta, set is_reached_out to true
+/// @brief Calculate new that has advanced delta based on distance from src to dst
+///        If the distance from src to dst is less than or equal to delta, set is_reached_out to true
 ///        and return dst
 /// @param src_config Initial configuration
 /// @param dst_config Target configuration
 /// @param delta Distance measured from src to approach dst
-/// @param is_reached_out true: reached, false: not reached
-/// @return Configuration progressed by delta from src to dst based on distance
+/// @param is_reached_out true: Reached, false: Not reached
+/// @return Configuration that has advanced delta based on distance from src to dst
 /// @exception invalid_argument
 /// @exception DimensionMismatch
 Config ConfigurationSpace::NewConfig(
     const Config& src_config, const Config& dst_config,
     double delta, bool& is_reached_out) const {
-  // delta must be positive
+  // Delta must be positive
   if (delta < std::numeric_limits<double>::min()) {
     throw std::invalid_argument("Delta must be positive.");
   }
@@ -117,7 +117,7 @@ Config ConfigurationSpace::NewConfig(
     throw DimensionMismatch("Configuration size mismatch.");
   }
   double length = CalcDistance(src_config, dst_config);
-  // Calculate unit vector computed by distance
+  // Calculate the unit vector computed by distance
   if (length > delta) {
     is_reached_out = false;
     return src_config + (dst_config-src_config)/length * delta;
@@ -130,13 +130,13 @@ Config ConfigurationSpace::NewConfig(
 
 /// @func bool CheckLine
 /// @brief Check linear trajectory
-/// Check transitions from start_config to goal_config at intervals of delta.
-/// If transition to goal_config is possible, return the series
+/// Perform transition checks at intervals of delta from start_config to goal_config.
+/// Return the series if it can transition to goal_config
 /// @param src_config Initial configuration
 /// @param dst_config Final configuration
-/// @param delta Width of the check
+/// @param delta Check width
 /// @param path_out Checked configuration series
-/// @return true: transition possible false: transition not possible
+/// @return true: Transferable false: Not transferable
 /// @exception DimensionMismatch
 bool ConfigurationSpace::CheckLine(
     const Config& src_config,
@@ -150,14 +150,14 @@ bool ConfigurationSpace::CheckLine(
 
 /// @func bool CheckLine
 /// @brief Check linear trajectory
-/// Check transitions from start_config to goal_config at intervals of delta.
-/// If transition to goal_config is possible, return the series
+/// Perform transition checks at intervals of delta from start_config to goal_config.
+/// Return the series if it can transition to goal_config
 /// @param src_config Initial configuration
 /// @param dst_config Final configuration
-/// @param delta Width of the check
-/// @param terminate Termination conditions
+/// @param delta Check width
+/// @param terminate Termination condition
 /// @param path_out Checked configuration series
-/// @return true: transition possible false: transition not possible
+/// @return true: Transferable false: Not transferable
 /// @exception DimensionMismatch
 bool ConfigurationSpace::CheckLine(
     const Config& src_config,
@@ -177,8 +177,8 @@ bool ConfigurationSpace::CheckLine(
   Config point = src_config;
   Config next_point = src_config;
 
-  // If src_config and dst_config are equal, only perform interference check with constrain_config and
-  // checkfeasibility and return the path
+  // If src_config and dst_config are equal, only perform interference check with constrain_config
+  // and checkfeasibility, then return the path
   if (CalcDistance(src_config, dst_config) < kAdvancedEps)  {
     if (!ConstrainConfig(dst_config, next_point)) {
       return false;
@@ -202,8 +202,8 @@ bool ConfigurationSpace::CheckLine(
     next_point = NewConfig(path_out.back(),
                            next_point, delta,
                            constrain_reached);
-    // Consider as failure if the result of constrain config is far from the previous position or has not progressed
-    // Consider as failure
+    // Considered a failure if the result of constrain config is far from the previous location or hasn't advanced
+    // Considered a failure
     if ((CalcDistance(next_point, path_out.back()) < kAdvancedEps)
         || (CalcDistance(next_point, dst_config)) >
         CalcDistance(path_out.back(), dst_config) + kAdvancedEps) {
@@ -219,8 +219,8 @@ bool ConfigurationSpace::CheckLine(
 }
 
 /// @brief Calculate the distance between two configurations
-///       If distance is set in planner_param_, use it to calculate, otherwise return Euclidean distance
-///      Use it to calculate, otherwise return Euclidean distance
+///       If distance is set in planner_param_, calculate with it
+///      Otherwise, return Euclidean distance
 /// optional: distance
 /// @param config1 Configuration 1
 /// @param config2 Configuration 2
@@ -242,7 +242,7 @@ double ConfigurationSpace::CalcDistance(const Config& config1,
 /// @brief Check if the configuration is valid
 ///        required: check_feasibility
 /// @param config Configuration
-/// @return true: valid false: invalid
+/// @return true: Valid false: Invalid
 /// @exception LackRequiredFunc
 /// @exception DimensionMismatch
 bool ConfigurationSpace::CheckFeasibility(const Config& config) const {
@@ -259,13 +259,13 @@ bool ConfigurationSpace::CheckFeasibility(const Config& config) const {
   }
 }
 
-/// @brief Check transition feasibility between two configurations.
+/// @brief Check the transferability between two configurations.
 ///        If check_transferability is not set in planner_param_, only check the terminal value
-///        Only check the terminal value
+///
 //         required: check_feasibility or check_transferability
-/// @param src_config Starting configuration
-/// @param dst_config Ending configuration
-/// @return true: transition possible false: transition not possible
+/// @param src_config Start configuration
+/// @param dst_config End configuration
+/// @return true: Transferable false: Not transferable
 /// @exception DimensionMismatch
 bool ConfigurationSpace::CheckTransferability(
     const Config& src_config,
@@ -282,7 +282,7 @@ bool ConfigurationSpace::CheckTransferability(
 }
 
 
-/// @brief Generate random configuration
+/// @brief Generate a random configuration
 ///        required: random_config
 /// @return Random configuration
 /// @exception LackRequiredFunc
@@ -296,7 +296,7 @@ Config ConfigurationSpace::GenerateRandomConfig() const {
 }
 
 
-/// @brief Configuration evaluation
+/// @brief Evaluate the configuration
 ///        required: random_config
 /// @return Evaluation value
 /// @exception LackRequiredFunc
@@ -337,10 +337,10 @@ bool ConfigurationSpace::GenerateStartConfig(Config& config) const {
 }
 
 
-/// @brief Check if configuration is included in termination conditions
+/// @brief Check if the configuration meets the termination condition
 ///        required: check_goal_config
 /// @param Configuration to be judged
-/// @return true: satisfies termination conditions false: does not satisfy termination requirements
+/// @return true: Meets termination condition false: Does not meet termination requirements
 /// @exception LackRequiredFunc
 /// @exception DimensionMismatch
 bool ConfigurationSpace::CheckConfigInGoal(const Config& config) const {
@@ -354,11 +354,11 @@ bool ConfigurationSpace::CheckConfigInGoal(const Config& config) const {
   }
 }
 
-/// @brief Constrain configuration.
+/// @brief Constrain the configuration.
 /// If constraint_config is not set in planner_param_, return config_in as is
 /// @param config_in: Input configuration
 /// @param config_out: Constrained configuration
-/// @return true: constraint failed false: constraint succeeded
+/// @return true: Constraint failed false: Constraint succeeded
 /// @exception LackRequiredFunc
 /// @exception DimensionMismatch
 bool ConfigurationSpace::ConstrainConfig(
@@ -377,11 +377,11 @@ bool ConfigurationSpace::ConstrainConfig(
   }
 }
 
-/// Constrain the start configuration.
+/// Constrain the Start configuration.
 /// If constraint_config is not set in planner_param_, return config_in as is
 /// @param config_in: Input configuration
 /// @param config_out: Constrained configuration
-/// @return true: constraint failed false: constraint succeeded
+/// @return true: Constraint failed false: Constraint succeeded
 /// @exception LackRequiredFunc
 /// @exception DimensionMismatch
 bool ConfigurationSpace::ConstrainStartConfig(
@@ -400,11 +400,11 @@ bool ConfigurationSpace::ConstrainStartConfig(
   }
 }
 
-/// Constrain the goal configuration.
+/// Constrain the Goal configuration.
 /// If constraint_config is not set in planner_param_, return config_in as is
 /// @param config_in: Input configuration
 /// @param config_out: Constrained configuration
-/// @return true: constraint failed false: constraint succeeded
+/// @return true: Constraint failed false: Constraint succeeded
 /// @exception LackRequiredFunc
 /// @exception DimensionMismatch
 bool ConfigurationSpace::ConstrainGoalConfig(
@@ -434,7 +434,7 @@ void ConfigurationSpace::CheckFeasibilityCallBack(
   }
 }
 
-/// Function called when adding node Mainly for debugging
+/// Function called when adding a node Mainly for debugging
 /// @param parent Parent node
 /// @param child Child node
 void ConfigurationSpace::AddNodeCallBack(

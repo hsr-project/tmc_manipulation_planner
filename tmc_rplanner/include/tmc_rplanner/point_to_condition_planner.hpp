@@ -26,7 +26,7 @@ OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH
 DAMAGE.
 */
 /// @file     point_to_condition_planner.hpp
-/// @brief Interface for planners connecting a point and a goal state
+/// @brief    Interface of the planner connecting a point and the goal state
 /// @author   Koji Terada
 /// @version  1.0.0
 /// @date     2011.10.25
@@ -42,7 +42,7 @@ DAMAGE.
 namespace tmc_rplanner {
 
 /// @class IPointToConditionPlanner
-/// @brief Interface for planners connecting two points
+/// @brief Interface of the planner connecting two points
 class IPointToConditionPlanner {
  public:
   using Ptr = std::shared_ptr<IPointToConditionPlanner>;

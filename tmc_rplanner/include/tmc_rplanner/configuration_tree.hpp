@@ -26,7 +26,7 @@ OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH
 DAMAGE.
 */
 /// @file     configuration_tree.hpp
-/// @brief    Tree structure class in configuration space used in planner
+/// @brief    Tree structure class in the configuration space used by the planner
 /// @author   Koji Terada
 /// @version  1.0.0
 /// @date     2011.11.01
@@ -50,7 +50,7 @@ class ConfigurationTree {
   ConfigurationTree(ConfigurationSpace::Ptr configuration_space, double delta, int32_t max_connect);
   ~ConfigurationTree() {}
 
-  /// Extend branches from the nearest node of the tree to dst_config by a distance of delta
+  /// Extend the branch from the nearest node in the tree to dst_config by a distance of delta
   /// @param[in] dst_config Target configuration
   ExtendRet Extend(const Config& dst_config);
 
@@ -65,20 +65,20 @@ class ConfigurationTree {
                     TerminateConditionFunc terminate);
   /// Initialize the tree
   void ClearTree() {tree_.clear();}
-  /// Output the tree to a stream
+  /// Output the tree to the stream
   void PrintTree() const;
-  /// Extract path with the final element as the goal
+  /// Extract the path, with the final element as the goal
   void TrackBackPath(Path& path_out) const;
 
   /// Get the latest configuration
   /// @return Latest configuration
   Config GetLastConfig() const {return tree_.back()->data;}
 
-  /// Remove the branch connected to the latest configuration
+  /// Delete the branch connected to the latest configuration
   void RemoveLastBranch();
 
   /// Set the root configuration
-  /// @param[in] config The configuration to set as root
+  /// @param[in] config Configuration of the root to be set
   void SetRootConfig(const Config& config) {
     tree_.push_front(Node::Ptr(new Node(config)));
   }
@@ -93,7 +93,7 @@ class ConfigurationTree {
   void set_delta(double delta) {delta_ = delta;}
 
  private:
-  /// Copying is prohibited
+  /// Copy is prohibited
   ConfigurationTree(const ConfigurationTree&);
   ConfigurationTree& operator=(const ConfigurationTree&);
 
@@ -101,11 +101,11 @@ class ConfigurationTree {
   Tree tree_;
   /// Configuration space
   ConfigurationSpace::Ptr configuration_space_;
-  /// Exploration width of the tree
+  /// Search width of the tree
   double delta_;
   /// Maximum number of times to continue Extend in Connect; if negative, continue as much as possible
   int32_t max_connect_;
-  /// Retrieve the nearest node within the tree
+  /// Get the nearest node from the tree
   Node::WeakPtr FetchNearestNeighbor_(const Config& config);
 };
 }  // namespace tmc_rplanner

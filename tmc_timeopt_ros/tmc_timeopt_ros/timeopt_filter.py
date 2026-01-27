@@ -42,8 +42,8 @@ from trajectory_msgs.msg import JointTrajectory
 from trajectory_msgs.msg import JointTrajectoryPoint
 
 
-# Experimentally determined, with HSR, repeating move_to_go and move_to_neutral often gets stuck at 1.0e-3
-# Slightly looser than that
+# Experimentally determined, frequently gets stuck at 1.0e-3 when repeating move_to_go and move_to_neutral with HSR
+# Slightly loosen it
 _EPSILON = 1.0e-2
 
 
@@ -66,7 +66,7 @@ def _is_in_acc_limit(joint_names, accelerations, acc_limit_dict):
 
 def _ros_trajectory_from_timeopt(
         trajectory, joint_names, logger, acc_limit_dict, min_step=0.01, offset=0.0):
-    u"""Convert trajectory obtained from timeopt's get_optimal_trajectory to ROS
+    u"""Convert the trajectory obtained from timeopt's get_optimal_trajectory to ROS
 
     Args:
         trajectory: timeopt trajectory (list  (time, state) )
@@ -102,23 +102,23 @@ def _timeopt_trajectory_from_ros(start_state,
                                  trajectory_msg,
                                  target_joint_names,
                                  decimate_threshold=1e-3):
-    u"""Convert ROS trajectory to be usable with timeopt
+    u"""Convert ROS trajectory to be handled by timeopt
 
     Args:
         start_state: Initial state.
-        trajectory_msg: Joint trajectory in ROS (trajectory_msg/JointTrajecotry)
-        target_joint_names: Trajectory to optimize with timeopt (list (str) )
-        decimate_threshold: Threshold to consider two points close. Value of 2-norm of position (float)
+        trajectory_msg: Joint trajectory in ROS (trajectory_msg/JointTrajectory)
+        target_joint_names: Trajectory to be optimized by timeopt (list (str) )
+        decimate_threshold: Threshold for considering two points as close. Value of 2-norm of position (float)
     Return:
         timeopt_trajectory: Trajectory used by timeopt (TrajectoryDict)
     Note:
-        Returns None if there are no changing points from initial state
+        Return None if there are no points changing from the initial state
     """
     points = trajectory_msg.points
     joint_names = trajectory_msg.joint_names
 
-    # Calculation becomes unstable if there are almost the same points.
-    # The same points are unnecessary due to the characteristics of minimum-time control, so decimate them
+    # Calculation becomes unstable if there are almost identical points.
+    # Unnecessary to have identical points due to the characteristics of minimum time control, so decimate them
     decimate_point = []
     prev_point = [start_state.position[start_state.name.index(joint)]
                   for joint in joint_names]
@@ -137,15 +137,15 @@ def _timeopt_trajectory_from_ros(start_state,
 
     traj = TrajectoryDict(point_num)
     if (point_num == 2):
-        # If there are two waypoints, it is considered a linear trajectory
+        # If there are two waypoints, make it a linear trajectory
         for name in target_joint_names:
             traj.append(name, LinearTrajectory)
     else:
-        # Normally interpolate with cubic natural splines
+        # Normally interpolate with cubic natural spline
         for name in target_joint_names:
             traj.append(name, NaturalCubicSplineTrajectory)
 
-    # Start with the start_state point as the starting point
+    # Insert the point of start_state as the starting point
     for index, name in enumerate(start_state.name):
         if name in traj:
             traj[name][0] = (start_state.position[index], 0, 0)
@@ -163,7 +163,7 @@ def _timeopt_trajectory_from_ros(start_state,
 
 
 class TimeoptFilterNode(Node):
-    u"""A node that converts spatial command trajectories into temporal trajectories"""
+    u"""Node to convert spatial command trajectory to temporal trajectory"""
 
     _DEFAULT_ACCELERATION_LIMIT = 1.0
     _DEFAULT_VELOCITY_LIMIT = 1.0
@@ -217,7 +217,7 @@ class TimeoptFilterNode(Node):
         return self.get_parameter(name).value
 
     def _update_velocity_limit(self, joint_name, value):
-        u"""Overwrite speed constraints"""
+        u"""Overwrite velocity constraints"""
         self._kinematics.set_limit(joint_name, 'velocity',
                                    (-self._velocity_ratio * value, self._velocity_ratio * value))
 
@@ -236,7 +236,7 @@ class TimeoptFilterNode(Node):
                 self._update_acceleration_limit(limit.joint_name, limit.max_acceleration)
 
     def _reset_joint_limits(self):
-        u"""Reset speed and acceleration constraints with current parameters"""
+        u"""Reset velocity and acceleration constraints with current parameters"""
         for joint in self._use_joint:
             self._update_velocity_limit(joint, self._vel_limit[joint])
             self._update_acceleration_limit(joint, self._acc_limit[joint])
@@ -254,7 +254,7 @@ class TimeoptFilterNode(Node):
     def _timeopt_trajectory_from_ros(self, start_state, trajectory):
         u"""Convert ROS trajectory to timeopt trajectory
 
-        Functionate to implement robot-specific processing with overwrite
+        Functionize to implement robot-specific processing with overwrite
         """
         return _timeopt_trajectory_from_ros(
             start_state, trajectory, self._target.names,
@@ -263,7 +263,7 @@ class TimeoptFilterNode(Node):
     def _set_trajectory(self, timeopt_trajectory):
         u"""Set trajectory to time optimization instance
 
-        Functionate to implement robot-specific processing with overwrite
+        Functionize to implement robot-specific processing with overwrite
         """
         self._timeopt.set_trajectory(timeopt_trajectory)
 
@@ -271,7 +271,7 @@ class TimeoptFilterNode(Node):
         u"""Callback for filter_trajectory service.
 
         Receive command space trajectory (tmc_manipulation/FilterJointTrajectory),
-        Return minimum-time trajectory (JointTrajectory)
+        Return minimum time trajectory (JointTrajectory)
         """
         self.get_logger().debug('\n%s' % req)
         start = self.get_clock().now()
@@ -288,7 +288,7 @@ class TimeoptFilterNode(Node):
             return res
 
         if timeopt_traj is None:
-            # When there are no waypoints, return a trajectory with minimum time without optimization
+            # If there are no waypoints, return a trajectory with minimum time without optimization
             self.get_logger().info('no movement')
             output_traj = JointTrajectory()
             output_traj.joint_names = req.trajectory.joint_names

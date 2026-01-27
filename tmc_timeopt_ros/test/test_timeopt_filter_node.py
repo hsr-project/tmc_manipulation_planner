@@ -80,7 +80,7 @@ class TimeoptFilterNodeTest(unittest.TestCase):
             JointTrajectoryPoint(positions=pos)
             for pos in [[1.5, 0.0], [2.0, 2.0]]]
 
-        # Spin needs to be threaded separately to call the service
+        # To call the service, spin needs to be in a separate thread
         self._node = rclpy.create_node("test_node")
         self._executor = MultiThreadedExecutor()
         self._thread = threading.Thread(target=rclpy.spin, args=(self._node, self._executor), daemon=True)
@@ -116,7 +116,7 @@ class TimeoptFilterNodeTest(unittest.TestCase):
             self.assertLessEqual(abs(point.accelerations[1]), _JOINT2_LIMIT['acceleration'] + _EPSILONE)
 
     def test_timeopt_result_including_acc_error(self):
-        u"""Cases where the optimization result contains large acceleration"""
+        u"""Case where the optimization result includes large acceleration"""
         self._req.trajectory.points = [JointTrajectoryPoint(positions=pos) for pos in [[2.0, -1.0], [1.5, 0.0]]]
         res = self._filter_srv.call(self._req)
 
@@ -132,7 +132,7 @@ class TimeoptFilterNodeTest(unittest.TestCase):
             self.assertLessEqual(abs(point.accelerations[1]), _JOINT2_LIMIT['acceleration'] + _EPSILONE)
 
     def test_two_points_trajectory(self):
-        u"""Time optimization for two-point trajectory: current posture and one target point"""
+        u"""Time optimization of a two-point trajectory from the current posture to a target point"""
         del self._req.trajectory.points[-1]
         res = self._filter_srv.call(self._req)
 
@@ -148,7 +148,7 @@ class TimeoptFilterNodeTest(unittest.TestCase):
             self.assertLessEqual(abs(point.accelerations[1]), _JOINT2_LIMIT['acceleration'] + _EPSILONE)
 
     def test_no_movement(self):
-        u"""Time optimization for a motionless trajectory"""
+        u"""Time optimization of a stationary trajectory"""
         self._req.trajectory.points = [
             JointTrajectoryPoint(positions=pos)
             for pos in [[1.0, 1.0], [1.0 + 1.0e-5, 1.0]]]
@@ -165,7 +165,7 @@ class TimeoptFilterNodeTest(unittest.TestCase):
             Duration.from_msg(res.trajectory.points[0].time_from_start).nanoseconds / 1000000000.0, 0.1)
 
     def test_velocity_ratio(self):
-        u"""Setting speed constraint parameters"""
+        u"""Setting velocity constraint parameters"""
         set_param_req = SetParameters.Request()
         set_param_req.parameters.append(Parameter('velocity_ratio', value=0.3).to_parameter_msg())
         _ = self._parameter_srv.call(set_param_req)
@@ -195,9 +195,9 @@ class TimeoptFilterNodeTest(unittest.TestCase):
             self.assertLessEqual(abs(point.accelerations[1]), _JOINT2_LIMIT['acceleration'] * 0.5 + _EPSILONE)
 
     def test_request_with_limits(self):
-        u"""Constraints on service requests"""
-        # Not sure why, but constraints work properly with 0.03, but not with 0.05
-        # There might be some issues around optimization
+        u"""Constraints in service requests"""
+        # Not sure why, but with 0.03 the constraints work properly, and with 0.05 they don't
+        # There seems to be some issue around optimization
         self._req.limits.append(
             JointLimits(joint_name='joint1',
                         has_velocity_limits=True, max_velocity=0.03))

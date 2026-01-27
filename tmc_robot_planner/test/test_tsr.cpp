@@ -50,7 +50,7 @@ using tmc_robot_planner::CalcClosestPose;
 using tmc_robot_planner::GenerateSample;
 
 namespace {
-/// Threshold for considering double values as close
+/// Threshold to consider double values as close
 
 double kDoubleEps = 1.0e-10;
 }
@@ -76,7 +76,7 @@ TEST(DistanceTest, pos) {
   // std::cerr << "distance = " << distance2(0) << std::endl;
 }
 
-// Check if sampling can be performed for TSR with only translation
+// Check if sampling can be done for TSR with only translation
 TEST(SamplingTest, pos) {
   RegionValues min;
   RegionValues max;
@@ -97,7 +97,7 @@ TEST(SamplingTest, pos) {
   }
 }
 
-// Check if sampling can be performed for rotational TSR
+// Check if sampling can be done for TSR with rotation
 TEST(SamplingTest, rot) {
   RegionValues min;
   RegionValues max;
@@ -120,7 +120,7 @@ TEST(SamplingTest, rot) {
   }
 }
 
-// Check if the nearest point can be calculated for rotational TSR
+// Check if the nearest point can be calculated for TSR with rotation
 TEST(ClosestTest, rot) {
   RegionValues min;
   RegionValues max;

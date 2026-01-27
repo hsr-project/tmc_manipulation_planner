@@ -25,7 +25,7 @@ LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT
 OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH
 DAMAGE.
 */
-/// @brief Test for QuickTrajectoryFilter
+/// @brief Test of QuickTrajectoryFilter
 
 #include <gtest/gtest.h>
 
@@ -37,7 +37,7 @@ namespace tmc_timeopt {
 
 INSTANTIATE_TYPED_TEST_SUITE_P(QuickTrajectoryFilterTest, TrajectoryFilterCommonTest, QuickTrajectoryFilter);
 
-// Test whether optimization satisfies constraints even when initial and maximum velocities are changed
+// Test to check if optimization satisfies constraints even when initial and maximum velocities are changed
 class OptimizationTest
     : public ::testing::TestWithParam<std::tuple<double, double, double> > {};
 
@@ -59,17 +59,17 @@ TEST_P(OptimizationTest, TestCase) {
   ASSERT_TRUE(trajectory.IsValid());
 
   EXPECT_TRUE(VerifyBothEndVelocity(trajectory, input.initial_velocities));
-  // Since kMaxDeviation is set to 0.03, it should fall within that range
+  // Since kMaxDeviation = 0.03, it should be within that range
   EXPECT_LT(CalcWayPointDistance(trajectory, input.way_points[0]), 0.03 * 2);
   EXPECT_LT(CalcLastPointDistnace(trajectory, input.way_points[1]), kEpsilon);
   EXPECT_TRUE(VerifyVelocityLimit(trajectory, input.max_velocities));
   EXPECT_TRUE(VerifyAccelarationLimit(trajectory, input.max_accelerations));
 }
 
-// Test where the absolute value of the inner product of the unit vector in the direction of movement exceeds 1.0
+// Test where the absolute value of the dot product of the unit vector in the direction of travel exceeds 1.0
 TEST(QuickTrajectoryFilterTest, InvalidArcCosInput) {
   auto input = TestInput();
-  // Bug that doesn't occur when theta = 1.0 where due to calculation fluctuation, the absolute value of the unit vector's inner product exceeds 1.0
+  // The issue where the absolute value of the dot product of the unit vector exceeds 1.0 due to calculation fluctuations does not occur when theta = 1.0
   // It occurs when starting from theta = 0.0 and incrementing by +=0.1 ten times
   double theta = 0.0;
   for (uint32_t i = 0; i < 10; ++i) {
@@ -83,7 +83,7 @@ TEST(QuickTrajectoryFilterTest, InvalidArcCosInput) {
   EXPECT_TRUE(trajectory.IsValid());
 }
 
-// Optimization of a trajectory that includes a waypoint where the direction of movement is completely opposite, even degree of freedom
+// Optimization of a trajectory including waypoints where the direction of travel is completely opposite, even degrees of freedom
 TEST(QuickTrajectoryFilterTest, ReverseTrajectory2Dof) {
   auto input = TestInput();
   input.way_points[1] = 0.5 * input.way_points[0];
@@ -99,7 +99,7 @@ TEST(QuickTrajectoryFilterTest, ReverseTrajectory2Dof) {
   EXPECT_TRUE(VerifyAccelarationLimit(trajectory, input.max_accelerations));
 }
 
-// Optimization of a trajectory that includes a waypoint where the direction of movement is completely opposite, odd degree of freedom
+// Optimization of a trajectory including waypoints where the direction of travel is completely opposite, odd degrees of freedom
 TEST(QuickTrajectoryFilterTest, ReverseTrajectory3Dof) {
   auto input = TestInput();
   input.initial_positions = Eigen::VectorXd::Zero(3);
@@ -123,7 +123,7 @@ TEST(QuickTrajectoryFilterTest, ReverseTrajectory3Dof) {
   EXPECT_TRUE(VerifyAccelarationLimit(trajectory, input.max_accelerations));
 }
 
-// It's a trajectory with multiple degrees of freedom, but the optimization that works is for a trajectory with one degree of freedom
+// Although it is a trajectory with multiple degrees of freedom, only the optimization of a trajectory with one degree of freedom is functioning
 TEST(QuickTrajectoryFilterTest, Hoge) {
   auto input = TestInput();
   input.way_points[0][0] = 0.5;

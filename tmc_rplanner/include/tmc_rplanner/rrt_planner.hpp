@@ -26,7 +26,7 @@ OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH
 DAMAGE.
 */
 /// @file     rrt_planner.hpp
-/// @brief Implementation of PointToConditionPlanner via rrt_planner
+/// @brief Implementation of PointToConditionPlanner using rrt_planner
 /// @author   Koji Terada
 /// @version  1.0.0
 /// @date     2011.10.25
@@ -52,12 +52,12 @@ class ConfigurationTree;
 ///       pages 995-1001, San Francisco, CA, April 2000.
 class RrtPlanner : public IPointToConditionPlanner {
  public:
-  /// @brief Passes the planner space and termination condition
+  /// @brief Pass the planner space and termination condition
   /// @param space Pointer to the planner space
   /// @param delta Search increment width
   /// @param max_itr Maximum number of iterations
-  /// @param goal_bias Proportion aiming for the goal [0.0-1.0]
-  /// @param greedy Flag to continue extending feasibly when aiming for the goal
+  /// @param goal_bias Ratio aiming for the goal [0.0-1.0]
+  /// @param greedy Flag indicating whether to continue extending feasibly when aiming for the goal
   /// @param is_terminate Forced termination condition
   RrtPlanner(ConfigurationSpace::Ptr space,
              double delta,
@@ -67,12 +67,12 @@ class RrtPlanner : public IPointToConditionPlanner {
              TerminateConditionFunc is_terminate) :
       space_(space), delta_(delta), max_itr_(max_itr),
       goal_bias_(goal_bias), greedy_(greedy), is_terminate_(is_terminate) {}
-  /// @brief Passes the planner space and termination condition
+  /// @brief Pass the planner space and termination condition
   /// @param space Pointer to the planner space
   /// @param delta Search increment width
   /// @param max_itr Maximum number of iterations
-  /// @param goal_bias Proportion aiming for the goal [0.0-1.0]
-  /// @param greedy Flag to continue extending feasibly when aiming for the goal
+  /// @param goal_bias Ratio aiming for the goal [0.0-1.0]
+  /// @param greedy Flag indicating whether to continue extending feasibly when aiming for the goal
   RrtPlanner(ConfigurationSpace::Ptr space,
              double delta,
              int32_t max_itr,
