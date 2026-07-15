@@ -4,6 +4,8 @@ project(tmc_robot_rrt_planner_node)
 # For using pinocchio library used in tmc_robot_kinematics_model
 SET(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -Wl,-rpath -Wl,/opt/openrobots/lib")
 
+set(Boost_USE_DEBUG_RUNTIME OFF)
+
 find_package(ament_cmake REQUIRED)
 find_package(pluginlib REQUIRED)
 find_package(rclcpp REQUIRED)
