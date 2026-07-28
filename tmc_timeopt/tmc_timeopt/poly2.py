@@ -1,5 +1,5 @@
 #!/usr/bin/env python
-# Copyright (c) 2024 TOYOTA MOTOR CORPORATION
+# Copyright (c) 2026 TOYOTA MOTOR CORPORATION
 # All rights reserved.
 # Redistribution and use in source and binary forms, with or without
 # modification, are permitted (subject to the limitations in the disclaimer
@@ -25,7 +25,7 @@
 # OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH
 # DAMAGE.
 # -*- coding: utf-8 -*-
-u"""Function to solve a quadratic inequality."""
+u"""Function to solve quadratic inequalities."""
 
 from math import sqrt
 
@@ -33,11 +33,11 @@ from math import sqrt
 def solve_equality(a):
     u"""Solve the quadratic equation a[0]+a[1]x+a[2]x^2==0 and return the solutions.
 
-    Solutions are like [0,2]. If there are no solutions, return [].
+    Solutions are like [0,2]. If no solution exists, return [].
     Args:
-        a [double]: Coefficients of the quadratic equation
+        a [double]: Coefficients of the quadratic equation.
     Return:
-        list: List of solutions
+        list: List of solutions.
     """
     u = a[1] * a[1] - 4 * a[2] * a[0]
     if u < 0:
@@ -50,22 +50,22 @@ def solve_equality(a):
 def solve_inequality(a, s):
     u"""Solve the quadratic inequality a[0]+a[1]x+a[2]x^2 <> 0.
 
-    s is the inequality sign '>' or '<'. Solutions are like [0,2](0<x<2), [[-inf, 0], [2,inf]](x<0, x>2), etc.
-    If there are no solutions, return [].
+    s is the inequality sign, either '>' or '<'. Solutions are like [0,2] (0<x<2), [[-inf, 0], [2,inf]] (x<0, x>2), etc.
+    If no solution exists, return [].
     Args:
-        a [double]: Coefficients of the quadratic equation
-        s string: Inequality sign '>' or '<'
+        a [double]: Coefficients of the quadratic equation.
+        s string: Inequality sign, either '>' or '<'.
     Return:
-        list: List representing intervals
+        list: List representing intervals.
     """
     if a[2] == 0:
-        # Case with no variables
+        # Case with no variables.
         if a[1] == 0:
             if (s == '>' and a[0] > 0) or (s == '<' and a[0] < 0):
                 return [float('-inf'), float('inf')]
             else:
                 return []
-        # Case of a linear inequality
+        # Case with linear inequality.
         if (s == '>' and a[1] > 0) or (s == '<' and a[1] < 0):
             return [-a[0] / a[1], float('inf')]
         if (s == '<' and a[1] > 0) or (s == '>' and a[1] < 0):

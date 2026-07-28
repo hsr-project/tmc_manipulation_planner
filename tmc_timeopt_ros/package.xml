@@ -1,7 +1,7 @@
 <package format="3">
   <name>tmc_timeopt_ros</name>
-  <version>2.0.2</version>
-  <description>Ros node of time optimal trajectory parameterization</description>
+  <version>3.0.0</version>
+  <description>Ros node of time optimal trajectory parametarization</description>
   <maintainer email="xr-hsr-support@mail.toyota.co.jp">HSR Support</maintainer>
 
   <license>BSD 3-clause Clear License</license>
@@ -20,7 +20,6 @@
   <test_depend>launch_ros</test_depend>
   <test_depend>launch_testing</test_depend>
   <test_depend>moveit_msgs</test_depend>
-  <test_depend>python3-nose</test_depend>
   <test_depend>python3-pytest</test_depend>
   <test_depend>sensor_msgs</test_depend>
 

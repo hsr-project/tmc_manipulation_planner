@@ -1,5 +1,5 @@
 #!/usr/bin/env python
-# Copyright (c) 2024 TOYOTA MOTOR CORPORATION
+# Copyright (c) 2026 TOYOTA MOTOR CORPORATION
 # All rights reserved.
 # Redistribution and use in source and binary forms, with or without
 # modification, are permitted (subject to the limitations in the disclaimer
@@ -29,7 +29,6 @@ u"""Unit test for solve_inequlisty"""
 
 import unittest
 
-from nose.tools import eq_
 from tmc_timeopt.interval import Interval
 
 
@@ -38,43 +37,43 @@ class IntervalTest(unittest.TestCase):
         int1 = Interval(lst=[1, 3])
         int2 = Interval(lst=[2, 4])
         int1_plus_int2 = int1 + int2
-        eq_([[1, 4]], int1_plus_int2.get_list())
+        self.assertEqual([[1, 4]], int1_plus_int2.get_list())
 
     def test_add2(self):
         int1 = Interval(lst=[1, 2])
         int2 = Interval(lst=[3, 4])
         int1_plus_int2 = int1 + int2
-        eq_([[1, 2], [3, 4]], int1_plus_int2.get_list())
+        self.assertEqual([[1, 2], [3, 4]], int1_plus_int2.get_list())
 
     def test_add3(self):
         int1 = Interval(lst=[1, 5])
         int2 = Interval(lst=[3, 4])
         int1_plus_int2 = int1 + int2
-        eq_([[1, 5]], int1_plus_int2.get_list())
+        self.assertEqual([[1, 5]], int1_plus_int2.get_list())
 
     def test_add_no1(self):
         int1 = Interval(lst=[])
         int2 = Interval(lst=[3, 4])
         int1_plus_int2 = int1 + int2
-        eq_([[3, 4]], int1_plus_int2.get_list())
+        self.assertEqual([[3, 4]], int1_plus_int2.get_list())
 
     def test_add_no2(self):
         int1 = Interval(lst=[1, 2])
         int2 = Interval(lst=[])
         int1_plus_int2 = int1 + int2
-        eq_([[1, 2]], int1_plus_int2.get_list())
+        self.assertEqual([[1, 2]], int1_plus_int2.get_list())
 
     def test_mul(self):
         int1 = Interval(lst=[1, 3])
         int2 = Interval(lst=[2, 4])
         int1_mul_int2 = int1 * int2
-        eq_([[2, 3]], int1_mul_int2.get_list())
+        self.assertEqual([[2, 3]], int1_mul_int2.get_list())
 
     def test_mul_no(self):
         int1 = Interval(lst=[1, 3])
         int2 = Interval(lst=[])
         int1_mul_int2 = int1 * int2
-        eq_([], int1_mul_int2)
+        self.assertEqual([], int1_mul_int2)
 
 
 if __name__ == '__main__':

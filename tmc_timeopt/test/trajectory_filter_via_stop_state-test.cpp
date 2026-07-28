@@ -1,5 +1,5 @@
 /*
-Copyright (c) 2024 TOYOTA MOTOR CORPORATION
+Copyright (c) 2026 TOYOTA MOTOR CORPORATION
 All rights reserved.
 Redistribution and use in source and binary forms, with or without
 modification, are permitted (subject to the limitations in the disclaimer
@@ -38,7 +38,7 @@ INSTANTIATE_TYPED_TEST_SUITE_P(TrajectoryFilterViaStopStateTest,
                                TrajectoryFilterCommonTest,
                                TrajectoryFilterViaStopState);
 
-// Optimization from a stop state
+// Optimization from a stationary state
 TEST(TrajectoryFilterViaStopStateTest, InitialVelocityZero) {
   auto input = TestInput();
 
@@ -55,7 +55,7 @@ TEST(TrajectoryFilterViaStopStateTest, InitialVelocityZero) {
   EXPECT_TRUE(VerifyAccelarationLimit(trajectory, input.max_accelerations));
 }
 
-// Optimization from a moving state, initial velocity is only one positive value
+// Optimization from a moving state, initial velocity is a single positive value
 TEST(TrajectoryFilterViaStopStateTest, OnePositiveInitialVelocity) {
   auto input = TestInput();
   input.initial_velocities << input.max_velocities[0], 0.0;
@@ -78,14 +78,14 @@ TEST(TrajectoryFilterViaStopStateTest, OnePositiveInitialVelocity) {
   stop_state_pos << 1.0, 0.0;
   EXPECT_LT(CalcWayPointDistance(trajectory, stop_state_pos), kEpsilon);
 
-  // Check appropriate waypoints
+  // Investigate appropriate waypoints
   EXPECT_NEAR(trajectory.GetPosition(1.0)[0], 0.75, kEpsilon);
   EXPECT_NEAR(trajectory.GetPosition(1.0)[1], 0.0, kEpsilon);
   EXPECT_NEAR(trajectory.GetVelocity(1.0)[0], 0.5, kEpsilon);
   EXPECT_NEAR(trajectory.GetVelocity(1.0)[1], 0.0, kEpsilon);
 }
 
-// Optimization from a moving state, initial velocity is only one negative value
+// Optimization from a moving state, initial velocity is a single negative value
 TEST(TrajectoryFilterViaStopStateTest, OneNegativeInitialVelocity) {
   auto input = TestInput();
   input.initial_velocities << -input.max_velocities[0], 0.0;
@@ -108,14 +108,14 @@ TEST(TrajectoryFilterViaStopStateTest, OneNegativeInitialVelocity) {
   stop_state_pos << -1.0, 0.0;
   EXPECT_LT(CalcWayPointDistance(trajectory, stop_state_pos), kEpsilon);
 
-  // Check appropriate waypoints
+  // Investigate appropriate waypoints
   EXPECT_NEAR(trajectory.GetPosition(1.0)[0], -0.75, kEpsilon);
   EXPECT_NEAR(trajectory.GetPosition(1.0)[1], 0.0, kEpsilon);
   EXPECT_NEAR(trajectory.GetVelocity(1.0)[0], -0.5, kEpsilon);
   EXPECT_NEAR(trajectory.GetVelocity(1.0)[1], 0.0, kEpsilon);
 }
 
-// Optimization from a moving state, initial velocity of multiple joints
+// Optimization from a moving state, initial velocities of multiple joints
 TEST(TrajectoryFilterViaStopStateTest, MultiJointsInitialVelocity) {
   auto input = TestInput();
   input.initial_velocities << -0.2, 0.5;
@@ -131,21 +131,21 @@ TEST(TrajectoryFilterViaStopStateTest, MultiJointsInitialVelocity) {
   EXPECT_TRUE(VerifyVelocityLimit(trajectory, input.max_velocities));
   EXPECT_TRUE(VerifyAccelarationLimit(trajectory, input.max_accelerations));
 
-  // Initial velocity of index1 is 0.5, maximum acceleration 1.0 is effective
+  // Initial velocity of index1 is 0.5, maximum acceleration of 1.0 applies
   EXPECT_TRUE(VerifyZeroVelocity(trajectory, 0.5, "stop state velocities"));
   Eigen::VectorXd stop_state_pos;
   stop_state_pos.resize(2);
   stop_state_pos << -0.05, 0.125;
   EXPECT_LT(CalcWayPointDistance(trajectory, stop_state_pos), kEpsilon);
 
-  // Check appropriate waypoints
+  // Investigate appropriate waypoints
   EXPECT_NEAR(trajectory.GetPosition(0.25)[0], -0.0375, kEpsilon);
   EXPECT_NEAR(trajectory.GetPosition(0.25)[1], 0.09375, kEpsilon);
   EXPECT_NEAR(trajectory.GetVelocity(0.25)[0], -0.1, kEpsilon);
   EXPECT_NEAR(trajectory.GetVelocity(0.25)[1], 0.25, kEpsilon);
 }
 
-// Change the acceleration multiplier at stop
+// Change the acceleration ratio at the stop
 TEST(TrajectoryFilterViaStopStateTest, AccelerationRateForStop) {
   auto input = TestInput();
   input.initial_velocities << input.max_velocities[0], 0.0;
@@ -172,7 +172,7 @@ TEST(TrajectoryFilterViaStopStateTest, AccelerationRateForStop) {
   EXPECT_TRUE(VerifyAccelarationLimit(trajectory, 0.0, 1.0, input.max_accelerations * 2.0));
   EXPECT_TRUE(VerifyAccelarationLimit(trajectory, 1.0, trajectory.GetDuration(), input.max_accelerations));
 
-  // Check appropriate waypoints
+  // Investigate appropriate waypoints
   EXPECT_NEAR(trajectory.GetPosition(0.5)[0], 0.375, kEpsilon);
   EXPECT_NEAR(trajectory.GetPosition(0.5)[1], 0.0, kEpsilon);
   EXPECT_NEAR(trajectory.GetVelocity(0.5)[0], 0.5, kEpsilon);
@@ -204,7 +204,7 @@ TEST(TrajectoryFilterViaStopStateTest, SameStopStateAndFirstWayPoint) {
   EXPECT_TRUE(VerifyZeroVelocity(trajectory, 2.0, "stop state velocities"));
   EXPECT_LT(CalcWayPointDistance(trajectory, stop_state_pos), kEpsilon);
 
-  // Check appropriate waypoints
+  // Investigate appropriate waypoints
   EXPECT_NEAR(trajectory.GetPosition(1.0)[0], 0.75, kEpsilon);
   EXPECT_NEAR(trajectory.GetPosition(1.0)[1], 0.0, kEpsilon);
   EXPECT_NEAR(trajectory.GetVelocity(1.0)[0], 0.5, kEpsilon);
@@ -226,7 +226,7 @@ TEST(TrajectoryFilterViaStopStateTest, StopOnly) {
       input.max_velocities, input.max_accelerations);
   ASSERT_TRUE(trajectory.IsValid());
 
-  // Initial velocity 1.0, maximum acceleration 0.5, so it stops temporarily in 2 seconds, and that is the playback time of the trajectory
+  // Initial velocity 1.0, maximum acceleration 0.5, so it stops temporarily in 2 seconds, and that is the trajectory playback time
   EXPECT_NEAR(trajectory.GetDuration(), 2.0, kEpsilon);
   EXPECT_TRUE(VerifyZeroVelocity(trajectory, 2.0, "stop state velocities"));
   EXPECT_LT(CalcLastPointDistnace(trajectory, input.way_points[0]), kEpsilon);

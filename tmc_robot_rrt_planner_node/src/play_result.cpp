@@ -1,5 +1,5 @@
 /*
-Copyright (c) 2025 TOYOTA MOTOR CORPORATION
+Copyright (c) 2026 TOYOTA MOTOR CORPORATION
 All rights reserved.
 Redistribution and use in source and binary forms, with or without
 modification, are permitted (subject to the limitations in the disclaimer
@@ -86,9 +86,9 @@ void PublishTrajectoryAndEvironment(
                      robot_pose);
   // Set the robot's position and orientation
   robot_collision_detector->SetRobotTransform(robot_pose);
-  /// Known objects for interference check
+  /// Known objects for interference checking
   tmc_manipulation_types::OuterObjectParametersSeq known_objects;
-  /// Environment for interference check
+  /// Environment for interference checking
   tmc_manipulation_types::CuboidSeq collision_map;
   CollisionEnvironmentToOuterObjectSeq(
       environment_msg,
@@ -105,7 +105,7 @@ void PublishTrajectoryAndEvironment(
        ++object) {
     robot_collision_detector->CreateOuterObject(*object);
   }
-  // Add environment using voxel
+  // Add environment using voxels
   robot_collision_detector->CreateCuboids(collision_map, false);
   tmc_manipulation_types::JointTrajectory joint_trajectory;
   JointTrajectoryMsgToJointTrajectory(
@@ -208,13 +208,13 @@ int main(int argc, char* argv[]) {
           100);
 
   string robot_model("");
-  // Get the robot model path from the parameter server
+  // Retrieve the robot model path from the parameter server
   if (!node.getParam("robot_description", robot_model)) {
     ROS_FATAL("cannot get paramter robot_description_file");
     exit(EXIT_FAILURE);
   }
   string robot_collision_pair("");
-  // Get the interference settings file path from the parameter server
+  // Retrieve the interference configuration file path from the parameter server
   if (!node.getParam("robot_collision_pair", robot_collision_pair)) {
     ROS_FATAL("cannot get paramter robot_collision_pair");
     exit(EXIT_FAILURE);

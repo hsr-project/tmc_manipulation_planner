@@ -1,5 +1,5 @@
 #!/usr/bin/env python
-# Copyright (c) 2024 TOYOTA MOTOR CORPORATION
+# Copyright (c) 2026 TOYOTA MOTOR CORPORATION
 # All rights reserved.
 # Redistribution and use in source and binary forms, with or without
 # modification, are permitted (subject to the limitations in the disclaimer
@@ -29,14 +29,14 @@ from tmc_timeopt.target import Target
 
 
 class SimpleJointTarget(Target):
-    u"""Target for joint trajectory filter with only acceleration level constraints"""
+    u"""Target for joint trajectory filter with acceleration-level constraints only"""
 
     def __init__(self, joint_names=[]):
         self.names = joint_names
         self.point = {}
 
     def update_kinematics(self, point):
-        u"""Update of kinematics.
+        u"""Update kinematics.
 
         Args:
             point: dict of state quantities
@@ -44,11 +44,11 @@ class SimpleJointTarget(Target):
         self.point = point
 
     def update_dynamics(self):
-        u"""Do nothing because it is an acceleration level constraint."""
+        u"""Do nothing as it is acceleration-level constraints."""
         pass
 
     def get_dynamics(self):
-        u"""Return dynamic parameters (a, b, c, d).
+        u"""Return dynamics parameters (a, b, c, d).
 
         Returns:
             (a, b, c, d): dict with ('variable name', 'constraint type') as key and value as value

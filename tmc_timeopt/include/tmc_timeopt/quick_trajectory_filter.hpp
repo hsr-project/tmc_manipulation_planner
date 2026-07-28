@@ -1,5 +1,5 @@
 /*
-Copyright (c) 2024 TOYOTA MOTOR CORPORATION
+Copyright (c) 2026 TOYOTA MOTOR CORPORATION
 All rights reserved.
 Redistribution and use in source and binary forms, with or without
 modification, are permitted (subject to the limitations in the disclaimer
@@ -43,7 +43,7 @@ class QuickTrajectoryFilter : public ITrajectoryFilter {
   // Constructor
   // @param[in] initial_positions  Current joint positions
   // @param[in] initial_velocities  Current joint velocities
-  // @param[in] way_points  Joint positions to pass through
+  // @param[in] way_points  Intermediate joint positions
   // @param[in] max_velocities  Maximum joint velocities
   // @param[in] max_accelerations  Maximum joint accelerations
   QuickTrajectoryFilter(const Eigen::VectorXd& initial_positions,
@@ -55,10 +55,10 @@ class QuickTrajectoryFilter : public ITrajectoryFilter {
   // Constructor
   // @param[in] initial_positions  Current joint positions
   // @param[in] initial_velocities  Current joint velocities
-  // @param[in] way_points  Joint positions to pass through
+  // @param[in] way_points  Intermediate joint positions
   // @param[in] max_velocities  Maximum joint velocities
   // @param[in] max_accelerations  Maximum joint accelerations
-  // @param[in] interrupt  Interrupt function, if it returns true, the optimization process is interrupted
+  // @param[in] interrupt  Interrupt function, optimization process is interrupted if it returns true
   QuickTrajectoryFilter(const Eigen::VectorXd& initial_positions,
                         const Eigen::VectorXd& initial_velocities,
                         const std::vector<Eigen::VectorXd>& way_points,
@@ -68,20 +68,20 @@ class QuickTrajectoryFilter : public ITrajectoryFilter {
   virtual ~QuickTrajectoryFilter() = default;
 
   // Get joint positions at time_from_start
-  // @param[in] time_from_start  Time at which to get joint positions [sec]
+  // @param[in] time_from_start  Time [sec] at which to get joint positions
   // @return Eigen::VectorXd  Joint positions
   Eigen::VectorXd GetPosition(double time_from_start) const override;
 
   // Get joint velocities at time_from_start
-  // @param[in] time_from_start  Time at which to get joint velocities [sec]
+  // @param[in] time_from_start  Time [sec] at which to get joint velocities
   // @return Eigen::VectorXd  Joint velocities
   Eigen::VectorXd GetVelocity(double time_from_start) const override;
 
-  // Get the playback time of the trajectory
-  // @return double  Playback time of the trajectory [sec]
+  // Get the playback duration of the trajectory
+  // @return double  Playback duration of the trajectory [sec]
   double GetDuration() const override;
 
-  // Check if the optimization was successful
+  // Check if optimization was successful
   // @return bool  True if optimization was successful and Get functions are available
   bool IsValid() const override { return trajectory_ != nullptr; }
 

@@ -1,4 +1,4 @@
-# Copyright (c) 2024 TOYOTA MOTOR CORPORATION
+# Copyright (c) 2026 TOYOTA MOTOR CORPORATION
 # All rights reserved.
 # Redistribution and use in source and binary forms, with or without
 # modification, are permitted (subject to the limitations in the disclaimer
@@ -25,7 +25,7 @@
 # DAMAGE.
 #!/usr/bin/python
 # -*- coding: utf-8 -*-
-u"""Sample of TOPP class."""
+u"""Sample of the TOPP class."""
 
 import time
 
@@ -59,13 +59,13 @@ class MyTarget(Target):
         self.point = point
 
     def update_dynamics(self):
-        u"""Do nothing as it is an acceleration level constraint."""
+        u"""Do nothing as it is an acceleration-level constraint."""
         pass
 
     def get_dynamics(self):
-        u"""Return the dynamic parameters (a,b,c,d).
+        u"""Return the dynamic parameters (a, b, c, d).
 
-        (a,b,c,d) are each a dict with ('variable name', 'constraint type') as the key and the value as the value.
+        (a, b, c, d) are dictionaries where the keys are ('variable name', 'constraint type') and the values are the corresponding values.
         """
         (a, b, c, d) = ({}, {}, {}, {})
         for name in self.names:

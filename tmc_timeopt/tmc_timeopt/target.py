@@ -1,5 +1,5 @@
 # !/usr/bin/env python
-# Copyright (c) 2024 TOYOTA MOTOR CORPORATION
+# Copyright (c) 2026 TOYOTA MOTOR CORPORATION
 # All rights reserved.
 # Redistribution and use in source and binary forms, with or without
 # modification, are permitted (subject to the limitations in the disclaimer
@@ -28,7 +28,7 @@
 """Target Interface."""
 
 import matplotlib
-# Change Agg to tkAgg for debugging
+# Change Agg to tkAgg during debugging
 matplotlib.use('Agg')
 
 # Subsequent imports are written after matplotlib.use, so pass with noqa
@@ -43,17 +43,17 @@ class Target(object):
         self.point = point
 
     def update_point(self, point):
-        u"""Update the target kinematics using the calculated point."""
+        u"""Update the target kinematics using the pre-calculated points."""
         self.point = point
 
     def update_dynamics(self):
-        u"""Calculate dynamics parameters (a,b,c,d)."""
+        u"""Calculate the dynamics parameters (a, b, c, d)."""
         pass
 
     def get_dynamics(self):
-        u"""Return dynamics parameters (a,b,c,d).
+        u"""Return the dynamics parameters (a, b, c, d).
 
-        (a,b,c,d) each become a dict with ('variable name', 'constraint type') as the key and the value as the value.
+        (a, b, c, d) are dictionaries where each key is ('variable name', 'constraint type') and the value is the corresponding value.
         """
         pass
 

@@ -1,5 +1,5 @@
 /*
-Copyright (c) 2024 TOYOTA MOTOR CORPORATION
+Copyright (c) 2026 TOYOTA MOTOR CORPORATION
 All rights reserved.
 Redistribution and use in source and binary forms, with or without
 modification, are permitted (subject to the limitations in the disclaimer
@@ -57,7 +57,7 @@ class TrajectoryFilterViaStopState : public ITrajectoryFilter {
   // @param[in] way_points  Intermediate joint positions
   // @param[in] max_velocities  Maximum joint velocities
   // @param[in] max_accelerations  Maximum joint accelerations
-  // @param[in] interrupt  Interrupt function, interrupts optimization process if returns true
+  // @param[in] interrupt  Interrupt function, optimization process is interrupted if it returns true
   TrajectoryFilterViaStopState(const Eigen::VectorXd& initial_positions,
                                const Eigen::VectorXd& initial_velocities,
                                const std::vector<Eigen::VectorXd>& way_points,
@@ -72,7 +72,7 @@ class TrajectoryFilterViaStopState : public ITrajectoryFilter {
   // @param[in] max_velocities  Maximum joint velocities
   // @param[in] max_accelerations  Maximum joint accelerations
   // @param[in] acceleration_rate_for_stop  Acceleration rate for initial stop
-  // @param[in] interrupt  Interrupt function, interrupts optimization process if returns true
+  // @param[in] interrupt  Interrupt function, optimization process is interrupted if it returns true
   TrajectoryFilterViaStopState(const Eigen::VectorXd& initial_positions,
                                const Eigen::VectorXd& initial_velocities,
                                const std::vector<Eigen::VectorXd>& way_points,
@@ -83,12 +83,12 @@ class TrajectoryFilterViaStopState : public ITrajectoryFilter {
   virtual ~TrajectoryFilterViaStopState() = default;
 
   // Get joint positions at time_from_start
-  // @param[in] time_from_start  Time at which to get joint positions [sec]
+  // @param[in] time_from_start  Time [sec] at which to get joint positions
   // @return Eigen::VectorXd  Joint positions
   Eigen::VectorXd GetPosition(double time_from_start) const override;
 
   // Get joint velocities at time_from_start
-  // @param[in] time_from_start  Time at which to get joint velocities [sec]
+  // @param[in] time_from_start  Time [sec] at which to get joint velocities
   // @return Eigen::VectorXd  Joint velocities
   Eigen::VectorXd GetVelocity(double time_from_start) const override;
 

@@ -1,5 +1,5 @@
 /*
-Copyright (c) 2024 TOYOTA MOTOR CORPORATION
+Copyright (c) 2026 TOYOTA MOTOR CORPORATION
 All rights reserved.
 Redistribution and use in source and binary forms, with or without
 modification, are permitted (subject to the limitations in the disclaimer
@@ -45,7 +45,7 @@ using tmc_rplanner::RandomOptimizer;
 namespace {
 // Dimension of the state space used in the test
 int32_t kDim = 2;
-// Tolerance for optimization
+// Tolerance value for optimization
 double kOptimThreshold = 1.0e-2;
 
 static double Randd() {
@@ -66,7 +66,7 @@ bool CheckConfig(const Config& config) {
   return true;
 }
 
-// Configuration evaluation for testing, a function that peaks at (2.0, 2.0)
+// Configuration evaluation for testing (function that peaks at (2.0, 2.0))
 double EvalConfig(const Config& config) {
   Config center(kDim);
   center(0) = 2.0;
@@ -76,7 +76,7 @@ double EvalConfig(const Config& config) {
 
 }  // anonymous namespace
 
-// Not sure how to test, but it should be fine if values close to the center are obtained
+// Not sure how to test, but values close to the center should be acceptable
 TEST(RandomOptimizerCheck, optim_check) {
   ConfigurationSpace::Ptr cspace(new ConfigurationSpace(kDim));
   cspace->set_random_config(RandomConfig);

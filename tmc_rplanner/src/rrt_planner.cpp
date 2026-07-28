@@ -1,5 +1,5 @@
 /*
-Copyright (c) 2024 TOYOTA MOTOR CORPORATION
+Copyright (c) 2026 TOYOTA MOTOR CORPORATION
 All rights reserved.
 Redistribution and use in source and binary forms, with or without
 modification, are permitted (subject to the limitations in the disclaimer
@@ -32,9 +32,7 @@ DAMAGE.
 /// @date     2011.10.25
 /// @note     [1.0.0] 2011.10.19 Newly created
 
-#include <ctime>
 #include <stdlib.h>
-#include <random>
 #include <tmc_rplanner/configuration_tree.hpp>
 #include <tmc_rplanner/rrt_planner.hpp>
 
@@ -45,23 +43,22 @@ namespace tmc_rplanner {
 
 /// @brief Extend 1-step RRT
 /// @param tree State space tree
-/// @return true: reached goal false: not reached
+/// @return true: Reached the goal, false: Not reached
 bool RrtPlanner::BuildOneStep_(ConfigurationTree& tree) {
   Config random_config;
   bool to_goal = false;
   ExtendRet ret = kFailed;
 
-  std::mt19937 eng(static_cast<uint32_t>(std::time(0)));
   std::uniform_real_distribution<> randf(0.0, 1.0);
 
-  // Aim for the goal at the rate of goal_bias
-  if (randf(eng) < goal_bias_) {
+  // Aim for the goal with the goal_bias ratio
+  if (randf(eng_) < goal_bias_) {
     space_->GenerateGoalConfig(random_config);
     to_goal = true;
   } else {
     random_config = space_->GenerateRandomConfig();
   }
-  // If greedy is true, proceed to the goal anyway
+  // If greedy is true, proceed directly to the goal
   // If greedy is false, 1-step
   if (greedy_) {
     ret = tree.Connect(random_config);
@@ -82,28 +79,29 @@ PlanRet RrtPlanner::PlanPath(const Config& init_config,
   ConfigurationTree tree(space_, delta_);
 
   bool is_success = false;
-  if (!space_->CheckFeasibility(init_config)) {
+  std::vector<Collisions> init_collisions;
+  if (!space_->CheckFeasibilityWithCollisions(init_config, init_collisions)) {
     return kInitConfigFail;
   }
-  tree.SetRootConfig(init_config);
+  tree.SetRootConfig(init_config, init_collisions);
   for (int32_t i = 0; i < max_itr_; ++i)  {
-    // Check termination conditions (timeout, etc.)
+    // Check termination conditions (e.g., timeout)
     if (is_terminate_ && is_terminate_()) {
       return kTerminate;
     }
-    // Extend Tree
+    // Extend the tree
     if (BuildOneStep_(tree)) {
       is_success = true;
       break;
     } else {
-      // Determine if it is the Goal
+      // Determine if it is the goal
       if (space_->CheckConfigInGoal(tree.GetLastConfig())) {
         is_success = true;
         break;
       }
     }
   }
-  // If successful, integrate the tree
+  // Merge trees in case of success
   if (is_success == true) {
     Path path;
     tree.TrackBackPath(path_out);

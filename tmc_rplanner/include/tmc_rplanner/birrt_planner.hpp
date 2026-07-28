@@ -1,5 +1,5 @@
 /*
-Copyright (c) 2024 TOYOTA MOTOR CORPORATION
+Copyright (c) 2026 TOYOTA MOTOR CORPORATION
 All rights reserved.
 Redistribution and use in source and binary forms, with or without
 modification, are permitted (subject to the limitations in the disclaimer
@@ -41,7 +41,7 @@ DAMAGE.
 namespace tmc_rplanner {
 
 /// @class Birrt_Planner
-/// @brief Two-point planner implementing BIRRT_PLANNER
+/// @brief Two-point planner implemented with BIRRT_PLANNER
 /// @note See J.J. Kuffner and S.M. LaValle. RRT-Connect:
 ///       An efficient approach to single-query path planning.
 ///       In Proc. IEEE Int’l Conf. on Robotics and Automation (ICRA‘2000
@@ -50,7 +50,7 @@ class BiRrtPlanner : public IPointToPointPlanner {
  public:
   /// @brief Pass the planner space and termination conditions
   /// @param space Pointer to the planner space
-  /// @param delta Exploration width of BiRRT. This width also becomes the width of the output trajectory.
+  /// @param delta Search width of BiRRT. This width also becomes the width of the output trajectory.
   /// @param max_itr Maximum number of iterations
   /// @param is_terminate Forced termination condition
   BiRrtPlanner(ConfigurationSpace::Ptr space,

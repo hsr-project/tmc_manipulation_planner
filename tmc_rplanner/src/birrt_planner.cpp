@@ -1,5 +1,5 @@
 /*
-Copyright (c) 2024 TOYOTA MOTOR CORPORATION
+Copyright (c) 2026 TOYOTA MOTOR CORPORATION
 All rights reserved.
 Redistribution and use in source and binary forms, with or without
 modification, are permitted (subject to the limitations in the disclaimer
@@ -40,8 +40,8 @@ DAMAGE.
 
 namespace tmc_rplanner {
 
-/// @brief Advance tree a one step towards a random configuration,
-///        and attempt to connect from tree b to tree a
+/// @brief Advance tree_a one step towards a random configuration,
+///        and attempt to connect tree_b to tree_a
 /// @param space Configuration space
 /// @param tree_a Exploration tree
 /// @param tree_b Connection tree
@@ -77,14 +77,15 @@ PlanRet BiRrtPlanner::PlanPath(const Config& init_config,
   /* oneTree */
   Tree tree;
   bool is_success = false;
-  if (!space_->CheckFeasibility(init_config)) {
+  // Initial collisions are allowed with the expectation of escaping, but collisions at the goal are not allowed
+  std::vector<Collisions> init_collisions;
+  if (!space_->CheckFeasibilityWithCollisions(init_config, init_collisions)) {
     return kInitConfigFail;
   }
-
   if (!space_->CheckFeasibility(goal_config)) {
     return kGoalConfigFail;
   }
-  tree_s.SetRootConfig(init_config);
+  tree_s.SetRootConfig(init_config, init_collisions);
   tree_g.SetRootConfig(goal_config);
   for (int32_t i = 0; i < max_itr_; ++i)  {
     // Check termination conditions (e.g., timeout)
@@ -104,7 +105,7 @@ PlanRet BiRrtPlanner::PlanPath(const Config& init_config,
       }
     }
   }
-  // Integrate trees in case of success
+  // Merge trees in case of success
   if (is_success == true) {
     Path start_path;
     Path goal_path;

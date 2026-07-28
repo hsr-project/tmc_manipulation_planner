@@ -1,7 +1,7 @@
 <package format="3">
   <name>tmc_timeopt</name>
-  <version>2.0.2</version>
-  <description>時間最適軌道パラメータ化を解決するためのライブラリ。</description>
+  <version>3.0.0</version>
+  <description>Libraries to solve Time optimal trajectory parametarization.</description>
   <maintainer email="xr-hsr-support@mail.toyota.co.jp">HSR Support</maintainer>]
   <author>Koji Terada</author>
   <author>Keisuke Takeshita</author>
@@ -18,7 +18,6 @@
 
   <test_depend>ament_cmake_gtest</test_depend>
   <test_depend>ament_cmake_pytest</test_depend>
-  <test_depend>python3-nose</test_depend>
 
   <export>
     <build_type>ament_cmake</build_type>

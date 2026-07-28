@@ -1,5 +1,5 @@
 /*
-Copyright (c) 2024 TOYOTA MOTOR CORPORATION
+Copyright (c) 2026 TOYOTA MOTOR CORPORATION
 All rights reserved.
 Redistribution and use in source and binary forms, with or without
 modification, are permitted (subject to the limitations in the disclaimer
@@ -35,7 +35,7 @@ DAMAGE.
 
 #include "../src/robot_rrt_planner_node.hpp"
 
-// pinocchio gives an error saying "You should include pinocchio before the Boost headers"
+// pinocchio gives the error "You should include pinocchio before the Boost headers"
 #include <geometric_shapes/shape_operations.h>  // NOLINT
 
 namespace {
@@ -86,7 +86,7 @@ sensor_msgs::msg::JointState CreateInitialJointState() {
 }
 
 /*
-/// @param[out] map : map for collision detection
+/// @param[out] map : Map for collision detection
 void CreateCollisionMap(
     tmc_mapping_msgs::CollisionMap& collision_map_out) {
   for (int32_t i = 0; i < 10; ++i) {
@@ -106,7 +106,7 @@ void CreateCollisionMap(
 }
 */
 
-/// @param[out] environment_out : environment for collision detection
+/// @param[out] environment_out : Environment for collision detection
 void CreateKnownObjects(
     moveit_msgs::msg::PlanningSceneWorld& environment_out) {
   environment_out.collision_objects.resize(2);
@@ -160,15 +160,17 @@ tmc_planning_msgs::srv::PlanWithHandGoals::Request::SharedPtr CreateHandGoalsReq
   request->origin_to_basejoint = CreateInitialPose();
   request->initial_joint_state = CreateInitialJointState();
   request->use_joints = kUseJoints;
-  request->origin_to_hand_goals.resize(1);
-  request->origin_to_hand_goals[0].position.x = 0.395;
-  request->origin_to_hand_goals[0].position.y = 0.190;
-  request->origin_to_hand_goals[0].position.z = 0.456;
-  request->origin_to_hand_goals[0].orientation.x = 0.707;
-  request->origin_to_hand_goals[0].orientation.y = 0;
-  request->origin_to_hand_goals[0].orientation.z = 0.707;
-  request->origin_to_hand_goals[0].orientation.w = 0;
-  request->ref_frame_id = "CARM/BASE_HAND";
+  tmc_planning_msgs::msg::HandGoals hand_goals;
+  hand_goals.ref_frame_ids.push_back("CARM/BASE_HAND");
+  hand_goals.origin_to_hand_goals.resize(1);
+  hand_goals.origin_to_hand_goals[0].position.x = 0.395;
+  hand_goals.origin_to_hand_goals[0].position.y = 0.190;
+  hand_goals.origin_to_hand_goals[0].position.z = 0.456;
+  hand_goals.origin_to_hand_goals[0].orientation.x = 0.707;
+  hand_goals.origin_to_hand_goals[0].orientation.y = 0;
+  hand_goals.origin_to_hand_goals[0].orientation.z = 0.707;
+  hand_goals.origin_to_hand_goals[0].orientation.w = 0;
+  request->hand_goals_seq.push_back(hand_goals);
   request->probability_goal_generate = 0.2;
   request->timeout.sec = 10;
   request->max_iteration = 1000;
@@ -181,11 +183,13 @@ tmc_planning_msgs::srv::PlanWithHandLine::Request::SharedPtr CreateHandLineReque
   request->origin_to_basejoint = CreateInitialPose();
   request->initial_joint_state = CreateInitialJointState();
   request->use_joints = kUseJoints;
-  request->axis.x = 1.0;
-  request->axis.y = 0.0;
-  request->axis.z = 0.0;
-  request->ref_frame_id = "CARM/BASE_HAND";
-  request->goal_value = 0.2;
+  tmc_planning_msgs::msg::LinearConstraint goal;
+  goal.end_frame_id = "CARM/BASE_HAND";
+  goal.axis.x = 1.0;
+  goal.axis.y = 0.0;
+  goal.axis.z = 0.0;
+  goal.distance = 0.2;
+  request->goals.push_back(goal);
   request->probability_goal_generate = 0.2;
   request->timeout.sec = 10;
   request->max_iteration = 1000;
@@ -226,6 +230,25 @@ tmc_planning_msgs::srv::PlanWithJointGoals::Request::SharedPtr CreateJointGoalsW
 
   return request;
 }
+
+// Mock class for verifying Request and Parameters
+class RobotCBiRrtPlannerMock : public tmc_robot_planner::RobotCBiRrtPlanner {
+ public:
+  RobotCBiRrtPlannerMock() : RobotCBiRrtPlanner(nullptr, nullptr, nullptr) {}
+
+  tmc_robot_planner::ErrorCode PlanPath(const tmc_robot_planner::CBiRrtRequest& request,
+                                        const tmc_robot_planner::CBiRrtParameters& params,
+                                        tmc_manipulation_types::RobotTrajectory& result_out) override {
+    request_ = request;
+    return tmc_robot_planner::kPlanningFailed;
+  }
+
+  tmc_robot_planner::CBiRrtRequest request() const { return request_; }
+
+ private:
+  tmc_robot_planner::CBiRrtRequest request_;
+};
+
 }  // namespace
 
 namespace tmc_robot_rrt_planner_node {
@@ -303,7 +326,7 @@ TEST_F(RobotRrtPlannerTest, TestHandPlanningWithCollision) {
   request->timeout.sec = 1;
   request->environment_before_planning.collision_objects.resize(1);
   request->environment_before_planning.collision_objects[0].id = "sphere";
-  request->environment_before_planning.collision_objects[0].pose = request->origin_to_hand_goals[0];
+  request->environment_before_planning.collision_objects[0].pose = request->hand_goals_seq[0].origin_to_hand_goals[0];
   request->environment_before_planning.collision_objects[0].meshes.push_back(
       boost::get<shape_msgs::msg::Mesh>(shape_msg));
   request->environment_before_planning.collision_objects[0].mesh_poses.resize(1);
@@ -348,10 +371,10 @@ TEST_F(RobotRrtPlannerTest, TestLinePlanningBackward) {
   ASSERT_TRUE(client);
 
   const auto request = CreateHandLineRequest();
-  request->goal_value = -request->goal_value;
-  request->axis.x = -request->axis.x;
-  request->axis.y = -request->axis.y;
-  request->axis.z = -request->axis.z;
+  request->goals[0].distance = -request->goals[0].distance;
+  request->goals[0].axis.x = -request->goals[0].axis.x;
+  request->goals[0].axis.y = -request->goals[0].axis.y;
+  request->goals[0].axis.z = -request->goals[0].axis.z;
 
   auto result = client->async_send_request(request);
   while (result.wait_for(std::chrono::milliseconds(1)) != std::future_status::ready) {}
@@ -399,6 +422,101 @@ TEST_F(RobotRrtPlannerTest, TestSimplePlanningWithCollisionMap) {
 
   const auto response = result.get();
   EXPECT_EQ(response->error_code.val, moveit_msgs::msg::MoveItErrorCodes::SUCCESS);
+}
+
+TEST_F(RobotRrtPlannerTest, MultiHandGoals) {
+  auto planner_mock = std::make_shared<RobotCBiRrtPlannerMock>();
+  planner_node_->SetPlanner(planner_mock);
+
+  const auto client = CreateClient<tmc_planning_msgs::srv::PlanWithHandGoals>(client_node_, kPlanWithHandGoals);
+  ASSERT_TRUE(client);
+
+  tmc_planning_msgs::msg::HandGoals hand_goals_1;
+  hand_goals_1.ref_frame_ids = {"hand_1", "hand_2"};
+  hand_goals_1.origin_to_hand_goals.resize(2);
+  hand_goals_1.origin_to_hand_goals[0].position.x = 0.1;
+  hand_goals_1.origin_to_hand_goals[1].position.x = 0.2;
+
+  tmc_planning_msgs::msg::HandGoals hand_goals_2;
+  hand_goals_2.ref_frame_ids = {"hand_3"};
+  hand_goals_2.origin_to_hand_goals.resize(1);
+  hand_goals_2.origin_to_hand_goals[0].position.x = 0.3;
+
+  auto request_srv = CreateHandGoalsRequest();
+  request_srv->hand_goals_seq = {hand_goals_1, hand_goals_2};
+
+  auto result = client->async_send_request(request_srv);
+  while (result.wait_for(std::chrono::milliseconds(1)) != std::future_status::ready) {}
+
+  auto request_impl = planner_mock->request();
+  EXPECT_EQ(request_impl.goal_tsrs_seq.size(), 2);
+  EXPECT_EQ(request_impl.goal_tsrs_seq[0].size(), 2);
+  EXPECT_EQ(request_impl.goal_tsrs_seq[0][0].end_frame_id, "hand_1");
+  EXPECT_EQ(request_impl.goal_tsrs_seq[0][0].origin_to_tsr.translation().x(), 0.1);
+  EXPECT_TRUE(request_impl.goal_tsrs_seq[0][0].tsr_to_end.matrix().isIdentity());
+  EXPECT_TRUE(request_impl.goal_tsrs_seq[0][0].min_bounds.isZero());
+  EXPECT_TRUE(request_impl.goal_tsrs_seq[0][0].max_bounds.isZero());
+
+  EXPECT_EQ(request_impl.goal_tsrs_seq[0][1].end_frame_id, "hand_2");
+  EXPECT_EQ(request_impl.goal_tsrs_seq[0][1].origin_to_tsr.translation().x(), 0.2);
+  EXPECT_TRUE(request_impl.goal_tsrs_seq[0][1].tsr_to_end.matrix().isIdentity());
+  EXPECT_TRUE(request_impl.goal_tsrs_seq[0][1].min_bounds.isZero());
+  EXPECT_TRUE(request_impl.goal_tsrs_seq[0][1].max_bounds.isZero());
+
+  EXPECT_EQ(request_impl.goal_tsrs_seq[1].size(), 1);
+  EXPECT_EQ(request_impl.goal_tsrs_seq[1][0].end_frame_id, "hand_3");
+  EXPECT_EQ(request_impl.goal_tsrs_seq[1][0].origin_to_tsr.translation().x(), 0.3);
+  EXPECT_TRUE(request_impl.goal_tsrs_seq[1][0].tsr_to_end.matrix().isIdentity());
+  EXPECT_TRUE(request_impl.goal_tsrs_seq[1][0].min_bounds.isZero());
+  EXPECT_TRUE(request_impl.goal_tsrs_seq[1][0].max_bounds.isZero());
+}
+
+TEST_F(RobotRrtPlannerTest, MultiHandLines) {
+  auto planner_mock = std::make_shared<RobotCBiRrtPlannerMock>();
+  planner_node_->SetPlanner(planner_mock);
+
+  const auto client = CreateClient<tmc_planning_msgs::srv::PlanWithHandLine>(client_node_, kPlanWithHandLine);
+  ASSERT_TRUE(client);
+
+  // Since the current position/orientation is derived from the robot model, it is necessary to specify the frame included in the model
+  // Among them, the frame at the origin is selected
+  tmc_planning_msgs::msg::LinearConstraint line_1;
+  line_1.end_frame_id = "BASE/SOLID_BASE";
+  line_1.axis.x = 1.0;
+  line_1.distance = 0.1;
+  tmc_planning_msgs::msg::LinearConstraint line_2;
+  line_2.end_frame_id = "BASE/_root_";
+  line_2.axis.x = 1.0;
+  line_2.distance = 0.2;
+
+  auto request_srv = CreateHandLineRequest();
+  request_srv->goals = {line_1, line_2};
+
+  auto result = client->async_send_request(request_srv);
+  while (result.wait_for(std::chrono::milliseconds(1)) != std::future_status::ready) {}
+
+  auto request_impl = planner_mock->request();
+  EXPECT_EQ(request_impl.goal_tsrs_seq.size(), 1);
+  EXPECT_EQ(request_impl.goal_tsrs_seq[0].size(), 2);
+  EXPECT_EQ(request_impl.goal_tsrs_seq[0][0].end_frame_id, "BASE/SOLID_BASE");
+  EXPECT_TRUE(request_impl.goal_tsrs_seq[0][0].origin_to_tsr.matrix().isIdentity());
+  EXPECT_TRUE(request_impl.goal_tsrs_seq[0][0].tsr_to_end.matrix().isIdentity());
+  EXPECT_EQ(request_impl.goal_tsrs_seq[0][0].min_bounds[0], 0.1);
+  EXPECT_EQ(request_impl.goal_tsrs_seq[0][0].max_bounds[0], 0.1);
+  for (int32_t i = 1; i < 6; ++i) {
+    EXPECT_EQ(request_impl.goal_tsrs_seq[0][0].min_bounds[i], 0.0);
+    EXPECT_EQ(request_impl.goal_tsrs_seq[0][0].max_bounds[i], 0.0);
+  }
+
+  EXPECT_EQ(request_impl.goal_tsrs_seq[0][1].end_frame_id, "BASE/_root_");
+  EXPECT_TRUE(request_impl.goal_tsrs_seq[0][1].origin_to_tsr.matrix().isIdentity());
+  EXPECT_TRUE(request_impl.goal_tsrs_seq[0][1].tsr_to_end.matrix().isIdentity());
+  EXPECT_EQ(request_impl.goal_tsrs_seq[0][1].min_bounds[0], 0.2);
+  EXPECT_EQ(request_impl.goal_tsrs_seq[0][1].max_bounds[0], 0.2);
+  for (int32_t i = 1; i < 6; ++i) {
+    EXPECT_EQ(request_impl.goal_tsrs_seq[0][1].min_bounds[i], 0.0);
+    EXPECT_EQ(request_impl.goal_tsrs_seq[0][1].max_bounds[i], 0.0);
+  }
 }
 
 // TEST_F(GoogleTestSimplePlanning, TestSimplePlanningWithExtraConstraint) {

@@ -1,5 +1,5 @@
 /*
-Copyright (c) 2024 TOYOTA MOTOR CORPORATION
+Copyright (c) 2026 TOYOTA MOTOR CORPORATION
 All rights reserved.
 Redistribution and use in source and binary forms, with or without
 modification, are permitted (subject to the limitations in the disclaimer
@@ -26,7 +26,7 @@ OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH
 DAMAGE.
 */
 /// @file     test_eigen_utils
-/// @brief    Test of eigen_utils
+/// @brief    Test for eigen_utils
 /// @author   Koji Terada
 /// @version  1.0.0
 /// @date     2012.2.24
@@ -76,7 +76,7 @@ TEST(DistanceTest, pos) {
   // std::cerr << "distance = " << distance2(0) << std::endl;
 }
 
-// Check if sampling can be done for TSR with only translation
+// Check if sampling is possible for TSR with only translation
 TEST(SamplingTest, pos) {
   RegionValues min;
   RegionValues max;
@@ -97,7 +97,7 @@ TEST(SamplingTest, pos) {
   }
 }
 
-// Check if sampling can be done for TSR with rotation
+// Check if sampling is possible for TSR with rotation
 TEST(SamplingTest, rot) {
   RegionValues min;
   RegionValues max;

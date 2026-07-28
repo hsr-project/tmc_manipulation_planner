@@ -1,5 +1,5 @@
 #!/usr/bin/env python
-# Copyright (c) 2024 TOYOTA MOTOR CORPORATION
+# Copyright (c) 2026 TOYOTA MOTOR CORPORATION
 # All rights reserved.
 # Redistribution and use in source and binary forms, with or without
 # modification, are permitted (subject to the limitations in the disclaimer
@@ -68,10 +68,10 @@ class Interval(object):
     u"""Class representing intervals expressed by multiple inequalities."""
 
     def __init__(self, lst=[]):
-        u"""Initialize with a given list.
+        u"""Initialize with a list.
 
         Args:
-            lis: Initialize with a list
+            lis: Initialize with a list.
         """
         if not lst:
             self.list = []
@@ -87,7 +87,7 @@ class Interval(object):
         return self.list
 
     def set_list(self, lst):
-        u"""Set with a list."""
+        u"""Set using a list."""
         if isinstance(lst[0], list):
             self.list = lst
         else:

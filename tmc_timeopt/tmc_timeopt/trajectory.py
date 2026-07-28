@@ -1,5 +1,5 @@
 # !/usr/bin/env python
-# Copyright (c) 2024 TOYOTA MOTOR CORPORATION
+# Copyright (c) 2026 TOYOTA MOTOR CORPORATION
 # All rights reserved.
 # Redistribution and use in source and binary forms, with or without
 # modification, are permitted (subject to the limitations in the disclaimer
@@ -25,19 +25,19 @@
 # OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH
 # DAMAGE.
 # -*- coding: utf-8 -*-
-u"""Module to generate spatial/temporal trajectories by specifying waypoints.
+u"""A module that generates spatial/temporal trajectories by specifying waypoints.
 
-Waypoints are represented as an array like point=[0,0,0], where the index is the order of differentiation.
-point[0] is displacement, point[1] is the first derivative, point[2] is the second derivative.
+Waypoints are represented as an array like point=[0,0,0], where the index indicates the order of differentiation.
+point[0] represents displacement, point[1] represents the first derivative, and point[2] represents the second derivative.
 """
 
 import bisect
 
 import matplotlib
-# Change Agg to tkAgg for debugging.
+# Change Agg to tkAgg during debugging.
 matplotlib.use('Agg')
 
-# Subsequent imports are written after matplotlib.use, so pass with noqa.
+# Subsequent imports are written after matplotlib.use, so pass them with noqa.
 import matplotlib.pyplot as plt  # noqa
 
 import numpy as np  # noqa
@@ -57,10 +57,10 @@ else:
 
 
 class TrajectoryDict(dict):
-    u"""Class for trajectory management."""
+    u"""Class for managing trajectories."""
 
     def __init__(self, length, items={}):
-        u"""Initialize with a given length."""
+        u"""Initialize by providing the length."""
         super(TrajectoryDict, self).__init__()
         self.length = length
         for (name, traj) in items.items():
@@ -80,14 +80,14 @@ class TrajectoryDict(dict):
 
 
 class Trajectory(dict):
-    u"""A class that acts like a dict with parameters as keys for (x0, x1, x2)."""
+    u"""A class that acts as a dict with parameters as keys (x0, x1, x2)."""
 
     def __init__(self, length, scale=3):
         u"""Perform initialization.
 
         Args:
-           length float : Range of parameters.
-           scale int : Resolution up to n decimal places.
+           length float: Range of parameters.
+           scale int: Resolution up to n decimal places.
         """
         super(Trajectory, self).__init__()
         self.length = length
@@ -108,7 +108,7 @@ class Trajectory(dict):
         return super(Trajectory, self).__setitem__(key, list(point))
 
     def __getitem__(self, x):
-        u"""Getting waypoints."""
+        u"""Retrieving waypoints."""
         key = np.round(x * float(self.scale)) / float(self.scale)
         return super(Trajectory, self).__getitem__(key)
 
@@ -201,7 +201,7 @@ class LinearTrajectory(Trajectory):
 
     def _interpolate(self, x):
         u"""Linear interpolation calculation, assuming update() has been called."""
-        # If statement to guard against cases where bisect.bisect_left results in 0.
+        # If statement to guard against cases where bisect.bisect_left returns 0.
         if x < self.sorted_keys[0]:
             return [self.a[self.sorted_keys[0]], 0, 0]
         else:
@@ -252,7 +252,7 @@ class Poly3Trajectory(Trajectory):
                           -(3 * d0 - 3 * d1 + (2 * v0 + v1) * xd) / (xd ** 2),
                           -(-2 * d0 + 2 * d1 - (v0 + v1) * xd) / (xd ** 3)]
         (x0, x1) = (self.sorted_keys[-2], self.sorted_keys[-1])
-        # Match the slope of the last point to the one just before.
+        # Match the slope of the last point to the previous one.
         self.a[x1] = [self[x1][0], self[x1][1], 0, 0]
 
 
@@ -301,7 +301,7 @@ class Poly5Trajectory(Trajectory):
                           (30 * d0 - 30 * d1 + (14 * v1 + 16 * v0) * xd + (3 * a0 - 2 * a1) * xd ** 2) / (2 * xd ** 4),
                           (12 * d1 - 12 * d0 - (6 * v1 + 6 * v0) * xd - (a0 - a1) * xd ** 2) / (2 * xd ** 5)]
         (x0, x1) = (self.sorted_keys[-2], self.sorted_keys[-1])
-        # Match the slope of the last point to the one just before.
+        # Match the slope of the last point to the previous one.
         self.a[x1] = [self[x1][0], self[x1][1], self[x1][2] / 2, 0, 0, 0]
 
 

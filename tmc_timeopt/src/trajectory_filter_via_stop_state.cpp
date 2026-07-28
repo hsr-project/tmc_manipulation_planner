@@ -1,5 +1,5 @@
 /*
-Copyright (c) 2024 TOYOTA MOTOR CORPORATION
+Copyright (c) 2026 TOYOTA MOTOR CORPORATION
 All rights reserved.
 Redistribution and use in source and binary forms, with or without
 modification, are permitted (subject to the limitations in the disclaimer
@@ -92,7 +92,7 @@ TrajectoryFilterViaStopState::TrajectoryFilterViaStopState(const Eigen::VectorXd
     if (!IsSameWayPoints(stop_positions, valid_way_points.front())) {
       way_points_impl.push_back(stop_positions);
     } else if (valid_way_points.size() == 1) {
-      // If there is only one substantial waypoint, and the point to stop temporarily is that waypoint, optimization is unnecessary.
+      // If there is only one substantial waypoint, and it is a temporary stop point, optimization is unnecessary.
       is_valid_ = true;
       return;
     }
@@ -122,8 +122,8 @@ Eigen::VectorXd TrajectoryFilterViaStopState::GetPosition(
   }
 }
 
-// Get the joint velocity at the time time_from_start.
-// @param[in] time_from_start  The time [sec] at which you want to obtain the joint velocity.
+// Get the joint velocity at the time 'time_from_start'.
+// @param[in] time_from_start  The time [sec] at which the joint velocity is to be obtained.
 // @return Eigen::VectorXd  Joint velocity.
 Eigen::VectorXd TrajectoryFilterViaStopState::GetVelocity(
     double time_from_start) const {

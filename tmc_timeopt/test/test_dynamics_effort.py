@@ -1,5 +1,5 @@
 #!/usr/bin/env python
-# Copyright (c) 2024 TOYOTA MOTOR CORPORATION
+# Copyright (c) 2026 TOYOTA MOTOR CORPORATION
 # All rights reserved.
 # Redistribution and use in source and binary forms, with or without
 # modification, are permitted (subject to the limitations in the disclaimer
@@ -31,7 +31,6 @@ from math import sqrt
 
 import unittest
 
-from nose.tools import assert_almost_equal, eq_, raises
 from tmc_timeopt.dynamics import Dynamics
 from tmc_timeopt.target import Target
 
@@ -76,7 +75,7 @@ class DummyTarget(Target):
 class DynamicsTestCase(unittest.TestCase):
 
     def setUp(self):
-        # Test logic only with dummy target
+        # Test logic only with a dummy target
         self.target = DummyTarget()
         self.dynamics = Dynamics(self.target)
 
@@ -88,7 +87,7 @@ class DynamicsTestCase(unittest.TestCase):
         ans = {('JOINT1', 'effort'): (-2, 2),
                ('JOINT2', 'effort'): (-2, 2),
                ('JOINT3', 'effort'): (-2, 2)}
-        eq_(self.dynamics.limits, ans)
+        self.assertEqual(self.dynamics.limits, ans)
 
     def test_calc_accel_limit_sv_inf(self):
         # CASE A
@@ -101,38 +100,38 @@ class DynamicsTestCase(unittest.TestCase):
         self.target.set_test_case('CASE_A')
         self.dynamics.update()
         (sa_min, sa_max) = self.dynamics.calc_accel_limit(0.0)
-        assert_almost_equal((-3.0 / 4.0, 1.0 / 4.0), (sa_min, sa_max))
+        self.assertAlmostEqual((-3.0 / 4.0, 1.0 / 4.0), (sa_min, sa_max))
 
         # CASE B
         self.target.set_test_case('CASE_B')
         self.dynamics.update()
         (sa_min, sa_max) = self.dynamics.calc_accel_limit(0.0)
-        assert_almost_equal((-1.0 / 4.0, 3.0 / 4.0), (sa_min, sa_max))
+        self.assertAlmostEqual((-1.0 / 4.0, 3.0 / 4.0), (sa_min, sa_max))
 
     def test_get_mvc(self):
         # CASE C
         self.target.set_test_case('CASE_C')
         self.dynamics.update()
         mvc = self.dynamics.get_mvc()
-        assert_almost_equal((sqrt(5) - 1) / 2, mvc)
+        self.assertAlmostEqual((sqrt(5) - 1) / 2, mvc)
 
         # CASE D
         self.target.set_test_case('CASE_D')
         self.dynamics.update()
         mvc = self.dynamics.get_mvc()
-        assert_almost_equal(sqrt(2) - 1, mvc)
+        self.assertAlmostEqual(sqrt(2) - 1, mvc)
 
-    @raises(ValueError)
     def test_get_mvc_exception(self):
-        self.target.set_test_case('CASE_E')
-        self.dynamics.update()
-        self.dynamics.get_mvc()
+        with self.assertRaises(ValueError):
+            self.target.set_test_case('CASE_E')
+            self.dynamics.update()
+            self.dynamics.get_mvc()
 
     def test_zero_inertia_sv(self):
         self.target.set_test_case('CASE_D')
         self.dynamics.update()
         sv_max = self.dynamics.calc_zero_inertia_sv(('JOINT3', 'effort'))
-        assert_almost_equal(-1.0 + sqrt(2.0), sv_max)
+        self.assertAlmostEqual(-1.0 + sqrt(2.0), sv_max)
 
 
 if __name__ == '__main__':

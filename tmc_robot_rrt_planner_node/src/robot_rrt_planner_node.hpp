@@ -1,5 +1,5 @@
 /*
-Copyright (c) 2024 TOYOTA MOTOR CORPORATION
+Copyright (c) 2026 TOYOTA MOTOR CORPORATION
 All rights reserved.
 Redistribution and use in source and binary forms, with or without
 modification, are permitted (subject to the limitations in the disclaimer
@@ -61,8 +61,13 @@ class RobotRrtPlannerNode : public rclcpp::Node {
   /// Destructor
   virtual ~RobotRrtPlannerNode() = default;
 
-  /// Separate constructor and Init to use shared_from_this
+  /// Constructor and Init are separated to use shared_from_this
   bool Init();
+
+  /// For replacing the implementation of Planner, mainly for testing purposes
+  void SetPlanner(const tmc_robot_planner::RobotCBiRrtPlanner::Ptr& planner) {
+    planner_ = planner;
+  }
 
  private:
   // TODO(Takeshita) 外部障害物，把持物の利用
@@ -92,18 +97,18 @@ class RobotRrtPlannerNode : public rclcpp::Node {
       const tmc_planning_msgs::srv::PlanWithHandLine::Request::SharedPtr req,
       tmc_planning_msgs::srv::PlanWithHandLine::Response::SharedPtr res);
 
-  /// Load plugin to constrain joints
+  /// Loading plugin to constrain joints
   pluginlib::ClassLoader<tmc_robot_planner::IConfigurationConstraint> constraint_plugin_loader_;
   /// Loaded plugin to constrain joints
   std::map<std::string, tmc_robot_planner::IConfigurationConstraint::Ptr> constraint_plugin_cache_;
-  /// Load inverse kinematics plugin
+  /// Loading inverse kinematics plugin
   pluginlib::ClassLoader<tmc_robot_kinematics_model::IKSolver> ik_plugin_loader_;
-  /// Load forward kinematics plugin
+  /// Loading forward kinematics plugin
   pluginlib::ClassLoader<tmc_robot_kinematics_model::IRobotKinematicsModel> fk_loader_;
 
   /// Search width
   double delta_;
-  /// Interference check width delta_ should be >= sub_delta_
+  /// Interference check width, delta_ should be >= sub_delta_
   double sub_delta_;
   /// Maximum value of base translation direction [m]
   double base_translation_max_;
@@ -111,16 +116,18 @@ class RobotRrtPlannerNode : public rclcpp::Node {
   double increase_sampling_deviation_;
   double step_sampling_deviation_;
 
-  /// Class to save request
+  double allowable_collision_depth_;
+
+  /// Class to save requests
   tmc_utils::MessageLogger::Ptr request_logger_;
-  /// Flag to publish for debugging
+  /// Flag to enable debug publishing
   bool publish_debug_info_;
-  /// Flag to print information for debugging
+  /// Flag to enable debug information printing
   tmc_utils::DynamicParameter<bool>::Ptr print_debug_info_;
   /// Enable step execution mode
   bool step_mode_;
 
-  /// Set callback for debugging
+  /// Set debug callback
   void SetDebugCallBacks_(const std::vector<std::string>& joint_names);
       // const tmc_manipulation_types::AttachedObjectSeq& attached_objects,
       // const tmc_manipulation_msgs::CollisionEnvironment& environment);
@@ -129,24 +136,24 @@ class RobotRrtPlannerNode : public rclcpp::Node {
       // const tmc_manipulation_types::AttachedObjectSeq& attached_objects,
       // const tmc_manipulation_msgs::CollisionEnvironment& environment);
 
-  /// Joint names to weight in planner
+  /// Joint names to weight in the planner
   std::vector<std::string> weight_names_;
-  /// Weights in planner
+  /// Weights in the planner
   std::vector<double> weights_;
   /// Joint names to weight in IK
   std::vector<std::string> ik_weight_names_;
   /// Weights in IK
   std::vector<double> ik_weights_;
-  /// Weights in translation direction
+  /// Weights for translation direction
   double weight_linear_base_;
-  /// Weights in rotation direction
+  /// Weights for rotation direction
   double weight_rotational_base_;
-  /// IK weights in translation direction
+  /// IK weights for translation direction
   double weight_linear_base_ik_;
-  /// IK weights in rotation direction
+  /// IK weights for rotation direction
   double weight_rotational_base_ik_;
 
-  /// Interference checker for robot
+  /// Robot interference checker
   tmc_robot_collision_detector::RobotCollisionDetector::Ptr robot_collision_detector_;
   /// CBiRRT2 planner
   tmc_robot_planner::RobotCBiRrtPlanner::Ptr planner_;
@@ -168,6 +175,14 @@ class RobotRrtPlannerNode : public rclcpp::Node {
   rclcpp::Service<tmc_planning_msgs::srv::PlanWithHandGoals>::SharedPtr plan_with_hand_service_;
   /// Service for PlanWithHandLine
   rclcpp::Service<tmc_planning_msgs::srv::PlanWithHandLine>::SharedPtr plan_with_line_service_;
+
+  tmc_planning_msgs::msg::TaskSpaceRegion Convert(const tmc_planning_msgs::msg::LinearConstraint& linear_constraint);
+  tmc_planning_msgs::msg::TaskSpaceRegion Convert(const std::string& frame_id,
+                                                  const double distance,
+                                                  const geometry_msgs::msg::Vector3& axis,
+                                                  const bool local_origin_of_axis);
+  tmc_planning_msgs::msg::TaskSpaceRegion UpdateForGoalConstraint(
+      const tmc_planning_msgs::msg::TaskSpaceRegion& constraint_tsr);
 };
 
 }  // namespace tmc_robot_rrt_planner_node

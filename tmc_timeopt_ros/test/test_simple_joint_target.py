@@ -1,5 +1,5 @@
 #!/usr/bin/env python
-# Copyright (c) 2024 TOYOTA MOTOR CORPORATION
+# Copyright (c) 2026 TOYOTA MOTOR CORPORATION
 # All rights reserved.
 # Redistribution and use in source and binary forms, with or without
 # modification, are permitted (subject to the limitations in the disclaimer
@@ -25,28 +25,30 @@
 # OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH
 # DAMAGE.
 # -*- coding: utf-8 -*-
-from nose.tools import eq_
+import unittest
+
 from tmc_timeopt_ros.simple_joint_target import SimpleJointTarget
 
 
-def test_calc_dynamics():
-    u"""Dynamics update"""
-    target = SimpleJointTarget(['j1', 'j2', 'j3'])
-    target.point = {}
-    target.point['j1'] = (0, 1.0, 2.0)
-    target.point['j2'] = (0, 3.0, 4.0)
-    target.point['j3'] = (0, 5.0, 6.0)
-    (a, b, c, d) = target.get_dynamics()
+class SimpleJointTargetTestCase(unittest.TestCase):
+    def test_calc_dynamics(self):
+        u"""Dynamics update"""
+        target = SimpleJointTarget(['j1', 'j2', 'j3'])
+        target.point = {}
+        target.point['j1'] = (0, 1.0, 2.0)
+        target.point['j2'] = (0, 3.0, 4.0)
+        target.point['j3'] = (0, 5.0, 6.0)
+        (a, b, c, d) = target.get_dynamics()
 
-    eq_(a['j1', 'acceleration'], 1.0)
-    eq_(b['j1', 'acceleration'], 2.0)
-    eq_(c['j1', 'acceleration'], 0.0)
-    eq_(d['j1', 'acceleration'], 0.0)
-    eq_(a['j2', 'acceleration'], 3.0)
-    eq_(b['j2', 'acceleration'], 4.0)
-    eq_(c['j2', 'acceleration'], 0.0)
-    eq_(d['j2', 'acceleration'], 0.0)
-    eq_(a['j3', 'acceleration'], 5.0)
-    eq_(b['j3', 'acceleration'], 6.0)
-    eq_(c['j3', 'acceleration'], 0.0)
-    eq_(d['j3', 'acceleration'], 0.0)
+        self.assertEqual(a['j1', 'acceleration'], 1.0)
+        self.assertEqual(b['j1', 'acceleration'], 2.0)
+        self.assertEqual(c['j1', 'acceleration'], 0.0)
+        self.assertEqual(d['j1', 'acceleration'], 0.0)
+        self.assertEqual(a['j2', 'acceleration'], 3.0)
+        self.assertEqual(b['j2', 'acceleration'], 4.0)
+        self.assertEqual(c['j2', 'acceleration'], 0.0)
+        self.assertEqual(d['j2', 'acceleration'], 0.0)
+        self.assertEqual(a['j3', 'acceleration'], 5.0)
+        self.assertEqual(b['j3', 'acceleration'], 6.0)
+        self.assertEqual(c['j3', 'acceleration'], 0.0)
+        self.assertEqual(d['j3', 'acceleration'], 0.0)

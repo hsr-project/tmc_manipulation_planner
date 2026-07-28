@@ -1,5 +1,5 @@
 /*
-Copyright (c) 2024 TOYOTA MOTOR CORPORATION
+Copyright (c) 2026 TOYOTA MOTOR CORPORATION
 All rights reserved.
 Redistribution and use in source and binary forms, with or without
 modification, are permitted (subject to the limitations in the disclaimer
@@ -41,8 +41,8 @@ DAMAGE.
 namespace tmc_rplanner {
 
 /// @class Random_Optimizer
-/// @brief Implementation by ConfigOptimizer's random_optimizer
-/// @note Only returns the optimal value among random configurations
+/// @brief Implementation using ConfigOptimizer's random_optimizer
+/// @note Returns only the optimal value among random configurations
 class RandomOptimizer : public IConfigOptimizer {
  public:
   /// @brief Pass the planner space and termination conditions
@@ -72,7 +72,7 @@ class RandomOptimizer : public IConfigOptimizer {
                         double& value_out);
 
  private:
-  // Prohibition of copying
+  // Prohibit copying
   RandomOptimizer(const RandomOptimizer&);
   RandomOptimizer& operator=(const RandomOptimizer&);
   const ConfigurationSpace::Ptr space_;

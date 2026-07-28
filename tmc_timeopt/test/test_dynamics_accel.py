@@ -1,5 +1,5 @@
 #!/usr/bin/env python
-# Copyright (c) 2024 TOYOTA MOTOR CORPORATION
+# Copyright (c) 2026 TOYOTA MOTOR CORPORATION
 # All rights reserved.
 # Redistribution and use in source and binary forms, with or without
 # modification, are permitted (subject to the limitations in the disclaimer
@@ -31,7 +31,6 @@ from math import sqrt
 
 import unittest
 
-from nose.tools import assert_almost_equal, raises
 from tmc_timeopt.dynamics import Dynamics
 from tmc_timeopt.target import Target
 
@@ -73,7 +72,7 @@ class DummyTarget(Target):
 class DynamicsTestCase(unittest.TestCase):
 
     def setUp(self):
-        # Test only the logic with a dummy target
+        # Test logic only with a dummy target
         self.target = DummyTarget()
         self.dynamics = Dynamics(self.target)
         self.dynamics.get_mvc = self.dynamics.get_mvc_accel
@@ -93,38 +92,38 @@ class DynamicsTestCase(unittest.TestCase):
         self.target.set_test_case('CASE_A')
         self.dynamics.update()
         (sa_min, sa_max) = self.dynamics.calc_accel_limit(0.0)
-        assert_almost_equal((-3.0 / 4.0, 1.0 / 4.0), (sa_min, sa_max))
+        self.assertAlmostEqual((-3.0 / 4.0, 1.0 / 4.0), (sa_min, sa_max))
 
         # CASE B
         self.target.set_test_case('CASE_B')
         self.dynamics.update()
         (sa_min, sa_max) = self.dynamics.calc_accel_limit(0.0)
-        assert_almost_equal((-1.0 / 4.0, 3.0 / 4.0), (sa_min, sa_max))
+        self.assertAlmostEqual((-1.0 / 4.0, 3.0 / 4.0), (sa_min, sa_max))
 
     def test_get_mvc(self):
         # CASE C
         self.target.set_test_case('CASE_C')
         self.dynamics.update()
         mvc = self.dynamics.get_mvc()
-        assert_almost_equal(sqrt(2), mvc)
+        self.assertAlmostEqual(sqrt(2), mvc)
 
         # CASE D
         self.target.set_test_case('CASE_D')
         self.dynamics.update()
         mvc = self.dynamics.get_mvc()
-        assert_almost_equal(sqrt(2), mvc)
+        self.assertAlmostEqual(sqrt(2), mvc)
 
-    @raises(ValueError)
     def test_get_mvc_exception(self):
-        self.target.set_test_case('CASE_E')
-        self.dynamics.update()
-        self.dynamics.get_mvc()
+        with self.assertRaises(ValueError):
+            self.target.set_test_case('CASE_E')
+            self.dynamics.update()
+            self.dynamics.get_mvc()
 
     def test_zero_inertia_sv(self):
         self.target.set_test_case('CASE_D')
         self.dynamics.update()
         sv_max = self.dynamics.calc_zero_inertia_sv(('JOINT3', 'acceleration'))
-        assert_almost_equal(sqrt(2.0), sv_max)
+        self.assertAlmostEqual(sqrt(2.0), sv_max)
 
 
 if __name__ == '__main__':

@@ -1,5 +1,5 @@
 # !/usr/bin/env python
-# Copyright (c) 2024 TOYOTA MOTOR CORPORATION
+# Copyright (c) 2026 TOYOTA MOTOR CORPORATION
 # All rights reserved.
 # Redistribution and use in source and binary forms, with or without
 # modification, are permitted (subject to the limitations in the disclaimer
@@ -26,11 +26,6 @@
 # DAMAGE.
 # -*- coding: utf-8 -*-
 u"""Geometry calculation module."""
-
-import sys
-
-if sys.version_info.major == 2:
-    from itertools import izip as zip
 
 
 class Kinematics(object):
@@ -63,7 +58,7 @@ class Kinematics(object):
         self.limits[name, limit_type] = limit
 
     def set_trajectory(self, traj):
-        u"""Set command space trajectory.
+        u"""Set the command space trajectory.
 
         Args:
             traj (dict of Trajectory): Command space trajectory
@@ -79,7 +74,7 @@ class Kinematics(object):
         u"""Return the current state point.
 
         Return:
-            curr (Point): Return the current state of each joint
+            curr (Point): Returns the current state of each joint
         """
         return self.curr
 
@@ -89,10 +84,10 @@ class Kinematics(object):
         Args:
             sd(float): Position on the trajectory (specified by parameter s)
         """
-        # Due to calculation errors, sd may become greater than self.traj.length
+        # Due to calculation errors, sd > self.traj.length may occur
         sd = min(sd, self.traj.length)
 
-        # Obtain interpolation point on the trajectory
+        # Retrieve interpolation point on the trajectory
         if sd in self.traj_memo:
             self.curr = self.traj_memo[sd]
             self.target.update_point(self.traj_memo[sd])
@@ -112,7 +107,7 @@ class Kinematics(object):
             self.target.update_kinematics(self.curr)
 
     def get_vlc(self):
-        u"""Return a point on the curve VLC (Velocity Limit Curve) due to velocity constraints. It is necessary to call update first.
+        u"""Return a point on the curve VLC (Velocity Limit Curve) constrained by velocity. Call update first.
 
         Return sv_max(float): s velocity of the point on VLC
         """
@@ -134,7 +129,7 @@ class Kinematics(object):
             sv (float): s velocity on the trajectory
             sa (float): s acceleration on the trajectory
         Return:
-            state (dict): [Position, Velocity, Acceleration] of each joint, derivatives are time derivatives
+            state (dict): [Position, Velocity, Acceleration] of each joint. Derivatives are time derivatives.
         """
         state = {}
         self.update(sd)
@@ -149,9 +144,9 @@ class Kinematics(object):
         u"""Calculate the upper and lower limits of trajectory acceleration under constraints.
 
         Args:
-            sv (float): s velocity of the point to be calculated
+            sv (float): s velocity of the point to calculate
         Return:
-            [sa_min, sa_max] : Lower limit, upper limit of s acceleration
+            [sa_min, sa_max] : Lower and upper limits of s acceleration
         """
         (sa_min, sa_max) = (float('-inf'), float('inf'))
         accel_limits = [

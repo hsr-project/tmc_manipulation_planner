@@ -1,5 +1,5 @@
 /*
-Copyright (c) 2024 TOYOTA MOTOR CORPORATION
+Copyright (c) 2026 TOYOTA MOTOR CORPORATION
 All rights reserved.
 Redistribution and use in source and binary forms, with or without
 modification, are permitted (subject to the limitations in the disclaimer
@@ -62,45 +62,45 @@ RegionValues PoseToRegionValues(const Pose& pose) {
   return region_val;
 }
 
-/// Return the frame closest to the argument within TSR
+/// Return the frame closest to the argument within the TSR
 /// @param tsr task_space_region
-/// @param origin_to_frame Frame given as reference
-/// @return Frame closest to origin_to_frame based on origin
+/// @param origin_to_frame Frame provided as a reference
+/// @return The frame closest to origin_to_frame relative to the origin
 Pose CalcClosestPose(const TaskSpaceRegion& tsr,
                      const Pose& origin_to_sample) {
   Pose origin_to_sample_dash = origin_to_sample * tsr.tsr_to_end.inverse();
   Pose tsr_to_sample_dash = tsr.origin_to_tsr.inverse() * origin_to_sample_dash;
   RegionValues sample_dash = PoseToRegionValues(tsr_to_sample_dash);
-  // Calculate the distance between sample and TSR
+  // Calculate the distance between the sample and the TSR
   RegionValues distance = CalcDistanceToTsr(tsr, origin_to_sample);
   return tsr.origin_to_tsr * RegionValuesToPose(sample_dash - distance)
       * tsr.tsr_to_end;
 }
 
-/// Randomly sample one from TSR
+/// Randomly sample one from within the TSR
 /// @param tsr task_space_region
-/// @return Random end_effector value on TSR
+/// @return Random end_effector values on the TSR
 Pose GenerateSample(const TaskSpaceRegion& tsr) {
   RegionValues random = (tsr.max_bounds - tsr.min_bounds).array() *
       RegionValues::Random().array().abs() + tsr.min_bounds.array();
   return tsr.origin_to_tsr * RegionValuesToPose(random) * tsr.tsr_to_end;
 }
 
-/// Calculate the distance from the given sample (coordinates of endeffector) to TSR
+/// Calculate the distance from the given sample (end effector coordinates) to the TSR
 /// @param tsr task_space_region
-/// @param origin_to_sample Sample coordinates viewed from the reference coordinate system
-/// @return How far x, y, z, roll, pitch, yaw are from TSR
+/// @param origin_to_sample Sample coordinates relative to the reference coordinate system
+/// @return The distance from the TSR in terms of x, y, z, roll, pitch, yaw
 RegionValues CalcDistanceToTsr(
     const TaskSpaceRegion& tsr,
     const Pose& origin_to_sample) {
-  // Value of sample without offset viewed from origin
+  // Sample values without offset relative to the origin
   Pose origin_to_sample_dash = origin_to_sample * tsr.tsr_to_end.inverse();
   Pose tsr_to_sample_dash = tsr.origin_to_tsr.inverse() * origin_to_sample_dash;
   Eigen::Vector3d disp_pos = tsr_to_sample_dash.translation();
   Eigen::Vector3d disp_rot = tmc_eigen_utils::QuaternionToRPY(
       Eigen::Quaterniond(tsr_to_sample_dash.linear()));
   Eigen::Vector3d distance_pos;
-  // Position is simply compared with bounds
+  // Position is simply compared with the bounds
   for (int32_t i = 0; i < 3; ++i) {
     if (disp_pos(i) < tsr.min_bounds(i)) {
       distance_pos(i) = disp_pos(i) - tsr.min_bounds(i);

@@ -1,5 +1,5 @@
 /*
-Copyright (c) 2024 TOYOTA MOTOR CORPORATION
+Copyright (c) 2026 TOYOTA MOTOR CORPORATION
 All rights reserved.
 Redistribution and use in source and binary forms, with or without
 modification, are permitted (subject to the limitations in the disclaimer
@@ -37,8 +37,11 @@ DAMAGE.
 #include <tmc_rplanner/birrt_planner.hpp>
 
 using tmc_rplanner::BiRrtPlanner;
+using tmc_rplanner::CheckTransferabilityByDividing;
+using tmc_rplanner::Collisions;
 using tmc_rplanner::Config;
 using tmc_rplanner::ConfigurationSpace;
+using tmc_rplanner::DistanceFunc;
 using tmc_rplanner::IPointToPointPlanner;
 using tmc_rplanner::kMaxItr;
 using tmc_rplanner::kSuccess;
@@ -50,7 +53,7 @@ namespace {
 int32_t kDim = 2;
 // Search width
 double kDelta = 0.2;
-// Tolerance for floating-point identity
+// Tolerance value for floating-point equality
 double kDoubleEps = 1e-5;
 
 
@@ -66,16 +69,50 @@ Config RandomConfig() {
   return v;
 }
 
+bool CheckFeasibilityWithCollisions(const Config& config, std::vector<Collisions>& dst_collisions) {
+  dst_collisions.clear();
+  if (((config(0) < 3.5) && (config(0) > 0)) &&
+      ((config(1) < 1.5) && (config(1) > 1.0))) {
+    Collisions collision;
+    collision.name_1 = "obstacle1";
+    collision.name_2 = "robot";
+    collision.depth = std::min(3.5 - config(0), config(0) - 0.0);
+    collision.depth = std::min(collision.depth, 1.5 - config(1));
+    collision.depth = std::min(collision.depth, config(1) - 1.0);
+    dst_collisions.push_back(collision);
+  }
+  if (((config(0) < 4.0) && (config(0) > 0.5)) &&
+      ((config(1) < 3.5) && (config(1) > 3.0))) {
+    Collisions collision;
+    collision.name_1 = "obstacle2";
+    collision.name_2 = "robot";
+    collision.depth = std::min(4.0 - config(0), config(0) - 0.5);
+    collision.depth = std::min(collision.depth, 3.5 - config(1));
+    collision.depth = std::min(collision.depth, config(1) - 3.0);
+    dst_collisions.push_back(collision);
+  }
+  return true;
+}
+
 bool CheckFeasibility(const Config& config) {
-  if (((config(0) < 3.5) && (config(0) > 0))
-      && ((config(1) < 1.5) && (config(1) > 1.0))) {
+  std::vector<Collisions> collisions;
+  if (CheckFeasibilityWithCollisions(config, collisions)) {
+    if (collisions.empty()) {
+      return true;
+    } else {
+      return false;
+    }
+  } else {
     return false;
   }
-  if (((config(0) < 4.0) && (config(0) > 0.5))
-      && ((config(1) < 3.5) && (config(1) > 3.0))) {
-    return false;
 }
-    return true;
+
+bool CheckTransferability(const Config& src_config,
+                          const Config& dst_config,
+                          const std::vector<Collisions>& src_collisions,
+                          std::vector<Collisions>& dst_collisions) {
+  return CheckTransferabilityByDividing(
+      src_config, dst_config, src_collisions, CheckFeasibilityWithCollisions, DistanceFunc(), 0.01, dst_collisions);
 }
 
 bool IsTerminate() {
@@ -93,6 +130,8 @@ class BiRrtPlannerTest : public ::testing::Test {
     const auto cspace = std::make_shared<ConfigurationSpace>(kDim);
     cspace->set_random_config(RandomConfig);
     cspace->set_check_feasibility(CheckFeasibility);
+    cspace->set_check_feasibility_with_collisions(CheckFeasibilityWithCollisions);
+    cspace->set_check_transferability(CheckTransferability);
     planner_ = std::make_shared<BiRrtPlanner>(cspace, kDelta, 10000);
   }
   IPointToPointPlanner::Ptr planner_;
@@ -108,7 +147,7 @@ TEST_F(BiRrtPlannerTest, plan) {
   Path path;
   ASSERT_EQ(kSuccess, planner_->PlanPath(init, goal, path));
 
-  // Check of the path
+  // Path check
   // Initial value is init
   ASSERT_DOUBLE_EQ(init(0), path.front()(0));
   ASSERT_DOUBLE_EQ(init(1), path.front()(1));
@@ -126,6 +165,51 @@ TEST_F(BiRrtPlannerTest, plan) {
   }
 }
 
+// Escape from initial state collision
+TEST_F(BiRrtPlannerTest, init_collision) {
+  Config init(kDim);
+  init << 0.5, 1.2;  // Inside obstacle
+  Config goal(kDim);
+  goal << 4.0, 4.0;
+
+  Path path;
+  ASSERT_EQ(kSuccess, planner_->PlanPath(init, goal, path));
+
+  // Path check
+  // Initial value is init
+  ASSERT_DOUBLE_EQ(init(0), path.front()(0));
+  ASSERT_DOUBLE_EQ(init(1), path.front()(1));
+
+  // Terminal value is goal
+  ASSERT_DOUBLE_EQ(goal(0), path.back()(0));
+  ASSERT_DOUBLE_EQ(goal(1), path.back()(1));
+
+  // Escape from a state where distance is always less than or equal to kDelta and not Feasible to become Feasible
+  Config old_config = init;
+  std::vector<bool> feasibility_checks = {CheckFeasibility(init)};
+  for (Path::iterator config = ++(path.begin()); config != path.end(); ++config) {
+    EXPECT_LE((*config - old_config).norm(), kDelta + kDoubleEps);
+    feasibility_checks.push_back(CheckFeasibility(*config));
+    old_config = *config;
+  }
+  // The initial state is not Feasible, but it should become Feasible along the way
+  EXPECT_FALSE(feasibility_checks.front());
+  const auto true_it = std::find(feasibility_checks.begin(), feasibility_checks.end(), true);
+  EXPECT_TRUE(std::all_of(feasibility_checks.begin(), true_it, [](bool v) { return !v; }));
+  EXPECT_TRUE(std::all_of(true_it, feasibility_checks.end(), [](bool v) { return v; }));
+}
+
+// Failure if the target state is in collision
+TEST_F(BiRrtPlannerTest, goal_collision) {
+  Config init(kDim);
+  init << 0.0, 0.0;
+  Config goal(kDim);
+  goal << 1.0, 1.2;  // Inside obstacle
+
+  Path path;
+  EXPECT_EQ(tmc_rplanner::kGoalConfigFail, planner_->PlanPath(init, goal, path));
+}
+
 // Termination at maximum number of iterations
 TEST(BiRrtPlanner, max_itr) {
   ConfigurationSpace::Ptr cspace(new ConfigurationSpace(kDim));
@@ -141,7 +225,7 @@ TEST(BiRrtPlanner, max_itr) {
   EXPECT_EQ(kMaxItr, planner->PlanPath(init, goal, path));
 }
 
-// Termination by the termination condition function
+// Termination by end condition function
 TEST(BiRrtPlanner, terminate) {
   ConfigurationSpace::Ptr cspace(new ConfigurationSpace(kDim));
   cspace->set_random_config(RandomConfig);

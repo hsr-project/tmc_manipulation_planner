@@ -56,8 +56,8 @@ using std::numeric_limits;
 using std::ofstream;
 using std::pair;
 
-// Loosened from the original
-// Due to the impact of including initial velocity, cases of backward integration failing at the starting point occurred frequently
+// Loosened compared to the original
+// Possibly due to the inclusion of initial velocity, cases of failure in backward integration at the starting point occurred frequently
 const double Trajectory::eps = 0.00002;
 
 static double squared(double d) { return d * d; }
@@ -74,8 +74,8 @@ Trajectory::Trajectory(const Path &path, const VectorXd &maxVelocity,
       cachedTime(numeric_limits<double>::max()) {
   // The original includes zero initial velocity
   // For optimization with initial velocity, either include the initial velocity of s here and use a linear segment
-  // Or devise an f(s) such that even if the initial velocity of s is zero, there is initial velocity in the joint space
-  // Since a suitable f(s) could not be found, the former was chosen
+  // Or devise an f(s) such that even with zero initial velocity of s, there exists an initial velocity in joint space
+  // Chose the former as a suitable f(s) could not be found
   trajectory.push_back(TrajectoryStep(0.0, init_velocity_abs));
   double afterAcceleration =
       getMinMaxPathAcceleration(0.0, init_velocity_abs, true);

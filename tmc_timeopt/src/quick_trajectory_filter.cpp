@@ -1,5 +1,5 @@
 /*
-Copyright (c) 2024 TOYOTA MOTOR CORPORATION
+Copyright (c) 2026 TOYOTA MOTOR CORPORATION
 All rights reserved.
 Redistribution and use in source and binary forms, with or without
 modification, are permitted (subject to the limitations in the disclaimer
@@ -65,9 +65,9 @@ QuickTrajectoryFilter::QuickTrajectoryFilter(const Eigen::VectorXd& initial_posi
   }
 
   // Behavior of normalized when initial_velocities is a zero vector
-  // Varies depending on the version of Eigen
-  // Returns a vector with nan elements in older versions (3.3~beta1-2) and a zero vector in newer versions (3.3.4-4)
-  // To accommodate both, process by branching with isZero()
+  // Depends on the version of Eigen
+  // Older versions (3.3~beta1-2) return a vector with nan elements, newer versions (3.3.4-4) return a zero vector
+  // To handle both cases, process by branching with isZero()
   Eigen::VectorXd init_vel_normalized;
   if (initial_velocities.isZero()) {
     init_vel_normalized = Eigen::VectorXd::Zero(initial_velocities.size());
@@ -81,11 +81,11 @@ QuickTrajectoryFilter::QuickTrajectoryFilter(const Eigen::VectorXd& initial_posi
       CONSOLE_BRIDGE_logInform("Otimization interrupted");
       break;
     }
-    // Place waypoints in the direction of initial velocity from initial_positions to accommodate any initial velocity
+    // Place a waypoint in the direction of initial velocity from initial_positions to accommodate arbitrary initial velocities
     //
     // Of the path from the first point to the second point, the part extending from the first point becomes a straight segment
-    // If the direction of the straight segment is the direction of initial velocity, the given initial velocity can be achieved
-    // The length of the straight segment should be shorter, but since the formula to derive the minimum value is unknown, it will be explored
+    // If the direction of the straight segment matches the initial velocity direction, the given initial velocity can be achieved
+    // The length of the straight segment should be as short as possible, but since the formula for deriving the minimum value is unknown, it is explored
     std::list<Eigen::VectorXd> way_points_impl;
     way_points_impl.push_back(initial_positions);
     way_points_impl.push_back(initial_positions +
@@ -113,8 +113,8 @@ Eigen::VectorXd QuickTrajectoryFilter::GetPosition(
   }
 }
 
-// Obtain joint velocity at time_from_start
-// @param[in] time_from_start  Time [sec] at which joint velocity is to be obtained
+// Retrieve joint velocity at time_from_start
+// @param[in] time_from_start  The time [sec] at which to retrieve the joint velocity
 // @return Eigen::VectorXd  Joint velocity
 Eigen::VectorXd QuickTrajectoryFilter::GetVelocity(
     double time_from_start) const {
@@ -125,7 +125,7 @@ Eigen::VectorXd QuickTrajectoryFilter::GetVelocity(
   }
 }
 
-// Obtain the playback time of the trajectory
+// Retrieve the playback time of the trajectory
 // @return double  Playback time of the trajectory [sec]
 double QuickTrajectoryFilter::GetDuration() const {
   if (IsValid()) {

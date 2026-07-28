@@ -1,5 +1,5 @@
 # !/usr/bin/env python
-# Copyright (c) 2024 TOYOTA MOTOR CORPORATION
+# Copyright (c) 2026 TOYOTA MOTOR CORPORATION
 # All rights reserved.
 # Redistribution and use in source and binary forms, with or without
 # modification, are permitted (subject to the limitations in the disclaimer
@@ -25,7 +25,7 @@
 # OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH
 # DAMAGE.
 # -*- coding: utf-8 -*-
-u"""Module to calculate the minimum time control problem (TOPP)."""
+u"""Module for calculating the minimum time control problem (TOPP)."""
 
 from __future__ import print_function
 
@@ -34,7 +34,7 @@ from math import sqrt
 import os
 
 import matplotlib
-# Change Agg to tkAgg for debugging
+# Change Agg to tkAgg during debugging
 matplotlib.use('Agg')
 
 # Subsequent imports are written after matplotlib.use, so pass with noqa
@@ -46,9 +46,9 @@ from tmc_timeopt.trajectory import TrajectoryDict, _NEW_SCIPY  # noqa
 
 
 def _plot_step(func):
-    u"""Decorator to plot the processing of one-step integration.
+    u"""Decorator for plotting the processing of one step integration.
 
-    For debugging.
+    For debugging purposes.
     """
     def wrapper(*args, **kwds):
         self = args[0]
@@ -88,11 +88,11 @@ def _plot_step(func):
 
 
 class Timeopt(object):
-    u"""Class to calculate the minimum time control problem (TOPP)."""
+    u"""Class for calculating the minimum time control problem (TOPP)."""
 
-    # Maximum number of divisions for divided integration
+    # Maximum number of divisions for split integration
     _INTEGRATE_DIV_NUM = 4
-    # Lower sensitivity for tangent point as calculations are critical
+    # Tangent point calculations are sensitive, so reduce sensitivity
     _LOW_SENSITIVITY_COEFF = 0.95
     _VLC_MERGIN = 0.001
     _MVC_MERGIN = 0.001
@@ -101,7 +101,7 @@ class Timeopt(object):
     # Minimum time integration width
     _MINIMUM_DT = 0.001
 
-    # Precision of switching point
+    # Precision of the switching point
     _SP_ACCURACY = 1e-4
 
     # Threshold for double solutions
@@ -150,13 +150,13 @@ class Timeopt(object):
     def preprocess(self, step=0.1):
         u"""Perform preprocessing for minimum time control.
 
-           1. Reserve the area
+           1. Allocate regions
            2. Calculate MVC and VLC
-           3. Calculate parameters of dynamics
+           3. Calculate dynamics parameters
         Args:
             step (float): Step width of s used for exploration
         Note:
-            It is efficient & simple to calculate MVC for all discrete points first
+            It is more efficient and simpler to calculate MVC for all discrete points first.
         """
         self._ds = step
         # Get the length of the trajectory
@@ -165,9 +165,9 @@ class Timeopt(object):
         self._sd = [float(i) * self._ds for i in range(self._size)]
         # Pre-calculate traj
         if _NEW_SCIPY:
-            # It's faster not to pre-calculate when not using scipy
+            # If not using scipy, pre-calculation is faster
             self._kinematics.pre_calc_traj(self._sd, step)
-        # Reserve area for processing
+        # Allocate regions for processing
         (self._mvc, self._sa_mvc, self._vlc) = ([0] * self._size, [0] * self._size, [0] * self._size)
         self._mvc_dt = [0] * self._size
         self._mvc_sa_min = [0] * self._size
@@ -178,22 +178,22 @@ class Timeopt(object):
         self._sa = [0] * self._size
         self._fw = [True] * self._size
 
-        # Reserve area for parameters
+        # Allocate regions for parameters
         for pair in self._dynamics.limits:
             self._a_buff[pair] = [0] * self._size
             self._b_buff[pair] = [0] * self._size
             self._c_buff[pair] = [0] * self._size
             self._d_buff[pair] = [0] * self._size
 
-        # Find MVC and VLC for the entire section
+        # Determine MVC and VLC for the entire section
         for i, sd in enumerate(self._sd):
-            # Update kinematics, dynamics
+            # Update kinematics and dynamics
             self._kinematics.update(sd)
             self._dynamics.update()
 
             # Calculate MVC
             self._mvc[i] = self._dynamics.get_mvc()
-            # Find upper and lower limits of acceleration on MVC
+            # Determine upper and lower limits of acceleration on MVC
             (self._mvc_sa_min[i], self._mvc_sa_max[i]) = self._dynamics.calc_accel_limit(self._mvc[i])
             self._sa_mvc[i] = self._mvc_sa_min[i]
             dt = self.__calc_dt(self._mvc[i], self._mvc_sa_min[i], self._ds)
@@ -211,7 +211,7 @@ class Timeopt(object):
                 self._d_buff[pair][i] = self._dynamics.d[pair]
 
     def update(self):
-        u"""Solve the TOPP algorithm to generate the shortest velocity trajectory."""
+        u"""Solve the TOPP algorithm to generate the minimum velocity trajectory."""
         # Integrate backward from the endpoint
         self.__integrate_backward_segment(self._size - 1)
 
@@ -223,17 +223,17 @@ class Timeopt(object):
             (r, index) = result
             if r == 'END':
                 break
-            # Search for switching points forward
+            # Search forward for switching points
             result = self.__search_switching_point(index)
             (r, curr) = result
-            # When there are no valid switching points
+            # If no valid switching points exist
             if r == 'NG':
                 raise RuntimeError('No valid switching point found.')
         # Recalculate the trajectory and finish
         self.__recalc_trajectory()
 
     def get_optimal_trajectory(self):
-        u"""Get the optimal trajectory after calculation with update.
+        u"""Retrieve the optimal trajectory after calculation with update.
 
         Return:
            trajectory: list of (time, state)
@@ -247,15 +247,15 @@ class Timeopt(object):
         return trajectory
 
     def __integrate_forward_segment(self, curr):
-        u"""Integrate forward as much as possible from sd[curr] and return the stop factor and stop position.
+        u"""Integrate forward as much as possible from sd[curr] and return the stopping factor and stopping position.
 
         Args:
-            curr (int): Index of the starting position of integration
+            curr (int): Index of the starting position for integration
         Retrun:
-            tuple: Returns a tuple of (stop factor, stop index).
+            tuple: Returns a tuple of (stopping factor, stopping index).
             'END': Integration completed to the end
             'MVC': Stopped exceeding MVC
-            'VLC': Stopped failing to meet VLC
+            'VLC': Stopped failing to adhere to VLC
         """
         while curr < self._size - 1:
             (sd0, sv0) = (self._sd[curr], self._sv[curr])
@@ -265,10 +265,10 @@ class Timeopt(object):
             # Integration stopped
             if r != 'OK':
                 return (r, curr)
-            # Intersection judgment with the backward trajectory
+            # Intersection determination with the backward trajectory
             if curr + 1 < self._size:
                 if sv1 >= self._sv[curr + 1] - self._CROSS_MERGIN:
-                    # It seems to be a bug that sa is not updated here in the code of the research center
+                    # It seems to be a bug in the code from the research center not updating sa here
                     self._sa[curr] = sa0
                     break
             self._sa[curr] = sa0
@@ -279,15 +279,15 @@ class Timeopt(object):
     def __integrate_forward_adaptive(self, sd0, sv0, step):
         u"""Integrate forward by step width from (sd0, sv0).
 
-        If integration fails, try while dividing the integration width.
+        If integration fails, try dividing the integration width.
         Args:
-            sd0 (float): s of the integration start point
-            sv0 (float): Velocity of s of the integration start point
+            sd0 (float): Starting point s for integration
+            sv0 (float): Velocity of s at the starting point of integration
         Return:
-            tuple: Returns a tuple of (stop factor, stop state).
+            tuple: Returns a tuple of (stopping factor, stopping state).
             'OK': Integration successful
             'MVC': Stopped exceeding MVC
-            'VLC': Stopped failing to meet VLC
+            'VLC': Stopped failing to adhere to VLC
         """
         nxt = 0
         sa0_sv = None
@@ -307,16 +307,16 @@ class Timeopt(object):
         return result
 
     def __integrate_forward_divide(self, sd0, sv0, step, div_num, start=0):
-        u"""Integrate forward by width divided by div_num from (sd0, sv0).
+        u"""Integrate forward by step width divided into div_num parts from (sd0, sv0).
 
         Args:
-            sd0 (float): s of the integration start point
-            sv0 (float): Velocity of s of the integration start point
+            sd0 (float): Starting point s for integration
+            sv0 (float): Velocity of s at the starting point of integration
         Return:
-            tuple: Returns a tuple of (stop factor, stop state).
+            tuple: Returns a tuple of (stopping factor, stopping state).
             'OK': Integration successful
             'MVC': Stopped exceeding MVC
-            'VLC': Stopped failing to meet VLC
+            'VLC': Stopped failing to adhere to VLC
         """
         ds = step / div_num
         sa0 = None
@@ -341,18 +341,18 @@ class Timeopt(object):
 
     # @_plot_step
     def __integrate_forward_step(self, sd, sv, step, singular_flag=False):
-        u"""Integrate forward by step width for one step from (sd, sv).
+        u"""Integrate forward by one step of step width from (sd, sv).
 
         Args:
-            sd (float): s of the integration start point
-            sv (float): Velocity of s of the integration start point
+            sd (float): Starting point s for integration
+            sv (float): Velocity of s at the starting point of integration
             step (float): Integration width
             singular_flag (bool): Set to True when integrating from zero-inertia switching point
         Return:
-            tuple: Returns a tuple of (stop factor, stop state).
+            tuple: Returns a tuple of (stopping factor, stopping state).
             'OK': Integration successful
             'MVC': Failed exceeding MVC
-            'VLC': Failed failing to meet VLC
+            'VLC': Failed failing to adhere to VLC
         """
         # Update dynamics
         self._kinematics.update(sd)
@@ -368,21 +368,21 @@ class Timeopt(object):
         # Update state
         sd_next = sd + sv * self._dt_max + 0.5 * self._sa_max * self._dt_max ** 2
         sv_next = sv + self._sa_max * self._dt_max
-        # Constraints are too tight to be feasible
+        # Constraints are too strict to be feasible
         if sv_next < 0:
             return ('MVC', sd_next, sv_next, self._sa_max)
         # Update dynamics at candidate points
         mvc, vlc = self.__get_mvc_vlc(sd_next, update_flg=True)
-        # Determine if it exceeded mvc
+        # Determine if MVC is exceeded
         if sv_next > mvc + self._MVC_MERGIN:
             return ('MVC', sd_next, sv_next, self._sa_max)
-        # Shape to not exceed VLC
+        # Shape to avoid exceeding VLC
         if sv_next > vlc:
             dt = 2.0 * step / (vlc + sv)
             sa = (vlc - sv) / dt
             sv_next = vlc
 
-            # Cannot follow VLC
+            # Unable to adhere to VLC
             if sa < self._sa_min:
                 return ('VLC', sd_next, sv_next, self._sa_min)
             else:
@@ -390,15 +390,15 @@ class Timeopt(object):
         return ('OK', sd_next, sv_next, self._sa_max)
 
     def __integrate_backward_segment(self, curr):
-        u"""Integrate backward as much as possible from sd[curr] and return the stop factor and stop position.
+        u"""Integrate backward as much as possible from sd[curr] and return the stopping factor and stopping position.
 
         Args:
-            curr (int): Index of the starting position of integration
+            curr (int): Index of the starting position for integration
         Retrun:
-            tuple: Returns a tuple of (stop factor, stop index).
+            tuple: Returns a tuple of (stopping factor, stopping index).
             'END': Integration completed to the end
             'MVC': Stopped exceeding MVC
-            'VLC': Stopped failing to meet VLC
+            'VLC': Stopped failing to adhere to VLC
         """
         while curr > 0:
             (sd1, sv1) = (self._sd[curr], self._sv[curr])
@@ -407,7 +407,7 @@ class Timeopt(object):
             # Integration stopped
             if r != 'OK':
                 return (r, curr)
-            # Intersection judgment with the forward trajectory
+            # Intersection determination with the forward trajectory
             if sv0 >= self._sv[curr - 1] - self._CROSS_MERGIN:
                 if float('inf') in self._sv:
                     if self._sv.index(float('inf')) >= curr - 1:
@@ -424,15 +424,15 @@ class Timeopt(object):
     def __integrate_backward_adaptive(self, sd1, sv1, step):
         u"""Integrate backward by step width from (sd1, sv1).
 
-        If integration fails, try while dividing the integration width.
+        If integration fails, try dividing the integration width.
         Args:
-            sd1 (float): s of the integration start point
-            sv1 (float): Velocity of s of the integration start point
+            sd1 (float): Starting point s for integration
+            sv1 (float): Velocity of s at the starting point of integration
         Return:
-            tuple: Returns a tuple of (stop factor, stop state).
+            tuple: Returns a tuple of (stopping factor, stopping state).
             'OK': Integration successful
             'MVC': Stopped exceeding MVC
-            'VLC': Stopped failing to meet VLC
+            'VLC': Stopped failing to adhere to VLC
         """
         nxt = 0
         sa1_sv = None
@@ -452,16 +452,16 @@ class Timeopt(object):
         return result
 
     def __integrate_backward_divide(self, sd1, sv1, step, div_num, start=0):
-        u"""Integrate backward by width divided by div_num from (sd1, sv1).
+        u"""Integrate backward by step width divided into div_num parts from (sd1, sv1).
 
         Args:
-            sd1 (float): s of the integration start point
-            sv1 (float): Velocity of s of the integration start point
+            sd1 (float): Starting point s for integration
+            sv1 (float): Velocity of s at the starting point of integration
         Return:
-            tuple: Returns a tuple of (stop factor, stop state).
+            tuple: Returns a tuple of (stopping factor, stopping state).
             'OK': Integration successful
             'MVC': Stopped exceeding MVC
-            'VLC': Stopped failing to meet VLC
+            'VLC': Stopped failing to adhere to VLC
         """
         ds = step / div_num
         sa1 = None
@@ -485,18 +485,18 @@ class Timeopt(object):
 
     # @_plot_step
     def __integrate_backward_step(self, sd, sv, step, singular_flag=False):
-        u"""Integrate backward by step width for one step from (sd, sv).
+        u"""Integrate backward by one step of step width from (sd, sv).
 
         Args:
-            sd (float): s of the integration start point
-            sv (float): Velocity of s of the integration start point
+            sd (float): Starting point s for integration
+            sv (float): Velocity of s at the starting point of integration
             step (float): Integration width
             singular_flag (bool): Set to True when integrating from zero-inertia switching point
         Return:
-            tuple: Returns a tuple of (stop factor, stop state).
+            tuple: Returns a tuple of (stopping factor, stopping state).
             'OK': Integration successful
             'MVC': Failed exceeding MVC
-            'VLC': Failed failing to meet VLC
+            'VLC': Failed failing to adhere to VLC
         """
         # Update dynamics
         self._kinematics.update(sd)
@@ -512,21 +512,21 @@ class Timeopt(object):
         # Update state
         sd_prev = sd - sv * self._dt_min + 0.5 * self._sa_min * self._dt_min ** 2
         sv_prev = sv - self._sa_min * self._dt_min
-        # Constraints are too tight to be feasible
+        # Constraints are too strict to be feasible
         if sv_prev < 0:
             return ('MVC', sd_prev, sv_prev, self._sa_min)
         # Update dynamics at candidate points
         mvc, vlc = self.__get_mvc_vlc(sd_prev, update_flg=True)
-        # Determine if it exceeded mvc
+        # Determine if MVC is exceeded
         if sv_prev > mvc + self._MVC_MERGIN:
             return ('MVC', sd_prev, sv_prev, self._sa_min)
-        # Shape to not exceed VLC
+        # Shape to avoid exceeding VLC
         if sv_prev > vlc:
             dt = 2.0 * step / (vlc + sv)
             sa = (sv - vlc) / dt
             sv_prev = vlc
 
-            # Cannot follow VLC
+            # Unable to adhere to VLC
             if sa > self._sa_max:
                 return ('VLC', sd_prev, sv_prev, self._sa_max)
             else:
@@ -534,7 +534,7 @@ class Timeopt(object):
         return ('OK', sd_prev, sv_prev, self._sa_min)
 
     def __calc_dt(self, sv, sa, ds):
-        u"""Calculate integration time width dt for integration width ds (>0) from sv and sa.
+        u"""Calculate the integration time width dt for the integration width ds (>0) from sv and sa.
 
         Args:
             sv (float): Velocity of s
@@ -551,10 +551,10 @@ class Timeopt(object):
             if sv == 0:
                 return minimum_dt
             return ds / sv
-        # When there is no solution
+        # If no solution exists
         if (disciminant) < 0:
             if sv > self._DOUBLE_EPS:
-                # Return as a double solution as a numerical calculation error if small
+                # If small, return as a double solution due to numerical calculation error
                 return -sv / sa
             else:
                 return minimum_dt
@@ -568,7 +568,7 @@ class Timeopt(object):
         return max(dt, minimum_dt)
 
     def __calc_dt_back(self, sv, sa, ds):
-        u"""Calculate integration time width dt for integration width ds (>0) from sv and sa.
+        u"""Calculate the integration time width dt for the integration width ds (>0) from sv and sa.
 
            During backward integration
         Args:
@@ -586,10 +586,10 @@ class Timeopt(object):
             if sv == 0:
                 return minimum_dt
             return ds / sv
-        # When there is no solution
+        # If no solution exists
         if (disciminant) < 0:
             if sv > self._DOUBLE_EPS:
-                # Return as a double solution as a numerical calculation error if small
+                # If small, return as a double solution due to numerical calculation error
                 return sv / sa
             else:
                 return minimum_dt
@@ -616,14 +616,14 @@ class Timeopt(object):
         u"""Search forward from position curr until a Switching Point is found.
 
         Args:
-            curr (int): Index of the starting position of the search
+            curr (int): Index of the starting position for exploration
         Retrun:
-            tuple: Returns a tuple of (stop factor, stop position).
+            tuple: Returns a tuple of (stopping factor, stopping position).
             'OK': Found a switching point
-            'NG': Switching point not found (usually impossible)
+            'NG': No switching point found (usually unlikely)
         """
         while curr < self._size - 1:
-            # Check Zero-Inertia SP
+            # Check for Zero-Inertia SP
             for name in self.__check_zero_inertia_point(curr):
                 sp = self.__calc_zero_inertia_point(name, curr)
                 if sp:
@@ -633,18 +633,18 @@ class Timeopt(object):
                         return ('OK', curr + 1)
                     (self._fwd_singular, self._bkw_singular) = (False, False)
 
-            # Check Trap point
+            # Check for Trap point
             sp = self.__check_trap_point(curr)
             if sp:
-                # Confirm if integration can continue from SP
+                # Verify if integration can continue from SP
                 res = self.__integrate_from_switching_point(curr, sp)
                 if res:
                     return ('OK', curr + 1)
 
-            # Check Tangent point
+            # Check for Tangent point
             sp = self.__check_tangent_point(curr)
             if sp:
-                # Confirm if integration can continue from SP
+                # Verify if integration can continue from SP
                 res = self.__integrate_from_switching_point(curr, sp)
                 if res:
                     return ('OK', curr + 1)
@@ -655,11 +655,11 @@ class Timeopt(object):
     def __check_tangent_point(self, curr):
         u"""Check if there is a tangent switching point between curr and curr+1.
 
-        If so, return the exact position using bisection method
+        If found, return the exact position using bisection method.
         Args:
             curr (int): Index of the position to check
         Retrun:
-            tuple: Two points surrounding SP (sd1, sv1, sd2, sv2)
+            tuple: Two points surrounding the SP (sd1, sv1, sd2, sv2)
             None: No SP found
         """
         # Calculate acceleration limits
@@ -673,7 +673,7 @@ class Timeopt(object):
         # In case of sink->source
         if (self._mvc[curr] + sa_curr * dt_curr > self._mvc[curr + 1]) and \
            (self._mvc[curr + 1] + sa_next * dt_next < self._mvc[curr + 2]):
-            # Find and return the exact tangent sp
+            # Determine and return the exact tangent SP
             (sd1, sv1, sd2, sv2) = self.__search_precise_tangent_sp(curr)
             # self._sv[curr+1] = self._mvc[curr]+sa_limit*dt
             return (sd1, sv1 * self._LOW_SENSITIVITY_COEFF,
@@ -681,7 +681,7 @@ class Timeopt(object):
         return None
 
     def __search_precise_tangent_sp(self, curr):
-        u"""Calculate the exact position of tangent sp between curr and curr+1."""
+        u"""Calculate the exact position of the tangent SP between curr and curr+1."""
         (sd1, sd2) = (self._sd[curr], self._sd[curr + 1])
         (sv1, sv2) = (self._mvc[curr], self._mvc[curr + 1])
         for i in range(100):
@@ -692,13 +692,13 @@ class Timeopt(object):
         return (sd1, sv1, sd2, sv2)
 
     def __iterate_tangent_sp(self, sd1, sv1, sd2, sv2):
-        u"""Search for tangent switching point between (sd1, sv1) and (sd2, sv1) using bisection method.
+        u"""Search for the tangent switching point between (sd1, sv1) and (sd2, sv1) using bisection method.
 
         Args:
             sd1, sv1 (float): Left point
             sd2, sv2 (float): Right point
         Retrun:
-            tuple: Two points surrounding SP (sd1, sv1, sd2, sv2)
+            tuple: Two points surrounding the SP (sd1, sv1, sd2, sv2)
         """
         sd = (sd1 + sd2) / 2.0
         # Calculate MVC
@@ -720,10 +720,10 @@ class Timeopt(object):
         Args:
             curr (int): Index of the position to check
         Retrun:
-            tuple: Two points surrounding SP (sd1, sv1, sd2, sv2)
+            tuple: Two points surrounding the SP (sd1, sv1, sd2, sv2)
             None: No SP found
         """
-        # Determine if it is a point that can merge with VLC at the lower limit of acceleration
+        # Determine if it is a point that can merge with VLC at the lower acceleration limit
         self._kinematics.update(self._sd[curr])
         self._dynamics.update()
         if (self._vlc[curr] > self._mvc[curr]
@@ -740,21 +740,21 @@ class Timeopt(object):
     def __check_zero_inertia_point(self, curr):
         u"""Check if there is a zero inertia switching point between curr and curr+1.
 
-        Specifically, check the sign reversal of a(s).
-        If so, return the list of relevant constraints.
+        Specifically, check for sign reversal of a(s).
+        If found, return the list of relevant constraints.
 
         Args:
             curr (int): Index of the position to check
         Retrun:
-            list: List of constraints ('name', 'type') where the sign of a reverses
+            list: List of constraints where the sign of a reverses ('name', 'type')
         """
         zero_list = []
-        # Ignore start and end points
+        # Ignore the starting and ending points
         if curr == 0 or curr == self._size - 1:
             return zero_list
         # Check a==0 for all constraints
         for pair in self._dynamics.limits:
-            # Confirm if there is a point where a==0 in [curr, curr+1)
+            # Verify if there is a point where a==0 in [curr, curr+1)
             if (self._a_buff[pair][curr] == 0
                or self._a_buff[pair][curr] * self._a_buff[pair][curr + 1] <= 0
                or self._a_buff[pair][curr + 1] == 0):
@@ -762,13 +762,13 @@ class Timeopt(object):
         return zero_list
 
     def __calc_zero_inertia_point(self, name, curr):
-        u"""Calculate the exact position of zero-inertia point in [curr, curr+1).
+        u"""Calculate the exact position of the zero-inertia point in [curr, curr+1).
 
         Args:
-            name (tuple): Constraint ('name', 'type') where the sign of a reverses
+            name (tuple): Constraint where the sign of a reverses ('name', 'type')
             curr (int): Index of the position to check
         Retrun:
-            tuple: Two points surrounding SP (sd1, sv1, sd2, sv2)
+            tuple: Two points surrounding the SP (sd1, sv1, sd2, sv2)
             None: No SP found
         """
         (sd1, sd2) = (self._sd[curr], self._sd[curr + 1])
@@ -789,26 +789,26 @@ class Timeopt(object):
         self._dynamics.update()
         sv2 = self._dynamics.calc_zero_inertia_sv(name)
         mvc2, vlc2 = self.__get_mvc_vlc(sd2)
-        # Ignore if above MVC
+        # Ignore if it is above MVC
         if sv1 > mvc1 and sv2 > mvc2:
             return None
-        # Ignore if above VLC
+        # Ignore if it is above VLC
         if sv1 > vlc1 and sv2 > vlc2:
             return None
         return (sd1, sv1, sd2, sv2)
 
     def __iterate_zero_inertia_sp(self, name, sd1, param_a1, sd2, param_a2):
-        u"""Zero-inertia switching point (a=0) between point 1 and point 2.
+        u"""Zero-inertia switching point (where a=0) between point 1 and point 2.
 
-        Improve accuracy using bisection method
+        Improve accuracy using bisection method.
         Args:
-            name (tuple): Constraint ('name', 'type') to be considered
+            name (tuple): Constraint to be considered ('name', 'type')
             sd1 (float): s of the left point
             param_a1 (float): a(s) of the left point
             sd2 (float): s of the right point
             param_a2 (float): a(s) of the right point
         Retrun:
-            tuple: Improved two points and parameter a (sd1, param_a1, sd2, param_a2)
+            tuple: Two improved points and parameter a (sd1, param_a1, sd2, param_a2)
         """
         sd = (sd1 + sd2) / 2.0
         if sd in self._kinematics.traj_memo:
@@ -817,7 +817,7 @@ class Timeopt(object):
             self._kinematics.update(sd)
             self._dynamics.update()
             param_a = self._dynamics.a[name]
-        # Search for point where param_a==0
+        # Search for the point where param_a==0
         if param_a * param_a1 < 0:
             (sd2, param_a2) = (sd, param_a)
         else:
@@ -825,16 +825,16 @@ class Timeopt(object):
         return (sd1, param_a1, sd2, param_a2)
 
     def __integrate_from_switching_point(self, curr, sp):
-        u"""Check if integration can continue from the Switching point forward to curr+1 and backward to curr.
+        u"""Check if integration can continue forward to curr+1 and backward to curr from the switching point.
 
         Args:
             curr (int): Index of the position to check
-            sp (tuple): Two points surrounding switching point (sd1, sv1, sd2, sv2)
+            sp (tuple): Two points surrounding the switching point (sd1, sv1, sd2, sv2)
         Retrun:
             bool: True: Integration successful False: Integration failed
         """
         (sd1, sv1, sd2, sv2) = sp
-        # Confirm if forward integration connects to curr+1
+        # Verify if forward integration connects to curr+1
         step = self._sd[curr + 1] - sd2
         if step == 0:
             (self._sd[curr + 1], self._sv[curr + 1]) = (sd2, sv2)
@@ -846,7 +846,7 @@ class Timeopt(object):
             if r in ['MVC', 'VLC']:
                 return False
             (self._sd[curr + 1], self._sv[curr + 1]) = (sd, sv)
-        # Confirm if backward integration connects to curr
+        # Verify if backward integration connects to curr
         step = sd1 - self._sd[curr]
         if step == 0:
             (self._sd[curr], self._sv[curr]) = (sd1, sv1)
@@ -858,7 +858,7 @@ class Timeopt(object):
             if r in ['MVC', 'VLC']:
                 return False
             (self._sd[curr], self._sv[curr]) = (sd, sv)
-        # Confirm if backward integration connects to existing trajectory
+        # Verify if backward integration connects to the existing trajectory
         result = self.__integrate_backward_segment(curr)
         (r, index) = result
         if r != 'END':
@@ -868,7 +868,7 @@ class Timeopt(object):
     def __calc_accel_limit(self, sv):
         u"""Acceleration constraints of kinematics and torque constraints of dynamics.
 
-        Find acceleration constraints of s considering both
+        Determine acceleration constraints of s considering both.
         Args:
             sv(float):
                 Velocity of s
@@ -883,7 +883,7 @@ class Timeopt(object):
         return [sa_min, sa_max]
 
     def validate(self):
-        u"""Check if the calculated sv and time are valid results.
+        u"""Check if the calculated sv and time results are valid.
 
         Retrun:
             bool: True: Valid, False: Invalid result
@@ -899,7 +899,7 @@ class Timeopt(object):
         u"""Reverse calculate actual results for constraints from (a, b, c, d) and save to self._value."""
         self._value = {}
 
-        # Constraints of Dynamics
+        # Dynamics constraints
         for pair in self._dynamics.limits.keys():
             self._value[pair] = [0] * self._size
             for i in range(self._size):
@@ -907,7 +907,7 @@ class Timeopt(object):
                 self._value[pair][i] = (self._a_buff[pair][i] * sa + self._b_buff[pair][i] * sv ** 2
                                         + self._c_buff[pair][i] * sv + self._d_buff[pair][i])
 
-        # Constraints of velocity
+        # Velocity constraints
         vel_limits = [
             pair for pair in self._kinematics.limits if pair[1] == 'velocity']
         for pair in vel_limits:
@@ -919,7 +919,7 @@ class Timeopt(object):
             for name, limit_type in vel_limits:
                 self._value[name, limit_type][i] = sv * point[name][1]
 
-        # Constraints of acceleration
+        # Acceleration constraints
         acc_limits = [pair for pair in
                       self._kinematics.limits if pair[1] == 'acceleration']
         for pair in acc_limits:
@@ -932,20 +932,20 @@ class Timeopt(object):
                 self._value[name, limit_type][i] = point[name][1] * sa + point[name][2] * sv ** 2
 
     def __get_mvc_vlc(self, sd, update_flg=False):
-        u"""Determine if pre-calculated mvc and vlc can be used
+        u"""Determine if pre-calculated mvc and vlc can be utilized.
 
-        It's fine if sd is a multiple of ds, so judge by whether mod is 0
-        Trick to absorb float error
+        It is fine if sd is a multiple of ds, so judge by whether mod is 0.
+        Small tricks to absorb float errors
         """
         mod_sd = int(sd * 1000000 + 0.1)
         mod_ds = int(self._ds * 1000000 + 0.1)
         if ((mod_sd) % (mod_ds)) == 0:
-            # Can use pre-calculated results, so call from array
+            # Pre-calculated results can be utilized, so call from the array
             already_index = int(mod_sd / mod_ds)
             mvc = self._mvc[already_index]
             vlc = self._vlc[already_index]
         else:
-            # Recalculate as it's a number not calculated due to bisection method
+            # Due to the influence of bisection method, numbers not calculated are recalculated
             if update_flg:
                 self._kinematics.update(sd)
                 self._dynamics.update()

@@ -1,5 +1,5 @@
 /*
-Copyright (c) 2024 TOYOTA MOTOR CORPORATION
+Copyright (c) 2026 TOYOTA MOTOR CORPORATION
 All rights reserved.
 Redistribution and use in source and binary forms, with or without
 modification, are permitted (subject to the limitations in the disclaimer
@@ -26,7 +26,7 @@ OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH
 DAMAGE.
 */
 /// @file     robot_rplanner_common.hpp
-/// @brief    Common definitions for robot planner
+/// @brief    Common definitions for the robot planner
 /// @author   Koji Terada
 
 #ifndef TMC_ROBOT_RPLANNER_ROBOT_RPLANNER_COMMON_HPP_

@@ -1,5 +1,5 @@
 /*
-Copyright (c) 2024 TOYOTA MOTOR CORPORATION
+Copyright (c) 2026 TOYOTA MOTOR CORPORATION
 All rights reserved.
 Redistribution and use in source and binary forms, with or without
 modification, are permitted (subject to the limitations in the disclaimer
@@ -46,7 +46,7 @@ class RoundRobinShortCutter : public IPathShortCutter {
  public:
   /// @brief Pass the planner space
   /// @param space Pointer to the planner space
-  /// @param delta Exploration step width
+  /// @param delta Search step size
   /// @param bidirectional Whether to shortcut bidirectionally
   /// @param skip Perform shortcutting by skipping nodes by this value.
   /// @param is_terminate Termination condition
@@ -60,7 +60,7 @@ class RoundRobinShortCutter : public IPathShortCutter {
       is_terminate_(is_terminate) {}
   /// @brief Pass the planner space
   /// @param space Pointer to the planner space
-  /// @param delta Exploration step width
+  /// @param delta Search step size
   /// @param bidirectional Whether to shortcut bidirectionally
   /// @param skip Perform shortcutting by skipping nodes by this value.
   RoundRobinShortCutter(ConfigurationSpace::Ptr space,
@@ -78,7 +78,7 @@ class RoundRobinShortCutter : public IPathShortCutter {
   // Prohibit copying
   RoundRobinShortCutter(const RoundRobinShortCutter&);
   RoundRobinShortCutter& operator=(const RoundRobinShortCutter&);
-  bool ShortCutOnce_(int32_t skip, const Path& path_in, Path& path_out) const;
+  bool ShortCutOnce_(int32_t skip, bool from_start, const Path& path_in, Path& path_out) const;
   bool ShortCutBiDirectional_(int32_t skip,
                               const Path& path_in, Path& path_out) const;
 

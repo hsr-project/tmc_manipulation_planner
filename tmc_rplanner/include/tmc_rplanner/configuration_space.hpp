@@ -1,5 +1,5 @@
 /*
-Copyright (c) 2024 TOYOTA MOTOR CORPORATION
+Copyright (c) 2026 TOYOTA MOTOR CORPORATION
 All rights reserved.
 Redistribution and use in source and binary forms, with or without
 modification, are permitted (subject to the limitations in the disclaimer
@@ -38,18 +38,21 @@ DAMAGE.
 
 #include <stdint.h>
 #include <memory>
+#include <vector>
 
 #include <tmc_rplanner/planner_common.hpp>
 
 namespace tmc_rplanner {
 
-/// @brief The most basic CheckTransferabilityFunc
+/// @brief The most fundamental CheckTransferabilityFunc
 bool CheckTransferabilityByDividing(
      const Config& src_config,
      const Config& dst_config,
-     const CheckFeasibilityFunc& check_feasibility,
+     const std::vector<Collisions>& src_collisions,
+     const CheckFeasibilityWithCollisionsFunc& check_feasibility,
      const DistanceFunc& calc_distance,
-     double sub_delta);
+     double sub_delta,
+     std::vector<Collisions>& dst_collisions);
 
 /// @brief State space definition
 class ConfigurationSpace {
@@ -67,6 +70,10 @@ class ConfigurationSpace {
   }
   void set_check_feasibility(CheckFeasibilityFunc check_feasibility) {
     check_feasibility_ = check_feasibility;
+  }
+  void set_check_feasibility_with_collisions(
+      CheckFeasibilityWithCollisionsFunc check_feasibility_with_collisions) {
+    check_feasibility_with_collisions_ = check_feasibility_with_collisions;
   }
   void set_check_transferability(
       CheckTransferabilityFunc check_transferability) {
@@ -122,22 +129,26 @@ class ConfigurationSpace {
     constrain_config_callback_ = constrain_config_callback;
   }
 
-  /// Returns a configuration one step advanced from src_config to dst_config
+  /// Returns the configuration advanced one step from src_config to dst_config
   Config NewConfig(const Config& src_config, const Config& dst_config,
                    double delta,  bool& is_reached_out) const;
-  /// Check the line
+  /// Check the straight line
   bool CheckLine(const Config& src_conifg, const Config& dst_config,
-                 double delta, Path& path_out) const;
-  /// Check the line (with termite)
+                 double delta, bool from_start, Path& path_out) const;
+  /// Check the straight line (with termite)
   bool CheckLine(const Config& src_conifg, const Config& dst_config,
-                 double delta, TerminateConditionFunc terminate,
+                 double delta, bool from_start, TerminateConditionFunc terminate,
                  Path& path_out) const;
   /// Check if the configuration is valid required: check_feasibility
   bool CheckFeasibility(const Config& config) const;
-  /// Transferability check required: check_feasibility or check_transferability
+  /// Check if the configuration is valid required: check_feasibility_with_collisions
+  bool CheckFeasibilityWithCollisions(const Config& config, std::vector<Collisions>& dst_collisions) const;
+  /// Transition feasibility check required: check_feasibility or check_transferability
   bool CheckTransferability(const Config& src_config,
-                            const Config& dst_config) const;
-  /// Generate a random configuration required: random_config
+                            const Config& dst_config,
+                            const std::vector<Collisions>& src_collisions,
+                            std::vector<Collisions>& dst_collisions) const;
+  /// Generate random configuration required: random_config
   Config GenerateRandomConfig() const;
   /// Measure the distance between configurations optional: distance
   double CalcDistance(const Config& config1, const Config& config2) const;
@@ -152,9 +163,9 @@ class ConfigurationSpace {
   bool CheckConfigInGoal(const Config& config) const;
   /// Constrain the configuration required: constrain_config
   bool ConstrainConfig(const Config& config_in, Config& config_out) const;
-  /// Constrain the start configuration required: constrain_config_goal
+  /// Constrain the Start configuration required: constrain_config_goal
   bool ConstrainStartConfig(const Config& config_in, Config& config_out) const;
-  /// Constrain the goal configuration required: constrain_config_goal
+  /// Constrain the Goal configuration required: constrain_config_goal
   bool ConstrainGoalConfig(const Config& config_in, Config& config_out) const;
   /// Function called during configuration check Mainly for debugging
   void CheckFeasibilityCallBack(const Config& config,  bool success) const;
@@ -172,12 +183,14 @@ class ConfigurationSpace {
   // Copying is prohibited
   ConfigurationSpace(const ConfigurationSpace&);
   ConfigurationSpace& operator = (const ConfigurationSpace&);
-  /// Degrees of freedom in the state space
+  /// Degrees of freedom in state space
   const int32_t dof_;
   /// Function that returns a random state
   RandomConfigFunc generate_random_config_;
-  /// Function that returns if the current configuration is feasible
+  /// Function that returns whether the current configuration is feasible
   CheckFeasibilityFunc check_feasibility_;
+  /// Function that returns whether the current configuration is feasible (with collision information)
+  CheckFeasibilityWithCollisionsFunc check_feasibility_with_collisions_;
   /// Check if two configurations can transition
   CheckTransferabilityFunc check_transferability_;
   /// Distance between two configurations
