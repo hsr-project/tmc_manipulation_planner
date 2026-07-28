@@ -1,5 +1,5 @@
 /*
-Copyright (c) 2024 TOYOTA MOTOR CORPORATION
+Copyright (c) 2026 TOYOTA MOTOR CORPORATION
 All rights reserved.
 Redistribution and use in source and binary forms, with or without
 modification, are permitted (subject to the limitations in the disclaimer
@@ -37,6 +37,7 @@ DAMAGE.
 #include <tmc_rplanner/configuration_space.hpp>
 
 using tmc_rplanner::CheckTransferabilityByDividing;
+using tmc_rplanner::Collisions;
 using tmc_rplanner::Config;
 using tmc_rplanner::ConfigurationSpace;
 using tmc_rplanner::DimensionMismatch;
@@ -75,26 +76,120 @@ bool CheckConfig(const Config& config) {
   return true;
 }
 
+// Configuration check for testing (without returning collision information)
+bool CheckConfigNoCollisions(const Config& config, std::vector<Collisions>& dst_collisions) {
+  return CheckConfig(config);
+}
+
+// Configuration check for testing (with collision information)
+bool CheckConfigWithCollisions(const Config& config, std::vector<Collisions>& dst_collisions) {
+  dst_collisions.clear();
+  if (((config(0) < 3.5) && (config(0) > 0)) &&
+      ((config(1) < 1.5) && (config(1) > 1.0))) {
+    Collisions collision;
+    collision.name_1 = "obstacle1";
+    collision.name_2 = "robot";
+    collision.depth = std::min(3.5 - config(0), config(0) - 0.0);
+    collision.depth = std::min(collision.depth, 1.5 - config(1));
+    collision.depth = std::min(collision.depth, config(1) - 1.0);
+    dst_collisions.push_back(collision);
+  }
+  if (((config(0) < 4.0) && (config(0) > 0.5)) &&
+      ((config(1) < 3.5) && (config(1) > 3.0))) {
+    Collisions collision;
+    collision.name_1 = "obstacle2";
+    collision.name_2 = "robot";
+    collision.depth = std::min(4.0 - config(0), config(0) - 0.5);
+    collision.depth = std::min(collision.depth, 3.5 - config(1));
+    collision.depth = std::min(collision.depth, config(1) - 3.0);
+    dst_collisions.push_back(collision);
+  }
+  return true;
+}
+
 // Transition between configurations for testing
-bool CheckTrans(const Config& src_config, const Config& dst_config) {
+bool CheckTrans(const Config& src_config,
+                const Config& dst_config,
+                const std::vector<Collisions>& src_collisions,
+                std::vector<Collisions>& dst_collisions) {
   return CheckTransferabilityByDividing(
-      src_config, dst_config, CheckConfig, DistanceFunc(), 0.01);
+      src_config, dst_config, src_collisions, CheckConfigNoCollisions, DistanceFunc(), 0.01, dst_collisions);
+}
+
+// Transition between configurations for testing (with collision information)
+bool CheckTransWithCollisions(const Config& src_config,
+                              const Config& dst_config,
+                              const std::vector<Collisions>& src_collisions,
+                              std::vector<Collisions>& dst_collisions) {
+  return CheckTransferabilityByDividing(
+      src_config, dst_config, src_collisions, CheckConfigWithCollisions, DistanceFunc(), 0.01, dst_collisions);
 }
 
 // Check function for CheckTransferabilityByDividingTest
 // Function that returns true for (0,0), (1,1) and false for ([0.4~0.6],[0.4~0.6])
-bool TestDividingFunc(const Config& config) {
+bool TestDividingFunc(const Config& config, std::vector<Collisions>& dst_collisions) {
   return !(((config(0) > 0.4) && (config(0) < 0.6))
            && ((config(1) > 0.4) && (config(1) < 0.6)));
 }
 
-// Distance between configurations for testing, weighted distance
+// Check function for CheckTransferabilityByDividingTest
+// Always returns true but considers a wall in the range less than 0.5
+bool TestDividingFuncWithCollisionsNormal(const Config& config, std::vector<Collisions>& dst_collisions) {
+  dst_collisions.clear();
+  double depth = 0.0;
+  if (config[0] < 0.5) {
+    depth += 0.5 - config[0];
+  }
+  if (config[1] < 0.5) {
+    depth += 0.5 - config[1];
+  }
+  if (depth > 0.0) {
+    Collisions collision;
+    collision.name_1 = "wall";
+    collision.name_2 = "robot";
+    collision.depth = depth;
+    dst_collisions.push_back(collision);
+  }
+  return true;
+}
+
+// Check function for CheckTransferabilityByDividingTest
+// Always returns true but the collision becomes shallow
+bool TestDividingFuncWithCollisionsDecreasing(const Config& config, std::vector<Collisions>& dst_collisions) {
+  dst_collisions.clear();
+  const double depth = 10.0 - (config[0] + config[1]);
+  if (depth > 0.0) {
+    Collisions collision;
+    collision.name_1 = "wall";
+    collision.name_2 = "robot";
+    collision.depth = depth;
+    dst_collisions.push_back(collision);
+  }
+  return true;
+}
+
+// Check function for CheckTransferabilityByDividingTest
+// Always returns true but the collision becomes deep
+bool TestDividingFuncWithCollisionsIncreasing(const Config& config, std::vector<Collisions>& dst_collisions) {
+  dst_collisions.clear();
+  const double depth = config[0] + config[1] - 1.0;
+  if (depth > 0.0) {
+    Collisions collision;
+    collision.name_1 = "wall";
+    collision.name_2 = "robot";
+    collision.depth = depth;
+    dst_collisions.push_back(collision);
+  }
+  return true;
+}
+
+// Distance between configurations for testing Weighted distance
 double CalcDistance(const Config& src_config, const Config& dst_config) {
   return sqrt(1.0 * pow(src_config(0) - dst_config(0), 2.0) +
               1.0 * pow(src_config(1) - dst_config(1), 2.0));
 }
 
-// Configuration evaluation for testing, function that maximizes at (0,0)
+// Configuration evaluation for testing A function that maximizes at (0,0)
 double EvalConfig(const Config& config) {
   return exp(-pow((config).norm(), 2));
 }
@@ -123,12 +218,12 @@ bool ConstraintGoalConfig(const Config& config_in, Config& config_out) {
 
 // Goal determination function for testing
 bool IsGoal(const Config& config) {
-  // Rectangular prism of (0.9 1.1), (3.4 3.6)
+  // Rectangular prism (0.9 1.1), (3.4 3.6)
   if (((config(0) > 0.9) && (config(0) < 1.1)) &&
       ((config(1) > 3.4) && (config(1) < 3.6))) {
     return true;
   }
-  // Rectangular prism of (2.9 3.1), (3.4 3.6)
+  // Rectangular prism (2.9 3.1), (3.4 3.6)
   if (((config(0) > 2.9) && (config(0) < 3.1)) &&
       ((config(1) > 3.4) && (config(1) < 3.6))) {
     return true;
@@ -168,7 +263,7 @@ bool GenerateStart(Config& v) {
 ///////////////////////////////////////////
 
 
-// Test to see if it is properly checked by dividing finely
+// Test to check if it is properly divided and checked
 TEST(CheckTransferabilityByDividingTest, normal_test) {
   int32_t dim = kDim;
   Config src_config(dim);
@@ -176,9 +271,67 @@ TEST(CheckTransferabilityByDividingTest, normal_test) {
   Config dst_config(dim);
   dst_config << 1.0, 1.0;
   double sub_delta = 0.1;
+  std::vector<Collisions> src_collisions;
+  std::vector<Collisions> dst_collisions;
   EXPECT_FALSE(CheckTransferabilityByDividing(
-      src_config, dst_config, TestDividingFunc,
-      DistanceFunc(), sub_delta));
+      src_config, dst_config, src_collisions, TestDividingFunc,
+      DistanceFunc(), sub_delta, dst_collisions));
+}
+
+// Test for cases where collisions become shallow and disappear
+TEST(CheckTransferabilityByDividingTest, collisions_normal) {
+  int32_t dim = kDim;
+  Config src_config(dim);
+  src_config << 0.0, 0.0;
+  Config dst_config(dim);
+  dst_config << 1.0, 1.0;
+  double sub_delta = 0.1;
+
+  std::vector<Collisions> src_collisions;
+  (void)TestDividingFuncWithCollisionsNormal(src_config, src_collisions);
+
+  std::vector<Collisions> dst_collisions;
+  EXPECT_TRUE(CheckTransferabilityByDividing(
+      src_config, dst_config, src_collisions, TestDividingFuncWithCollisionsNormal,
+      DistanceFunc(), sub_delta, dst_collisions));
+  EXPECT_TRUE(dst_collisions.empty());
+}
+
+// Test for cases where collisions become shallow
+TEST(CheckTransferabilityByDividingTest, collisions_decreasing) {
+  int32_t dim = kDim;
+  Config src_config(dim);
+  src_config << 0.0, 0.0;
+  Config dst_config(dim);
+  dst_config << 1.0, 1.0;
+  double sub_delta = 0.1;
+
+  std::vector<Collisions> src_collisions;
+  (void)TestDividingFuncWithCollisionsDecreasing(src_config, src_collisions);
+
+  std::vector<Collisions> dst_collisions;
+  EXPECT_TRUE(CheckTransferabilityByDividing(
+      src_config, dst_config, src_collisions, TestDividingFuncWithCollisionsDecreasing,
+      DistanceFunc(), sub_delta, dst_collisions));
+  EXPECT_FALSE(dst_collisions.empty());
+}
+
+// Test for cases where collisions become deep
+TEST(CheckTransferabilityByDividingTest, collisions_increasing) {
+  int32_t dim = kDim;
+  Config src_config(dim);
+  src_config << 0.0, 0.0;
+  Config dst_config(dim);
+  dst_config << 1.0, 1.0;
+  double sub_delta = 0.1;
+
+  std::vector<Collisions> src_collisions;
+  (void)TestDividingFuncWithCollisionsIncreasing(src_config, src_collisions);
+
+  std::vector<Collisions> dst_collisions;
+  EXPECT_FALSE(CheckTransferabilityByDividing(
+      src_config, dst_config, src_collisions, TestDividingFuncWithCollisionsIncreasing,
+      DistanceFunc(), sub_delta, dst_collisions));
 }
 
 // If the dimensions of src_config and dst_config are different, tmc_rplanner::DimensionMismatch
@@ -190,13 +343,12 @@ TEST(CheckTransferabilityByDividingTest, dim_mismatch) {
   Config dst_config(dim_dst);
   dst_config << 1.0, 1.0, 1.0;
   double sub_delta = 0.1;
+  std::vector<Collisions> src_collisions;
+  std::vector<Collisions> dst_collisions;
   EXPECT_THROW(
       CheckTransferabilityByDividing(
-          src_config,
-          dst_config,
-          TestDividingFunc,
-          DistanceFunc(),
-          sub_delta),
+          src_config, dst_config, src_collisions, TestDividingFunc,
+          DistanceFunc(), sub_delta, dst_collisions),
       DimensionMismatch);
 }
 
@@ -209,10 +361,12 @@ TEST(CheckTransferabilityByDividingTest, negative_subdelta) {
   Config dst_config(dim_dst);
   dst_config << 1.0, 1.0;
   double sub_delta = -0.1;
+  std::vector<Collisions> src_collisions;
+  std::vector<Collisions> dst_collisions;
   EXPECT_THROW(
     CheckTransferabilityByDividing(
-        src_config, dst_config, TestDividingFunc,
-        DistanceFunc(), sub_delta), std::invalid_argument);
+        src_config, dst_config, src_collisions, TestDividingFunc,
+        DistanceFunc(), sub_delta, dst_collisions), std::invalid_argument);
 }
 
 ///////////////////////////////////
@@ -268,7 +422,7 @@ TEST_F(TreeToPathTest, translate_path_mid) {
   EXPECT_EQ(config3_, path[2]);
 }
 
-// Check for loops with TreeToPath
+// Check loops with TreeToPath
 TEST_F(TreeToPathTest, translate_path_loop) {
   Path path;
   tree_[1]->parent = tree_[3];
@@ -276,7 +430,7 @@ TEST_F(TreeToPathTest, translate_path_loop) {
   EXPECT_THROW(TreeToPath(tree_, path), TreeLoop);
 }
 
-// Check for incorrect goal_index with TreeToPath
+// Check incorrect goal_index with TreeToPath
 TEST_F(TreeToPathTest, translate_path_invalid_goal) {
   Path path;
   // The goal is the last element of the tree
@@ -359,7 +513,7 @@ TEST_F(ChangeTreeRootTest, change_tree_root0) {
 /// Test of configuration_space
 //////////////////////////////////
 
-// Check if the set function is called correctly
+// Check if the configured function is called correctly
 class ConfigurationSpaceTest : public ::testing::Test {
  protected:
   ConfigurationSpaceTest() : space_(kDim) {}
@@ -379,7 +533,7 @@ class ConfigurationSpaceTest : public ::testing::Test {
   ConfigurationSpace space_;
 };
 
-// Check if the set function is called correctly
+// Check if the configured function is called correctly
 class ConfigurationSpaceTestNoConstrain : public ::testing::Test {
  protected:
   ConfigurationSpaceTestNoConstrain() : space_(kDim) {}
@@ -397,7 +551,7 @@ class ConfigurationSpaceTestNoConstrain : public ::testing::Test {
 };
 
 
-// For testing when the function is not set
+// Test for the state where the function is not configured
 class ConfigurationSpaceTestNoFunctions : public ::testing::Test {
  protected:
   ConfigurationSpaceTestNoFunctions() : space_(kDim) {}
@@ -413,14 +567,14 @@ TEST_F(ConfigurationSpaceTest, new_config) {
   dst_config(0) = 1.0;
   dst_config(1) = 1.0;
 
-  // Check configuration that advances in one step
+  // Check the configuration that progresses in one step
   bool unreach;
   Config next_config = space_.NewConfig(src_config, dst_config, 0.1, unreach);
   EXPECT_FALSE(unreach);
   EXPECT_NEAR(0.070711, next_config(0), kDoubleEps);
   EXPECT_NEAR(0.070711, next_config(1), kDoubleEps);
 
-  // Check for arrival
+  // Check for cases where it arrives
   Config dst_reach_config(kDim);
   dst_reach_config(0) = 0.05;
   dst_reach_config(1) = 0.0;
@@ -431,12 +585,12 @@ TEST_F(ConfigurationSpaceTest, new_config) {
   EXPECT_NEAR(dst_reach_config(0), reach_config(0), kDoubleEps);
   EXPECT_NEAR(dst_reach_config(1), reach_config(1), kDoubleEps);
 
-  // Exception: negative delta
+  // Exception delta is negative
   EXPECT_THROW(
       space_.NewConfig(src_config, dst_config, -0.1, unreach),
       std::invalid_argument);
 
-  // Exception: dof difference
+  // Exception dof mismatch
   Config inval_config(kDim+1);
   inval_config(0) = 0.0;
   inval_config(1) = 0.0;
@@ -453,7 +607,7 @@ TEST_F(ConfigurationSpaceTest, random_config) {
   EXPECT_TRUE((random_config(1) >= 0.0 && random_config(1) <= 4.0));
 }
 
-// Test of CheckLine when constrain is invalid
+// Test of CheckLine constrain is invalid
 TEST_F(ConfigurationSpaceTest, check_line) {
   Config src_config(kDim);
   src_config(0) = 0.0;
@@ -463,10 +617,10 @@ TEST_F(ConfigurationSpaceTest, check_line) {
   dst_config(1) = 1.0;
   Path path;
   // Should fail as it is projected to the same location
-  EXPECT_FALSE(space_.CheckLine(src_config, dst_config, 0.1, path));
+  EXPECT_FALSE(space_.CheckLine(src_config, dst_config, 0.1, true, path));
 }
 
-// Exception as random configuration generation function is not set
+// Exception as the random configuration generation function is not set
 TEST_F(ConfigurationSpaceTestNoFunctions, no_random_config_func) {
   EXPECT_THROW(
       space_.GenerateRandomConfig(),
@@ -484,37 +638,61 @@ TEST_F(ConfigurationSpaceTestNoConstrain, check_line) {
   Path path;
 
   // Example where a path is generated
-  EXPECT_TRUE(space_.CheckLine(src_config, dst_config, 0.1, path));
-  // Initial and terminal values match
+  EXPECT_TRUE(space_.CheckLine(src_config, dst_config, 0.1, true, path));
+  // Initial value and terminal match
   EXPECT_TRUE(path.front() == src_config);
   EXPECT_TRUE(path.back() == dst_config);
 
-  // Configs are very close
+  // Config is very close
   dst_config(0) = 0.0;
   dst_config(1) = 1.0e-7;
-  EXPECT_TRUE(space_.CheckLine(src_config, dst_config, 0.1, path));
+  EXPECT_TRUE(space_.CheckLine(src_config, dst_config, 0.1, true, path));
   EXPECT_NEAR(dst_config(1), path.back()(1), 1.0e-8);
 
-  // Example where there is a non-feasible configuration in the middle
+  // Example where there is an infeasible configuration in the middle
   Config infeasible_dst_config(kDim);
   infeasible_dst_config(0) = 1.0;
   infeasible_dst_config(1) = 1.2;
   Path infeasible_path;
-  EXPECT_FALSE(space_.CheckLine(
-      src_config, infeasible_dst_config, 0.1, infeasible_path));
+  EXPECT_FALSE(space_.CheckLine(src_config, infeasible_dst_config, 0.1, true, infeasible_path));
 
-  // Exception: dof difference
+  // Exception dof mismatch
   Config inval_config(kDim+1);
   inval_config(0) = 0.0;
   inval_config(1) = 0.0;
   inval_config(2) = 0.0;
 
   EXPECT_THROW(
-    space_.CheckLine(inval_config, dst_config, 0.1, infeasible_path),
+    space_.CheckLine(inval_config, dst_config, 0.1, true, infeasible_path),
     DimensionMismatch);
 }
 
-// Check of Feasibility
+// Test of CheckLine (with collision information)
+TEST_F(ConfigurationSpaceTestNoConstrain, check_line_with_collisions) {
+  Config src_config(kDim);
+  src_config(0) = 0.5;
+  src_config(1) = 1.2;
+  Config dst_config(kDim);
+  dst_config(0) = 0.5;
+  dst_config(1) = 0.0;
+
+  space_.set_check_feasibility_with_collisions(CheckConfigWithCollisions);
+  space_.set_check_transferability(CheckTransWithCollisions);
+
+  // Collision -> Non-collision is allowed
+  Path path;
+  EXPECT_TRUE(space_.CheckLine(src_config, dst_config, 0.1, true, path));
+  EXPECT_TRUE((path.front() - src_config).norm() < kDoubleEps);
+  EXPECT_TRUE((path.back() - dst_config).norm() < kDoubleEps);
+
+  // Collision -> Non-collision is not allowed if src_config is the goal
+  EXPECT_FALSE(space_.CheckLine(src_config, dst_config, 0.1, false, path));
+
+  // Non-collision -> Collision is not allowed
+  EXPECT_FALSE(space_.CheckLine(dst_config, src_config, 0.1, true, path));
+}
+
+// Check feasibility
 TEST_F(ConfigurationSpaceTest, check_feasibility) {
   Config feasible_config(kDim);
   feasible_config << 0.0, 0.0;
@@ -523,7 +701,7 @@ TEST_F(ConfigurationSpaceTest, check_feasibility) {
   EXPECT_TRUE(space_.CheckFeasibility(feasible_config));
   EXPECT_FALSE(space_.CheckFeasibility(infeasible_config));
 
-  // Exception: dof difference
+  // Exception dof mismatch
   Config inval_config(kDim+1);
   inval_config(0) = 0.0;
   inval_config(1) = 0.0;
@@ -531,6 +709,30 @@ TEST_F(ConfigurationSpaceTest, check_feasibility) {
   EXPECT_THROW(
       space_.CheckFeasibility(inval_config),
       DimensionMismatch);
+}
+
+// Check feasibility (with collision information)
+TEST_F(ConfigurationSpaceTest, check_feasibility_with_collisions) {
+  Config feasible_config(kDim);
+  feasible_config << 0.0, 0.0;
+  Config infeasible_config(kDim);
+  infeasible_config << 1.0, 1.2;
+
+  // If check feasibility with collisions is not set, it is the same as check_feasibility
+  std::vector<Collisions> collisions;
+  EXPECT_TRUE(space_.CheckFeasibilityWithCollisions(feasible_config, collisions));
+  EXPECT_TRUE(collisions.empty());
+
+  EXPECT_FALSE(space_.CheckFeasibilityWithCollisions(infeasible_config, collisions));
+  EXPECT_TRUE(collisions.empty());
+
+  // Set check feasibility with collisions
+  space_.set_check_feasibility_with_collisions(CheckConfigWithCollisions);
+  EXPECT_TRUE(space_.CheckFeasibilityWithCollisions(feasible_config, collisions));
+  EXPECT_TRUE(collisions.empty());
+
+  EXPECT_TRUE(space_.CheckFeasibilityWithCollisions(infeasible_config, collisions));
+  EXPECT_FALSE(collisions.empty());
 }
 
 // Exception as Feasibility function is not set
@@ -551,19 +753,40 @@ TEST_F(ConfigurationSpaceTest, check_transferability) {
   Config infeasible_config(kDim);
   infeasible_config << 0.1, 2.0;
   // Example of transferable
-  EXPECT_TRUE(space_.CheckTransferability(src_config, feasible_config));
+  std::vector<Collisions> src_collisions;
+  std::vector<Collisions> dst_collisions;
+  EXPECT_TRUE(space_.CheckTransferability(src_config, feasible_config, src_collisions, dst_collisions));
   // Example of non-transferable
-  EXPECT_FALSE(space_.CheckTransferability(src_config, infeasible_config));
+  EXPECT_FALSE(space_.CheckTransferability(src_config, infeasible_config, src_collisions, dst_collisions));
 
-  // Exception: dof difference
+  // Exception dof mismatch
   Config inval_config(kDim+1);
   inval_config(0) = 0.0;
   inval_config(1) = 0.0;
   inval_config(2) = 0.0;
 
   EXPECT_THROW(
-      space_.CheckTransferability(inval_config, infeasible_config),
+      space_.CheckTransferability(inval_config, infeasible_config, src_collisions, dst_collisions),
       DimensionMismatch);
+}
+
+// Check of check_transferability considering collisions
+TEST_F(ConfigurationSpaceTest, check_transferability_with_collisions) {
+  Config src_config(kDim);
+  src_config << 0.5, 1.2;
+  Config goal_config(kDim);
+  goal_config << 0.5, 0.0;
+
+  std::vector<Collisions> src_collisions;
+  CheckConfigWithCollisions(src_config, src_collisions);
+
+  // Fails if not set and there is a collision
+  std::vector<Collisions> dst_collisions;
+  EXPECT_FALSE(space_.CheckTransferability(src_config, goal_config, src_collisions, dst_collisions));
+
+  // Considers collisions when set
+  space_.set_check_transferability(CheckTransWithCollisions);
+  EXPECT_TRUE(space_.CheckTransferability(src_config, goal_config, src_collisions, dst_collisions));
 }
 
 // Works correctly even if Transferability is not set
@@ -576,13 +799,15 @@ TEST_F(ConfigurationSpaceTestNoFunctions, no_check_transferability_func) {
   Config infeasible_config(kDim);
   infeasible_config << 0.1, 1.2;
   // Example of transferable
-  EXPECT_TRUE(space_.CheckTransferability(src_config, feasible_config));
+  std::vector<Collisions> src_collisions;
+  std::vector<Collisions> dst_collisions;
+  EXPECT_TRUE(space_.CheckTransferability(src_config, feasible_config, src_collisions, dst_collisions));
   // Example of non-transferable
-  EXPECT_FALSE(space_.CheckTransferability(src_config, infeasible_config));
+  EXPECT_FALSE(space_.CheckTransferability(src_config, infeasible_config, src_collisions, dst_collisions));
 }
 
 
-// Measurement of distance
+// Distance measurement
 TEST_F(ConfigurationSpaceTest, calc_distance) {
   Config src_config(kDim);
   src_config(0) = 0.0;
@@ -594,7 +819,7 @@ TEST_F(ConfigurationSpaceTest, calc_distance) {
       sqrt(2.0), space_.CalcDistance(src_config, dst_config), kDoubleEps);
 }
 
-// Measurement of distance, Euclidean distance is used automatically.
+// Distance measurement Euclidean distance is automatically used.
 TEST_F(ConfigurationSpaceTestNoFunctions, no_calc_distance_func) {
   Config src_config(kDim);
   src_config(0) = 0.0;
@@ -606,13 +831,13 @@ TEST_F(ConfigurationSpaceTestNoFunctions, no_calc_distance_func) {
       sqrt(2.0), space_.CalcDistance(src_config, dst_config), kDoubleEps);
 }
 
-// Evaluation of configuration
+// Configuration evaluation
 TEST_F(ConfigurationSpaceTest, eval_func) {
   Config config(kDim);
   config(0) = 0.0;
   config(1) = 0.0;
   EXPECT_NEAR(1.0, space_.EvaluateConfig(config), kDoubleEps);
-  // Exception: dof difference
+  // Exception dof mismatch
   Config inval_config(kDim+1);
   inval_config(0) = 0.0;
   inval_config(1) = 0.0;
@@ -633,7 +858,7 @@ TEST_F(ConfigurationSpaceTestNoFunctions, no_evaluate_config_func) {
 }
 
 
-// Generation of goal configuration
+// Generate goal configuration
 TEST_F(ConfigurationSpaceTest, goal_func) {
   Config goal;
   space_.GenerateGoalConfig(goal);
@@ -647,7 +872,7 @@ TEST_F(ConfigurationSpaceTestNoFunctions, no_generate_goal_config_func) {
   EXPECT_FALSE(space_.GenerateGoalConfig(a));
 }
 
-// Generation of start configuration
+// Generate start configuration
 TEST_F(ConfigurationSpaceTest, start_func) {
   Config start;
   space_.GenerateStartConfig(start);
@@ -671,7 +896,7 @@ TEST_F(ConfigurationSpaceTest, is_goal_func) {
   EXPECT_TRUE(space_.CheckConfigInGoal(goal_config));
   EXPECT_FALSE(space_.CheckConfigInGoal(non_goal_config));
 
-  // Exception: dof difference
+  // Exception dof mismatch
   Config inval_config(kDim+1);
   inval_config(0) = 0.0;
   inval_config(1) = 0.0;
@@ -692,7 +917,7 @@ TEST_F(ConfigurationSpaceTestNoFunctions, no_is_goal_config_func) {
 }
 
 
-// Constrain the configuration
+// Constrain configuration
 TEST_F(ConfigurationSpaceTest, constraint_config_func) {
   Config config(kDim);
   config << 1.0, 3.5;
@@ -700,7 +925,7 @@ TEST_F(ConfigurationSpaceTest, constraint_config_func) {
   EXPECT_TRUE(space_.ConstrainConfig(config, constrainted_config));
   EXPECT_NEAR(0.0, constrainted_config(0), kDoubleEps);
 
-  // Exception: dof difference
+  // Exception dof mismatch
   Config inval_config(kDim+1);
   inval_config(0) = 0.0;
   inval_config(1) = 0.0;
@@ -721,7 +946,7 @@ TEST_F(ConfigurationSpaceTestNoFunctions, no_constraint_config_func) {
 }
 
 
-// Constrain the configuration
+// Constrain configuration
 TEST_F(ConfigurationSpaceTest, constraint_start_config_func) {
   Config config(kDim);
   config << 0.0, 3.5;
@@ -729,7 +954,7 @@ TEST_F(ConfigurationSpaceTest, constraint_start_config_func) {
   EXPECT_TRUE(space_.ConstrainStartConfig(config, constrainted_config));
   EXPECT_NEAR(1.0, constrainted_config(0), kDoubleEps);
 
-  // Exception: dof difference
+  // Exception dof mismatch
   Config inval_config(kDim+1);
   inval_config(0) = 0.0;
   inval_config(1) = 0.0;
@@ -740,7 +965,7 @@ TEST_F(ConfigurationSpaceTest, constraint_start_config_func) {
 }
 
 
-// Constrain the configuration
+// Constrain configuration
 TEST_F(ConfigurationSpaceTest, constraint_goal_config_func) {
   Config config(kDim);
   config << 1.0, 3.5;
@@ -748,7 +973,7 @@ TEST_F(ConfigurationSpaceTest, constraint_goal_config_func) {
   EXPECT_TRUE(space_.ConstrainGoalConfig(config, constrainted_config));
   EXPECT_NEAR(2.0, constrainted_config(0), kDoubleEps);
 
-  // Exception: dof difference
+  // Exception dof mismatch
   Config inval_config(kDim+1);
   inval_config(0) = 0.0;
   inval_config(1) = 0.0;

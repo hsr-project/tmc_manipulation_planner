@@ -1,5 +1,5 @@
 /*
-Copyright (c) 2024 TOYOTA MOTOR CORPORATION
+Copyright (c) 2026 TOYOTA MOTOR CORPORATION
 All rights reserved.
 Redistribution and use in source and binary forms, with or without
 modification, are permitted (subject to the limitations in the disclaimer
@@ -26,7 +26,7 @@ OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH
 DAMAGE.
 */
 /// @file     multi_planner.hpp
-/// @brief Interface for multiple planners with initial and terminal values
+/// @brief    Interface for planners with multiple initial and terminal values
 /// @author   Koji Terada
 /// @version  1.0.0
 /// @date     2012.03.28
@@ -44,7 +44,7 @@ DAMAGE.
 namespace tmc_rplanner {
 
 /// @class IMultiPlanner
-/// @brief Interface for multiple planners with initial and terminal values
+/// @brief Interface for planners with multiple initial and terminal values
 class IMultiPlanner {
  public:
   using Ptr = std::shared_ptr<IMultiPlanner>;

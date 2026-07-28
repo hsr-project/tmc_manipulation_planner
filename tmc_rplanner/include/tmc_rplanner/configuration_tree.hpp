@@ -1,5 +1,5 @@
 /*
-Copyright (c) 2024 TOYOTA MOTOR CORPORATION
+Copyright (c) 2026 TOYOTA MOTOR CORPORATION
 All rights reserved.
 Redistribution and use in source and binary forms, with or without
 modification, are permitted (subject to the limitations in the disclaimer
@@ -36,6 +36,7 @@ DAMAGE.
 #define TMC_MANIPULATION_TMC_RPLANNER_CONFIGURATION_TREEHPP_
 
 #include <memory>
+#include <vector>
 #include <tmc_rplanner/configuration_space.hpp>
 #include <tmc_rplanner/planner_common.hpp>
 
@@ -50,7 +51,7 @@ class ConfigurationTree {
   ConfigurationTree(ConfigurationSpace::Ptr configuration_space, double delta, int32_t max_connect);
   ~ConfigurationTree() {}
 
-  /// Extend the branch from the nearest node in the tree to dst_config by a distance of delta
+  /// Extend a branch from the nearest point in the tree to dst_config by a distance of delta
   /// @param[in] dst_config Target configuration
   ExtendRet Extend(const Config& dst_config);
 
@@ -65,7 +66,7 @@ class ConfigurationTree {
                     TerminateConditionFunc terminate);
   /// Initialize the tree
   void ClearTree() {tree_.clear();}
-  /// Output the tree to the stream
+  /// Output the tree to a stream
   void PrintTree() const;
   /// Extract the path, with the final element as the goal
   void TrackBackPath(Path& path_out) const;
@@ -74,13 +75,20 @@ class ConfigurationTree {
   /// @return Latest configuration
   Config GetLastConfig() const {return tree_.back()->data;}
 
-  /// Delete the branch connected to the latest configuration
+  /// Remove the branch connected to the latest configuration
   void RemoveLastBranch();
 
   /// Set the root configuration
-  /// @param[in] config Configuration of the root to be set
+  /// @param[in] config Configuration to set as the root
   void SetRootConfig(const Config& config) {
     tree_.push_front(Node::Ptr(new Node(config)));
+  }
+
+  /// Set the root configuration
+  /// @param[in] config Configuration to set as the root
+  /// @param[in] collisions Collision information to set for the root
+  void SetRootConfig(const Config& config, const std::vector<Collisions>& collisions) {
+    tree_.push_front(Node::Ptr(new Node(config, collisions)));
   }
 
   /// Get the current number of nodes
@@ -93,7 +101,7 @@ class ConfigurationTree {
   void set_delta(double delta) {delta_ = delta;}
 
  private:
-  /// Copy is prohibited
+  /// Copying is prohibited
   ConfigurationTree(const ConfigurationTree&);
   ConfigurationTree& operator=(const ConfigurationTree&);
 
@@ -101,7 +109,7 @@ class ConfigurationTree {
   Tree tree_;
   /// Configuration space
   ConfigurationSpace::Ptr configuration_space_;
-  /// Search width of the tree
+  /// Tree search width
   double delta_;
   /// Maximum number of times to continue Extend in Connect; if negative, continue as much as possible
   int32_t max_connect_;

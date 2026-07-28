@@ -1,5 +1,5 @@
 /*
-Copyright (c) 2024 TOYOTA MOTOR CORPORATION
+Copyright (c) 2026 TOYOTA MOTOR CORPORATION
 All rights reserved.
 Redistribution and use in source and binary forms, with or without
 modification, are permitted (subject to the limitations in the disclaimer
@@ -26,38 +26,65 @@ OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH
 DAMAGE.
 */
 /// @file     rplanner_space.cpp
-/// @brief Basic operations in configuration space for planning
+/// @brief Basic operations in the configuration space for planning
 /// @author   Koji Terada
 /// @version  1.0.0
 /// @date     2011.10.25
 /// @note     [1.0.0] 2011.10.19 Newly created
-
+#include <iostream>
 #include <limits>
 #include <tmc_rplanner/configuration_space.hpp>
 
 namespace {
-// Considered as no progress if it doesn't advance further
-double kAdvancedEps = 1e-6;
+// Considered as no progress if no further advancement is made
+constexpr double kAdvancedEps = 1e-6;
+// Allowable value for slight increases due to noise in depth calculation
+constexpr double kCollisionDepthEps = 1e-4;
 }
 
 namespace tmc_rplanner {
 
+bool IsFeasible(const std::vector<Collisions>& prev_collisions,
+                const std::vector<Collisions>& next_collisions) {
+  // The next collision must include the previous collision and have a smaller depth
+  // However, due to noise in depth calculation, slight increases may occur, so some margin is allowed
+  for (const auto& collision : next_collisions) {
+    bool found = false;
+    for (const auto& prev_collision : prev_collisions) {
+      if (collision.IsSameObjects(prev_collision)) {
+        if (collision.depth <= prev_collision.depth + kCollisionDepthEps) {
+          found = true;
+        }
+        break;
+      }
+    }
+    if (!found) {
+      return false;
+    }
+  }
+  return true;
+}
+
 /// @func CheckTransferabilityByDividing
-/// @brief Simply check by dividing the start and end points by division_num
-/// @param src_config Start configuration
-/// @param dst_config End configuration
+/// @brief Simply divides the start and end points into division_num parts and checks
+/// @param src_config Starting configuration
+/// @param dst_config Ending configuration
+/// @param src_collisions Collision information of the starting configuration
 /// @param check_feasibility Check if the configuration is feasible
 /// @param cacl_distance Distance calculation function
 /// @param sub_delta Granularity when checking transferability
+/// @param dst_collisions Collision information of the ending configuration
 /// @retval true: Transferable, false: Not transferable
 /// @exception invalid_argument
 /// @exception DimensionMismatch
 bool CheckTransferabilityByDividing(
     const Config& src_config,
     const Config& dst_config,
-    const CheckFeasibilityFunc& check_feasibility,
+    const std::vector<Collisions>& src_collisions,
+    const CheckFeasibilityWithCollisionsFunc& check_feasibility,
     const DistanceFunc& calc_distance,
-    double sub_delta) {
+    double sub_delta,
+    std::vector<Collisions>& dst_collisions) {
   if (sub_delta < std::numeric_limits<double>::min()) {
     throw std::invalid_argument("Invalid division number.");
   }
@@ -75,33 +102,41 @@ bool CheckTransferabilityByDividing(
 
   if (src_to_dst_norm <
       std::numeric_limits<double>::min()) {
-    // Considered attached if extremely close
+    // Considered as attached if extremely close
     return true;
   }
 
+  std::vector<Collisions> prev_collisions = src_collisions;
   for (double delta = 0; delta < src_to_dst_norm; delta += sub_delta) {
-    if (!check_feasibility(
-            src_config +
-            src_to_dst * delta / src_to_dst_norm)) {
+    std::vector<Collisions> next_collisions;
+    if (!check_feasibility(src_config + src_to_dst * delta / src_to_dst_norm, next_collisions)) {
       return false;
     }
+    if (!IsFeasible(prev_collisions, next_collisions)) {
+      return false;
+    }
+    prev_collisions = next_collisions;
   }
+
   // Always check at the end
-  if (!check_feasibility(dst_config)) {
+  if (!check_feasibility(dst_config, dst_collisions)) {
+    return false;
+  }
+  if (!IsFeasible(prev_collisions, dst_collisions)) {
     return false;
   }
   return true;
 }
 
 /// @func NewConfig
-/// @brief Calculate new that has advanced delta based on distance from src to dst
+/// @brief Calculate the new configuration by moving delta based on distance from src to dst
 ///        If the distance from src to dst is less than or equal to delta, set is_reached_out to true
 ///        and return dst
 /// @param src_config Initial configuration
 /// @param dst_config Target configuration
 /// @param delta Distance measured from src to approach dst
 /// @param is_reached_out true: Reached, false: Not reached
-/// @return Configuration that has advanced delta based on distance from src to dst
+/// @return Configuration moved delta based on distance from src to dst
 /// @exception invalid_argument
 /// @exception DimensionMismatch
 Config ConfigurationSpace::NewConfig(
@@ -117,7 +152,7 @@ Config ConfigurationSpace::NewConfig(
     throw DimensionMismatch("Configuration size mismatch.");
   }
   double length = CalcDistance(src_config, dst_config);
-  // Calculate the unit vector computed by distance
+  // Calculate the unit vector based on the distance
   if (length > delta) {
     is_reached_out = false;
     return src_config + (dst_config-src_config)/length * delta;
@@ -129,40 +164,44 @@ Config ConfigurationSpace::NewConfig(
 
 
 /// @func bool CheckLine
-/// @brief Check linear trajectory
+/// @brief Check the straight trajectory
 /// Perform transition checks at intervals of delta from start_config to goal_config.
-/// Return the series if it can transition to goal_config
+/// If transition to goal_config is possible, return the sequence
 /// @param src_config Initial configuration
 /// @param dst_config Final configuration
-/// @param delta Check width
-/// @param path_out Checked configuration series
-/// @return true: Transferable false: Not transferable
+/// @param delta Check interval
+/// @param from_start true: From start, false: From end
+/// @param path_out Checked configuration sequence
+/// @return true: Transferable, false: Not transferable
 /// @exception DimensionMismatch
 bool ConfigurationSpace::CheckLine(
     const Config& src_config,
     const Config& dst_config,
     double delta,
+    bool from_start,
     Path& path_out) const {
-  return CheckLine(src_config, dst_config, delta,
+  return CheckLine(src_config, dst_config, delta, from_start,
                    TerminateConditionFunc(), path_out);
 }
 
 
 /// @func bool CheckLine
-/// @brief Check linear trajectory
+/// @brief Check the straight trajectory
 /// Perform transition checks at intervals of delta from start_config to goal_config.
-/// Return the series if it can transition to goal_config
+/// If transition to goal_config is possible, return the sequence
 /// @param src_config Initial configuration
 /// @param dst_config Final configuration
-/// @param delta Check width
+/// @param delta Check interval
+/// @param from_start true: From start, false: From end
 /// @param terminate Termination condition
-/// @param path_out Checked configuration series
-/// @return true: Transferable false: Not transferable
+/// @param path_out Checked configuration sequence
+/// @return true: Transferable, false: Not transferable
 /// @exception DimensionMismatch
 bool ConfigurationSpace::CheckLine(
     const Config& src_config,
     const Config& dst_config,
     double delta,
+    bool from_start,
     TerminateConditionFunc terminate,
     Path& path_out) const {
   // Configuration size must be correct
@@ -177,13 +216,19 @@ bool ConfigurationSpace::CheckLine(
   Config point = src_config;
   Config next_point = src_config;
 
+  std::vector<Collisions> current_collisions;
+  if (from_start && !CheckFeasibilityWithCollisions(src_config, current_collisions)) {
+    return false;
+  }
+
   // If src_config and dst_config are equal, only perform interference check with constrain_config
   // and checkfeasibility, then return the path
   if (CalcDistance(src_config, dst_config) < kAdvancedEps)  {
     if (!ConstrainConfig(dst_config, next_point)) {
       return false;
     }
-    if (!CheckTransferability(path_out.back(), next_point)) {
+    std::vector<Collisions> next_collisions;
+    if (!CheckTransferability(path_out.back(), next_point, current_collisions, next_collisions)) {
       return false;
     }
     path_out.push_back(next_point);
@@ -202,25 +247,30 @@ bool ConfigurationSpace::CheckLine(
     next_point = NewConfig(path_out.back(),
                            next_point, delta,
                            constrain_reached);
-    // Considered a failure if the result of constrain config is far from the previous location or hasn't advanced
-    // Considered a failure
+    // If the result of constrain config is far from the previous location or has not progressed
+    // Consider it a failure
     if ((CalcDistance(next_point, path_out.back()) < kAdvancedEps)
         || (CalcDistance(next_point, dst_config)) >
         CalcDistance(path_out.back(), dst_config) + kAdvancedEps) {
       return false;
     }
-
-    if (!CheckTransferability(path_out.back(), next_point)) {
+    std::vector<Collisions> next_collisions;
+    if (!CheckTransferability(path_out.back(), next_point, current_collisions, next_collisions)) {
       return false;
     }
+    current_collisions = next_collisions;
     path_out.push_back(next_point);
+
+    if (CalcDistance(next_point, dst_config) < kAdvancedEps) {
+      break;
+    }
   }
   return true;
 }
 
 /// @brief Calculate the distance between two configurations
 ///       If distance is set in planner_param_, calculate with it
-///      Otherwise, return Euclidean distance
+///      Otherwise, return the Euclidean distance
 /// optional: distance
 /// @param config1 Configuration 1
 /// @param config2 Configuration 2
@@ -242,7 +292,7 @@ double ConfigurationSpace::CalcDistance(const Config& config1,
 /// @brief Check if the configuration is valid
 ///        required: check_feasibility
 /// @param config Configuration
-/// @return true: Valid false: Invalid
+/// @return true: Valid, false: Invalid
 /// @exception LackRequiredFunc
 /// @exception DimensionMismatch
 bool ConfigurationSpace::CheckFeasibility(const Config& config) const {
@@ -259,28 +309,52 @@ bool ConfigurationSpace::CheckFeasibility(const Config& config) const {
   }
 }
 
+/// @brief Check if the configuration is valid
+///        required: check_feasibility
+/// @param config Configuration
+/// @param dst_collisions Collision information
+/// @return true: Valid, false: Invalid
+/// @exception LackRequiredFunc
+/// @exception DimensionMismatch
+bool ConfigurationSpace::CheckFeasibilityWithCollisions(const Config& config,
+                                                        std::vector<Collisions>& dst_collisions) const {
+  if (dof_ != config.size()) {
+    throw DimensionMismatch("Configuration size mismatch.");
+  }
+  if (!check_feasibility_with_collisions_) {
+    return CheckFeasibility(config);
+  } else {
+    const auto feasible = check_feasibility_with_collisions_(config, dst_collisions);
+    CheckFeasibilityCallBack(config, feasible);
+    return feasible;
+  }
+}
+
 /// @brief Check the transferability between two configurations.
 ///        If check_transferability is not set in planner_param_, only check the terminal value
 ///
 //         required: check_feasibility or check_transferability
-/// @param src_config Start configuration
-/// @param dst_config End configuration
-/// @return true: Transferable false: Not transferable
+/// @param src_config Starting configuration
+/// @param dst_config Ending configuration
+/// @param src_collisions Collision information of the starting configuration
+/// @param dst_collisions Collision information of the ending configuration
+/// @return true: Transferable, false: Not transferable
 /// @exception DimensionMismatch
 bool ConfigurationSpace::CheckTransferability(
     const Config& src_config,
-    const Config& dst_config) const {
+    const Config& dst_config,
+    const std::vector<Collisions>& src_collisions,
+    std::vector<Collisions>& dst_collisions) const {
   if ((dof_ != src_config.size()) ||
       (dof_ != dst_config.size())) {
     throw DimensionMismatch("Configuration size mismatch.");
   }
   if (!check_transferability_) {
-    return CheckFeasibility(dst_config);
+    return CheckFeasibilityWithCollisions(dst_config, dst_collisions);
   } else {
-    return check_transferability_(src_config, dst_config);
+    return check_transferability_(src_config, dst_config, src_collisions, dst_collisions);
   }
 }
-
 
 /// @brief Generate a random configuration
 ///        required: random_config
@@ -340,7 +414,7 @@ bool ConfigurationSpace::GenerateStartConfig(Config& config) const {
 /// @brief Check if the configuration meets the termination condition
 ///        required: check_goal_config
 /// @param Configuration to be judged
-/// @return true: Meets termination condition false: Does not meet termination requirements
+/// @return true: Meets termination condition, false: Does not meet termination requirements
 /// @exception LackRequiredFunc
 /// @exception DimensionMismatch
 bool ConfigurationSpace::CheckConfigInGoal(const Config& config) const {
@@ -358,7 +432,7 @@ bool ConfigurationSpace::CheckConfigInGoal(const Config& config) const {
 /// If constraint_config is not set in planner_param_, return config_in as is
 /// @param config_in: Input configuration
 /// @param config_out: Constrained configuration
-/// @return true: Constraint failed false: Constraint succeeded
+/// @return true: Constraint failed, false: Constraint succeeded
 /// @exception LackRequiredFunc
 /// @exception DimensionMismatch
 bool ConfigurationSpace::ConstrainConfig(
@@ -377,11 +451,11 @@ bool ConfigurationSpace::ConstrainConfig(
   }
 }
 
-/// Constrain the Start configuration.
+/// Constrain the start configuration.
 /// If constraint_config is not set in planner_param_, return config_in as is
 /// @param config_in: Input configuration
 /// @param config_out: Constrained configuration
-/// @return true: Constraint failed false: Constraint succeeded
+/// @return true: Constraint failed, false: Constraint succeeded
 /// @exception LackRequiredFunc
 /// @exception DimensionMismatch
 bool ConfigurationSpace::ConstrainStartConfig(
@@ -400,11 +474,11 @@ bool ConfigurationSpace::ConstrainStartConfig(
   }
 }
 
-/// Constrain the Goal configuration.
+/// Constrain the goal configuration.
 /// If constraint_config is not set in planner_param_, return config_in as is
 /// @param config_in: Input configuration
 /// @param config_out: Constrained configuration
-/// @return true: Constraint failed false: Constraint succeeded
+/// @return true: Constraint failed, false: Constraint succeeded
 /// @exception LackRequiredFunc
 /// @exception DimensionMismatch
 bool ConfigurationSpace::ConstrainGoalConfig(
@@ -424,7 +498,7 @@ bool ConfigurationSpace::ConstrainGoalConfig(
 }
 
 
-/// Function called during configuration check Mainly for debugging
+/// Function called during configuration check, mainly for debugging
 /// @param config Checked configuration
 /// @param success Check result
 void ConfigurationSpace::CheckFeasibilityCallBack(
@@ -434,7 +508,7 @@ void ConfigurationSpace::CheckFeasibilityCallBack(
   }
 }
 
-/// Function called when adding a node Mainly for debugging
+/// Function called when adding a node, mainly for debugging
 /// @param parent Parent node
 /// @param child Child node
 void ConfigurationSpace::AddNodeCallBack(
@@ -444,7 +518,7 @@ void ConfigurationSpace::AddNodeCallBack(
   }
 }
 
-/// Function called during start generation Mainly for debugging
+/// Function called during start generation, mainly for debugging
 /// @param config Added configuration
 void ConfigurationSpace::AddStartCallBack(const Config& config) const {
   if (add_start_callback_) {
@@ -452,7 +526,7 @@ void ConfigurationSpace::AddStartCallBack(const Config& config) const {
   }
 }
 
-/// Function called during goal generation Mainly for debugging
+/// Function called during goal generation, mainly for debugging
 /// @param config Added configuration
 void ConfigurationSpace::AddGoalCallBack(const Config& config) const {
   if (add_goal_callback_) {
@@ -460,7 +534,7 @@ void ConfigurationSpace::AddGoalCallBack(const Config& config) const {
   }
 }
 
-/// Callback called during ConstraintConfig Mainly for debugging
+/// Callback called during ConstraintConfig, mainly for debugging
 void ConfigurationSpace::ConstrainConfigCallBack(
     const Config& config_in, const Config& config_out, bool success) const {
   if (constrain_config_callback_) {

@@ -1,5 +1,5 @@
 /*
-Copyright (c) 2024 TOYOTA MOTOR CORPORATION
+Copyright (c) 2026 TOYOTA MOTOR CORPORATION
 All rights reserved.
 Redistribution and use in source and binary forms, with or without
 modification, are permitted (subject to the limitations in the disclaimer
@@ -26,7 +26,7 @@ OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH
 DAMAGE.
 */
 /// @file     test_configuration_tree.cpp
-/// @brief    Test of ConfigurationTree
+/// @brief    Test for ConfigurationTree
 /// @author   Koji Terada
 /// @version  1.0.0
 /// @date     2011.11.30
@@ -38,6 +38,7 @@ DAMAGE.
 
 using tmc_rplanner::CheckTransferabilityByDividing;
 using tmc_rplanner::Config;
+using tmc_rplanner::Collisions;
 using tmc_rplanner::ConfigurationSpace;
 using tmc_rplanner::ConfigurationTree;
 using tmc_rplanner::DimensionMismatch;
@@ -65,23 +66,57 @@ Config RandomConfig() {
   return v;
 }
 
-// Configuration check for testing
-bool CheckConfig(const Config& config) {
+// Configuration check for testing (with collision information)
+bool CheckConfigWithCollisions(const Config& config, std::vector<Collisions>& dst_collisions) {
+  dst_collisions.clear();
   if (((config(0) < 3.5) && (config(0) > 0)) &&
-      ((config(1) < 1.5) && (config(1) > 1.0))) return false;
+      ((config(1) < 1.5) && (config(1) > 1.0))) {
+    Collisions collision;
+    collision.name_1 = "obstacle1";
+    collision.name_2 = "robot";
+    collision.depth = std::min(3.5 - config(0), config(0) - 0.0);
+    collision.depth = std::min(collision.depth, 1.5 - config(1));
+    collision.depth = std::min(collision.depth, config(1) - 1.0);
+    dst_collisions.push_back(collision);
+  }
   if (((config(0) < 4.0) && (config(0) > 0.5)) &&
-      ((config(1) < 3.5) && (config(1) > 3.0))) return false;
+      ((config(1) < 3.5) && (config(1) > 3.0))) {
+    Collisions collision;
+    collision.name_1 = "obstacle2";
+    collision.name_2 = "robot";
+    collision.depth = std::min(4.0 - config(0), config(0) - 0.5);
+    collision.depth = std::min(collision.depth, 3.5 - config(1));
+    collision.depth = std::min(collision.depth, config(1) - 3.0);
+    dst_collisions.push_back(collision);
+  }
   return true;
 }
 
+// Configuration check for testing
+bool CheckConfig(const Config& config) {
+  std::vector<Collisions> collisions;
+  if (CheckConfigWithCollisions(config, collisions)) {
+    if (collisions.empty()) {
+      return true;
+    } else {
+      return false;
+    }
+  } else {
+    return false;
+  }
+}
+
 // Transition between configurations for testing
-bool CheckTrans(const Config& src_config, const Config& dst_config) {
+bool CheckTrans(const Config& src_config,
+                const Config& dst_config,
+                const std::vector<Collisions>& src_collisions,
+                std::vector<Collisions>& dst_collisions) {
   return CheckTransferabilityByDividing(
-      src_config, dst_config, CheckConfig, DistanceFunc(), 0.01);
+      src_config, dst_config, src_collisions, CheckConfigWithCollisions, DistanceFunc(), 0.01, dst_collisions);
 }
 
 // Check function for CheckTransferabilityByDividingTest
-// Function that returns true for (0,0), (1,1) and false for ([0.4〜0.6],[0.4〜0.6])
+// Function that returns true for (0,0), (1,1) and false for ([0.4~0.6],[0.4~0.6])
 bool TestDividingFunc(const Config& config) {
   return (!(((config(0) > 0.4) && (config(0) < 0.6))
             && ((config(1) > 0.4) && (config(1) < 0.6))));
@@ -103,6 +138,7 @@ class ConfigurationTreeTest : public ::testing::Test {
     const auto cspace = std::make_shared<ConfigurationSpace>(kDim);
     cspace->set_random_config(RandomConfig);
     cspace->set_check_feasibility(CheckConfig);
+    cspace->set_check_feasibility_with_collisions(CheckConfigWithCollisions);
     cspace->set_check_transferability(CheckTrans);
     cspace->set_distance(CalcDistance);
 
@@ -164,16 +200,59 @@ TEST_F(ConfigurationTreeTest, Extend) {
   Config new_goal(kDim);
   new_goal(0) = 0.5;
   new_goal(1) = 0.4;
-  // This should be Reached
+  // Should become Reached
   EXPECT_EQ(kReached, ctree_->Extend(new_goal));
   EXPECT_EQ(9, ctree_->GetNumNode());
 
-  // Dimension error exception
+  // Dimension mismatch exception
   Config inval_goal(kDim+1);
   inval_goal(0) = 0.5;
   inval_goal(1) = 0.4;
   inval_goal(2) = 0.4;
   EXPECT_THROW(ctree_->Extend(inval_goal), DimensionMismatch);
+}
+
+TEST_F(ConfigurationTreeTest, ExtendMovingOutside) {
+  ctree_->set_delta(0.1);
+
+  Config start(kDim);
+  start(0) = 0.5;
+  start(1) = 1.2;
+  std::vector<Collisions> start_collisions;
+  (void)CheckConfigWithCollisions(start, start_collisions);
+  ctree_->SetRootConfig(start, start_collisions);
+
+  Config goal(kDim);
+  goal(0) = 0.5;
+  goal(1) = 0.8;
+  EXPECT_EQ(kAdvanced, ctree_->Extend(goal));
+  EXPECT_EQ(2, ctree_->GetNumNode());
+
+  EXPECT_EQ(kAdvanced, ctree_->Extend(goal));
+  EXPECT_EQ(3, ctree_->GetNumNode());
+
+  EXPECT_EQ(kAdvanced, ctree_->Extend(goal));
+  EXPECT_EQ(4, ctree_->GetNumNode());
+
+  EXPECT_EQ(kReached, ctree_->Extend(goal));
+  EXPECT_EQ(5, ctree_->GetNumNode());
+}
+
+TEST_F(ConfigurationTreeTest, ExtendMovingInside) {
+  ctree_->set_delta(0.1);
+
+  Config start(kDim);
+  start(0) = 0.5;
+  start(1) = 1.1;
+  std::vector<Collisions> start_collisions;
+  (void)CheckConfigWithCollisions(start, start_collisions);
+  ctree_->SetRootConfig(start, start_collisions);
+
+  Config goal(kDim);
+  goal(0) = 0.5;
+  goal(1) = 2.0;
+  EXPECT_EQ(kTrapped, ctree_->Extend(goal));
+  EXPECT_EQ(1, ctree_->GetNumNode());
 }
 
 TEST_F(ConfigurationTreeTest, Connect) {
@@ -182,19 +261,19 @@ TEST_F(ConfigurationTreeTest, Connect) {
   start(1) = 0.0;
   ctree_->SetRootConfig(start);
 
-  // Extend towards 3.5,0.5. Not reachable
+  // Extend towards 3.5,0.5. Will not reach
   Config goal(kDim);
   goal(0) = 3.5;
   goal(1) = 0.5;
   EXPECT_EQ(kAdvanced, ctree_->Connect(goal));
 
-  // Extend towards 4.0, 4.0. Should not be reachable.
+  // Extend towards 4.0, 4.0. Should not reach.
   Config new_goal(kDim);
   new_goal(0) = 4.0;
   new_goal(1) = 4.0;
   EXPECT_EQ(kTrapped, ctree_->Connect(new_goal));
 
-  // Dimension error exception
+  // Dimension mismatch exception
   Config inval_goal(kDim+1);
   inval_goal(0) = 0.5;
   inval_goal(1) = 0.4;
@@ -202,8 +281,40 @@ TEST_F(ConfigurationTreeTest, Connect) {
   EXPECT_THROW(ctree_->Connect(inval_goal), DimensionMismatch);
 }
 
+TEST_F(ConfigurationTreeTest, ConnectMovingOutside) {
+  ctree_->set_delta(0.1);
+
+  Config start(kDim);
+  start(0) = 0.5;
+  start(1) = 1.2;
+  std::vector<Collisions> start_collisions;
+  (void)CheckConfigWithCollisions(start, start_collisions);
+  ctree_->SetRootConfig(start, start_collisions);
+
+  Config goal(kDim);
+  goal(0) = 0.5;
+  goal(1) = 0.8;
+  EXPECT_EQ(kReached, ctree_->Connect(goal));
+}
+
+TEST_F(ConfigurationTreeTest, ConnectMovingInside) {
+  ctree_->set_delta(0.1);
+
+  Config start(kDim);
+  start(0) = 0.5;
+  start(1) = 1.1;
+  std::vector<Collisions> start_collisions;
+  (void)CheckConfigWithCollisions(start, start_collisions);
+  ctree_->SetRootConfig(start, start_collisions);
+
+  Config goal(kDim);
+  goal(0) = 0.5;
+  goal(1) = 2.0;
+  EXPECT_EQ(kTrapped, ctree_->Connect(goal));
+}
+
 TEST_F(ConfigurationTreeTest, SetMaxConnect) {
-  // Progress in increments of 0.2 from 3.0, should reach at 15 but not at 14
+  // Progress by 0.2 increments from 3.0, should reach at 15 but not at 14
   ResetTree(15);
 
   Config goal(kDim);
@@ -218,10 +329,10 @@ TEST_F(ConfigurationTreeTest, SetMaxConnect) {
   ResetTree(-1);
   EXPECT_EQ(kReached, ctree_->Connect(goal));
 
-  // In case of 0, check only if connectable without extending the tree
+  // For 0, check only if connectable without extending the tree
   ResetTree(0);
 
-  // If the tree is extended, it should be Reached on the second attempt, so perform twice to check that it is not extended
+  // If the tree is extended, it should become Reached on the second attempt, so perform twice to check if it was not extended
   goal(0) = 0.21;
   EXPECT_EQ(kFailed, ctree_->Connect(goal));
   EXPECT_EQ(kFailed, ctree_->Connect(goal));
@@ -282,16 +393,16 @@ TEST_F(ConfigurationTreeTest, RemoveLastBranch) {
   ctree_->RemoveLastBranch();
   EXPECT_EQ(2, ctree_->GetNumNode());
 
-  // 0 should disappear and 1 should remain
+  // 0 should disappear, and 1 should remain
   ctree_->RemoveLastBranch();
   EXPECT_EQ(1, ctree_->GetNumNode());
   EXPECT_DOUBLE_EQ(2.0, ctree_->GetLastConfig()[0]);
 
-  // 1 disappears and becomes empty
+  // 1 should disappear, leaving it empty
   ctree_->RemoveLastBranch();
   EXPECT_EQ(0, ctree_->GetNumNode());
 
-  // No exception occurs when trying to delete in an empty state
+  // Even if you try to delete in an empty state, no exception occurs
   ctree_->RemoveLastBranch();
 }
 

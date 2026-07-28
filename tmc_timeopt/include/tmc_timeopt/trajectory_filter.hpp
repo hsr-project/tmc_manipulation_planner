@@ -1,5 +1,5 @@
 /*
-Copyright (c) 2024 TOYOTA MOTOR CORPORATION
+Copyright (c) 2026 TOYOTA MOTOR CORPORATION
 All rights reserved.
 Redistribution and use in source and binary forms, with or without
 modification, are permitted (subject to the limitations in the disclaimer
@@ -40,22 +40,22 @@ class ITrajectoryFilter {
 
   virtual ~ITrajectoryFilter() = default;
 
-  // Get joint position at time_from_start
-  // @param[in] time_from_start  Time [sec] at which joint position is desired
-  // @return Eigen::VectorXd  Joint position
+  // Get joint positions at the time time_from_start
+  // @param[in] time_from_start  The time [sec] at which to get the joint positions
+  // @return Eigen::VectorXd  Joint positions
   virtual Eigen::VectorXd GetPosition(double time_from_start) const = 0;
 
-  // Get joint velocity at time_from_start
-  // @param[in] time_from_start  Time [sec] at which joint velocity is desired
-  // @return Eigen::VectorXd  Joint velocity
+  // Get joint velocities at the time time_from_start
+  // @param[in] time_from_start  The time [sec] at which to get the joint velocities
+  // @return Eigen::VectorXd  Joint velocities
   virtual Eigen::VectorXd GetVelocity(double time_from_start) const = 0;
 
-  // Get playback time of the trajectory
+  // Get the playback time of the trajectory
   // @return double  Playback time of the trajectory [sec]
   virtual double GetDuration() const = 0;
 
-  // Check if optimization was successful
-  // @return bool  Returns true if optimization was successful and Get functions are available
+  // Check if the optimization was successful
+  // @return bool  Returns true if the optimization was successful and Get functions are available
   virtual bool IsValid() const = 0;
 };
 

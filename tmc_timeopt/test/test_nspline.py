@@ -1,5 +1,5 @@
 #!/usr/bin/env python
-# Copyright (c) 2024 TOYOTA MOTOR CORPORATION
+# Copyright (c) 2026 TOYOTA MOTOR CORPORATION
 # All rights reserved.
 # Redistribution and use in source and binary forms, with or without
 # modification, are permitted (subject to the limitations in the disclaimer
@@ -29,8 +29,6 @@ u"""Unit test for nspline."""
 
 import unittest
 
-from nose.tools import assert_almost_equal, ok_
-
 import numpy as np
 
 from tmc_timeopt.nspline import NaturalCubicSpline
@@ -51,13 +49,13 @@ class NaturalCubicSplineTestCase(unittest.TestCase):
     def test_nspline(self):
         u"""Check with a simple example."""
         # Verify coefficients
-        ok_(np.allclose(
+        self.assertTrue(np.allclose(
             self.f,
             self.spline._a[0],
             atol=1e-3),
             'a is {0}'.format(self.spline._a[0]))
 
-        ok_(np.allclose(np.array(
+        self.assertTrue(np.allclose(np.array(
             [0.540, 0.42, 1.09, 1.29, 0.59,
              -0.02, -0.50, -0.48, -0.07, 0.26,
              0.08, 0.02, -0.15]),
@@ -65,7 +63,7 @@ class NaturalCubicSplineTestCase(unittest.TestCase):
             atol=1e-2),
             'b is {0}'.format(self.spline._a[1][:-1]))
 
-        ok_(np.allclose(np.array(
+        self.assertTrue(np.allclose(np.array(
             [0.00, -0.30, 1.41, -0.37, -1.04,
              -0.50, -0.03, 0.08, 1.27, -0.16,
              -0.03, -0.04, -0.13]),
@@ -74,7 +72,7 @@ class NaturalCubicSplineTestCase(unittest.TestCase):
             rtol=0.0),
             'c is {0}'.format(self.spline._a[2][:-1]))
 
-        ok_(np.allclose(np.array(
+        self.assertTrue(np.allclose(np.array(
             [-0.24, 0.95, -2.96, -0.45, 0.45,
              0.17, 0.08, 1.31, -1.58, 0.04,
              0.00, -0.03, 0.04]),
@@ -84,18 +82,18 @@ class NaturalCubicSplineTestCase(unittest.TestCase):
 
     def test_call(self):
         u"""Check call."""
-        assert_almost_equal(None, self.spline(0.0))
-        assert_almost_equal(self.f[0], self.spline(self.x[0]))
-        assert_almost_equal(1.35, self.spline(1.0), places=2)
-        assert_almost_equal(self.f[-1], self.spline(self.x[-1]))
-        assert_almost_equal(None, self.spline(9.3))
+        self.assertAlmostEqual(None, self.spline(0.0))
+        self.assertAlmostEqual(self.f[0], self.spline(self.x[0]))
+        self.assertAlmostEqual(1.35, self.spline(1.0), places=2)
+        self.assertAlmostEqual(self.f[-1], self.spline(self.x[-1]))
+        self.assertAlmostEqual(None, self.spline(9.3))
 
-        assert_almost_equal(0.53, self.spline(1.0, der=1), places=2)
+        self.assertAlmostEqual(0.53, self.spline(1.0, der=1), places=2)
 
-        # Since it's a natural spline, acceleration is 0 at the ends
-        assert_almost_equal(0.0, self.spline(self.x[0], der=2))
-        assert_almost_equal(-0.149, self.spline(1.0, der=2), places=2)
-        assert_almost_equal(0.0, self.spline(self.x[-1], der=2))
+        # Since it's a natural spline, acceleration is 0 at the ends.
+        self.assertAlmostEqual(0.0, self.spline(self.x[0], der=2))
+        self.assertAlmostEqual(-0.149, self.spline(1.0, der=2), places=2)
+        self.assertAlmostEqual(0.0, self.spline(self.x[-1], der=2))
 
 
 if __name__ == '__main__':

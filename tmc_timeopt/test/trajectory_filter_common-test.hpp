@@ -1,5 +1,5 @@
 /*
-Copyright (c) 2024 TOYOTA MOTOR CORPORATION
+Copyright (c) 2026 TOYOTA MOTOR CORPORATION
 All rights reserved.
 Redistribution and use in source and binary forms, with or without
 modification, are permitted (subject to the limitations in the disclaimer
@@ -125,7 +125,7 @@ bool VerifyVelocityLimit(const ITrajectoryFilter& trajectory,
   for (double t = 0.0; t < trajectory.GetDuration(); t += kTimeStep) {
     auto velocities = trajectory.GetVelocity(t);
     for (uint32_t i = 0; i < limits.size(); ++i) {
-      // Since it is a comparison of floating-point numbers, the test will not be stable without a margin
+      // Since it is a comparison of floating-point numbers, a margin is necessary for the test to be stable
       if (fabs(velocities[i]) > limits[i] + kEpsilon) {
         std::cerr << t << ": " << velocities.transpose() << std::endl;
         return false;
@@ -197,7 +197,7 @@ class TrajectoryFilterCommonTest : public ::testing::Test {};
 
 TYPED_TEST_SUITE_P(TrajectoryFilterCommonTest);
 
-// Test to see if it fails when non-positive values are included in the speed limit
+// Test whether it fails when the speed limit includes non-positive values
 TYPED_TEST_P(TrajectoryFilterCommonTest, MaxVelocityNotPositive) {
   std::vector<std::array<double, 2>> test_cases = {
       {1.0, 0.0}, {0.0, 0.5}, {0.0, 0.0}, {1.0, -0.5}, {-1.0, 0.5}, {-1.0, -0.5}};
@@ -211,7 +211,7 @@ TYPED_TEST_P(TrajectoryFilterCommonTest, MaxVelocityNotPositive) {
   }
 }
 
-// Test to see if it fails when non-positive values are included in the acceleration limit
+// Test whether it fails when the acceleration limit includes non-positive values
 TYPED_TEST_P(TrajectoryFilterCommonTest, MaxAccelarationNotPositive) {
   std::vector<std::array<double, 2>> test_cases = {
       {0.5, 0.0}, {0.0, 1.0}, {0.0, 0.0}, {0.5, -1.0}, {-0.5, 1.0}, {-0.5, -1.0}};
@@ -247,7 +247,7 @@ TYPED_TEST_P(TrajectoryFilterCommonTest, DofMismatch) {
   }
 }
 
-// Test for empty path
+// Test for an empty path
 TYPED_TEST_P(TrajectoryFilterCommonTest, EmptyWayPoints) {
   auto input = TestInput();
   input.way_points.clear();
@@ -257,7 +257,7 @@ TYPED_TEST_P(TrajectoryFilterCommonTest, EmptyWayPoints) {
   EXPECT_FALSE(trajectory.IsValid());
 }
 
-// Optimization of a single degree of freedom trajectory
+// Optimization of a single-degree-of-freedom trajectory
 TYPED_TEST_P(TrajectoryFilterCommonTest, OneDofTrajectory) {
   auto input = TestInput();
   input.initial_positions.resize(1);
@@ -272,7 +272,7 @@ TYPED_TEST_P(TrajectoryFilterCommonTest, OneDofTrajectory) {
   EXPECT_FALSE(trajectory.IsValid());
 }
 
-// Test for interruption
+// Test for interruptions
 TYPED_TEST_P(TrajectoryFilterCommonTest, Interrupt) {
   auto input = TestInput();
   InterruptionMock return_false_mock(-1);
@@ -290,7 +290,7 @@ TYPED_TEST_P(TrajectoryFilterCommonTest, Interrupt) {
   EXPECT_FALSE(trajectory.IsValid());
 }
 
-// Optimization of a trajectory that includes the same point in consecutive waypoints
+// Optimization of a trajectory containing the same point in consecutive waypoints
 TYPED_TEST_P(TrajectoryFilterCommonTest, SeriallySameWayPoint) {
   auto input = TestInput();
   input.way_points.insert(input.way_points.begin(), input.way_points.front());
@@ -301,7 +301,7 @@ TYPED_TEST_P(TrajectoryFilterCommonTest, SeriallySameWayPoint) {
   EXPECT_TRUE(trajectory.IsValid());
 
   EXPECT_TRUE(VerifyBothEndVelocity(trajectory, input.initial_velocities));
-  // Since kMaxDeviation = 0.03, it should be within that range
+  // Since kMaxDeviation = 0.03, it should fall within that range
   EXPECT_LT(CalcWayPointDistance(trajectory, input.way_points[1]), 0.03 * 2);
   EXPECT_LT(CalcLastPointDistnace(trajectory, input.way_points[2]), kEpsilon);
   EXPECT_TRUE(VerifyVelocityLimit(trajectory, input.max_velocities));

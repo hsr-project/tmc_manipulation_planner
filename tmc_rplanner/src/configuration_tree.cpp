@@ -1,5 +1,5 @@
 /*
-Copyright (c) 2024 TOYOTA MOTOR CORPORATION
+Copyright (c) 2026 TOYOTA MOTOR CORPORATION
 All rights reserved.
 Redistribution and use in source and binary forms, with or without
 modification, are permitted (subject to the limitations in the disclaimer
@@ -26,8 +26,8 @@ OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH
 DAMAGE.
 */
 /// @file     configuration_tree.cpp
-/// @brief    In the configuration space used by the planner
-///           A class that summarizes tree structures and operations
+/// @brief    Configuration space used in the planner
+///           Class summarizing tree structure and operations
 /// @author   Koji Terada
 /// @version  1.0.0
 /// @date     2011.10.25
@@ -59,7 +59,7 @@ ConfigurationTree::ConfigurationTree(ConfigurationSpace::Ptr configuration_space
 /// @retval kAdvanced Approached the target state
 /// @retval kTrapped Unable to approach the target state
 ExtendRet ConfigurationTree::Extend(const Config& dst_config) {
-  // Ensure the size of the Configuration is correct
+  // Ensure the size of Configuration is correct
   if (configuration_space_->dof() != dst_config.size()) {
     throw DimensionMismatch("Configuration size mismatch.");
   }
@@ -71,22 +71,25 @@ ExtendRet ConfigurationTree::Extend(const Config& dst_config) {
   if (!configuration_space_->ConstrainConfig(new_config, next_config)) {
     return kTrapped;
   }
-  // Ensure it does not exceed delta
+  // Prevent exceeding delta_ or more
   bool is_constrained_reached(false);
   next_config = configuration_space_->
       NewConfig(nearest.lock()->data, next_config,
                 delta_, is_constrained_reached);
 
   ExtendRet ret = kFailed;
+  std::vector<Collisions> next_collisions;
   if (configuration_space_->CheckTransferability(nearest.lock()->data,
-                                                 next_config)) {
-    Node::Ptr next_node(new Node(next_config, nearest));
+                                                 next_config,
+                                                 nearest.lock()->collisions,
+                                                 next_collisions)) {
+    Node::Ptr next_node(new Node(next_config, nearest, next_collisions));
     tree_.push_back(next_node);
     configuration_space_->AddNodeCallBack(nearest.lock()->data, next_config);
     if (is_reached) {
       ret = kReached;
     } else {
-      // If nearest is closer, return trapped, otherwise return Advanced
+      // Return trapped if nearest is closer, otherwise Advanced
       if ((nearest.lock()->data - dst_config).norm() <
           (next_config - dst_config).norm()) {
         return kTrapped;
@@ -125,8 +128,12 @@ ExtendRet ConfigurationTree::Connect(const Config& dst_config,
                                      TerminateConditionFunc terminate) {
   if (max_connect_ == 0) {
     Node::WeakPtr nearest = FetchNearestNeighbor_(dst_config);
+    std::vector<Collisions> dst_collisions;
     if (configuration_space_->CalcDistance(nearest.lock()->data, dst_config) < delta_ &&
-        configuration_space_->CheckTransferability(nearest.lock()->data, dst_config)) {
+        configuration_space_->CheckTransferability(nearest.lock()->data,
+                                                   dst_config,
+                                                   nearest.lock()->collisions,
+                                                   dst_collisions)) {
       return kReached;
     } else {
       return kFailed;
@@ -147,7 +154,7 @@ ExtendRet ConfigurationTree::Connect(const Config& dst_config,
 /// @func FetchNearestNeighbor_
 /// @brief Retrieve the nearest neighbor from the tree
 /// @param tree State tree
-/// @param config State to be the nearest neighbor target
+/// @param config State to find the nearest neighbor for
 /// @retval Nearest node
 Node::WeakPtr ConfigurationTree::FetchNearestNeighbor_(const Config& config) {
   double min = DBL_MAX;
@@ -163,7 +170,7 @@ Node::WeakPtr ConfigurationTree::FetchNearestNeighbor_(const Config& config) {
 }
 
 /// @func PrintTree
-/// @brief Output the tree to storm. Mainly for debugging
+/// @brief Output the tree to Storm, mainly for debugging
 void ConfigurationTree::PrintTree() const {
   for (Tree::const_iterator node = tree_.begin(); node != tree_.end(); ++node) {
     if (!(*node)->parent.expired()) {
@@ -195,7 +202,7 @@ void ConfigurationTree::RemoveLastBranch() {
       break;
     }
   }
-  // If all are Root, the leftmost one is the last added Root, so delete it and finish
+  // If all are Root, the leftmost one is the last added Root, so just delete it and finish
   if (root_node_num == tree_.size()) {
     tree_.pop_front();
     return;
@@ -211,8 +218,8 @@ void ConfigurationTree::RemoveLastBranch() {
       break;
     }
   }
-  // tree_ adds RootNode from the left and extended Node from the right
-  // Therefore, there is always a child Node on the right side of the deleted one, so if you delete them in order, you can delete them all
+  // tree_ adds RootNode from the left and extended Nodes from the right
+  // Therefore, there will always be child Nodes on the right side of the deleted one, so deleting them sequentially will remove all
   for (auto it = tree_.begin() + root_node_num - 1; it != tree_.end(); ) {
     if ((*it)->parent.expired()) {
       it = tree_.erase(it);

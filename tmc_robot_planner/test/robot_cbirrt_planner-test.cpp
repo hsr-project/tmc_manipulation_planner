@@ -1,5 +1,5 @@
 /*
-Copyright (c) 2024 TOYOTA MOTOR CORPORATION
+Copyright (c) 2026 TOYOTA MOTOR CORPORATION
 All rights reserved.
 Redistribution and use in source and binary forms, with or without
 modification, are permitted (subject to the limitations in the disclaimer
@@ -26,7 +26,7 @@ OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH
 DAMAGE.
 */
 ///  Test of the planner library
-///  Focus on cart movement and urdf model check
+///  Focus on cart movement and URDF model checks
 ///  @author Koji Terada
 
 #include <stdlib.h>
@@ -85,9 +85,9 @@ namespace {
 const double kDoubleEps = 1.0e-3;
 // Name of the hand
 const char* const kHandName = "link7";
-// Maximum number of iterations for numerical IK
+// Maximum iterations for numerical IK
 const int32_t kMaxItrIK = 1000;
-// Numerical IK allowable error
+// Numerical IK tolerance
 const double kIKDelta = 1.0e-3;
 // Numerical IK allowable variation
 const double kIKConvergeThreshold = 1.0e-10;
@@ -97,9 +97,9 @@ const double kTimeOutPlanning = 120.0;
 const double kTimeOutPlanningVeryShort = 0.0001;
 // Search width
 const double kDelta = 0.01;
-// Interference check width
+// Collision check width
 const double kSubDelta = 0.005;
-// Maximum number of iterations
+// Maximum iterations
 const int32_t kMaxItrPlanning = 1000;
 }  // anonymous namespace
 
@@ -112,7 +112,7 @@ class RobotCBiRrtPlannerUrdfTest :  public ::testing::Test {
     robot_ = std::make_shared<PinocchioWrapper>(model_xml_string);
     ik_solver_ = std::make_shared<NumericIKSolver>(IKSolver::Ptr(), robot_, kMaxItrIK, kIKDelta, kIKConvergeThreshold);
     robot_collision_detector_ = std::make_shared<RobotCollisionDetector>(
-        model_xml_string, collision_xml_string, "ODE");
+        model_xml_string, collision_xml_string, "fcl");
     planner_ = std::make_shared<RobotCBiRrtPlanner>(robot_, robot_collision_detector_, ik_solver_);
 
     NameSeq all_name(6);
@@ -132,13 +132,13 @@ class RobotCBiRrtPlannerUrdfTest :  public ::testing::Test {
     robot_collision_detector_->SetRobotNamedAngle(initial_config_);
   }
 
-  // Check if the trajectory is correct at the following points
-  // * Continuous (width between configs is less than or equal to delta)
-  // * Not interfering
+  // Check if the trajectory is correct based on the following points
+  // * Continuous (width between configs is within delta)
+  // * No collisions
   // * Satisfies constraint_tsr if it exists
-  // * Initial value is one of the following.
+  // * Initial value is one of the following:
   //   1. Set by start_configs 2. Generated from start_tsrs
-  // * Terminal value is one of the following.
+  // * Terminal value is one of the following:
   //   1. Set by goal_configs 2. Generated from goal_tsrs
   void CheckResultTrajectory(const RobotTrajectory& trajectory,
                              const CBiRrtRequest& req,
@@ -176,8 +176,8 @@ void RobotCBiRrtPlannerUrdfTest::CheckResultTrajectory(
         true, contact_pair));
     EXPECT_TRUE(feasible);
 
-    // Check of constraint_tsr
-    if (!req.constraint_tsrs.empty()) {
+    // Check constraint_tsr
+    if (!req.constraint_tsrs_seq.empty()) {
       JointState joint_state;
       joint_state.name = req.use_joints;
       joint_state.position = trajectory.path[i];
@@ -185,19 +185,19 @@ void RobotCBiRrtPlannerUrdfTest::CheckResultTrajectory(
       robot_collision_detector_->SetRobotTransform(req.origin_to_basejoint);
       robot_collision_detector_->SetRobotNamedAngle(joint_state);
       Eigen::Affine3d origin_to_end = robot_collision_detector_->
-          GetObjectTransform(req.constraint_tsrs[0].end_frame_id);
+          GetObjectTransform(req.constraint_tsrs_seq[0][0].end_frame_id);
 
-      // Confirm that it fits within the TSR constraint
-      double distance = (CalcDistanceToTsr(req.constraint_tsrs[0],
+      // Confirm that it fits within the TSR constraints
+      double distance = (CalcDistanceToTsr(req.constraint_tsrs_seq[0][0],
                                            origin_to_end)).norm();
-      // IK is AngleAxis, TSR is rpy representation, so a threefold error is possible and allowed
+      // Allowable error is about three times since IK uses AngleAxis and TSR uses RPY representation
       EXPECT_GE(kIKDelta * 3.0, distance);
     }
   }
 
   // Initial value check
   bool valid_start = false;
-  // Initial joint angle
+  // Initial joint angles
   for (std::vector<Config>::const_iterator config = req.start_configs.begin();
        config != req.start_configs.end();
        ++config) {
@@ -227,7 +227,7 @@ void RobotCBiRrtPlannerUrdfTest::CheckResultTrajectory(
 
   // Terminal value check
   bool valid_goal = false;
-  // Initial joint angle
+  // Initial joint angles
   for (std::vector<Config>::const_iterator config = req.goal_configs.begin();
        config != req.goal_configs.end();
        ++config) {
@@ -236,27 +236,29 @@ void RobotCBiRrtPlannerUrdfTest::CheckResultTrajectory(
       break;
     }
   }
-  for (TaskSpaceRegionSeq::const_iterator tsr = req.goal_tsrs.begin();
-       tsr != req.goal_tsrs.end();
-       ++tsr) {
-    JointState joint_state;
-    joint_state.name = req.use_joints;
-    joint_state.position = trajectory.path.back();
-    robot_collision_detector_->SetRobotTransform(base_trajectory.path.back()[0]);
-    robot_collision_detector_->SetRobotNamedAngle(joint_state);
-    Eigen::Affine3d origin_to_end = robot_collision_detector_->
-        GetObjectTransform(req.goal_tsrs[0].end_frame_id);
-    double distance = CalcDistanceToTsr(*tsr, origin_to_end).norm();
-    if (distance <  1e-02) {
-      valid_goal = true;
-      break;
+  if (!req.goal_tsrs_seq.empty()) {
+    for (TaskSpaceRegionSeq::const_iterator tsr = req.goal_tsrs_seq[0].begin();
+        tsr != req.goal_tsrs_seq[0].end();
+        ++tsr) {
+      JointState joint_state;
+      joint_state.name = req.use_joints;
+      joint_state.position = trajectory.path.back();
+      robot_collision_detector_->SetRobotTransform(base_trajectory.path.back()[0]);
+      robot_collision_detector_->SetRobotNamedAngle(joint_state);
+      Eigen::Affine3d origin_to_end = robot_collision_detector_->
+          GetObjectTransform(req.goal_tsrs_seq[0][0].end_frame_id);
+      double distance = CalcDistanceToTsr(*tsr, origin_to_end).norm();
+      if (distance <  1e-02) {
+        valid_goal = true;
+        break;
+      }
     }
   }
   EXPECT_TRUE(valid_goal);
 }
 
 
-// Test as a simple Birrt
+// Test as a simple BiRRT
 TEST_F(RobotCBiRrtPlannerUrdfTest, plan_as_birrt) {
   NameSeq use_name(6);
   use_name[0] = ("joint1");
@@ -268,12 +270,12 @@ TEST_F(RobotCBiRrtPlannerUrdfTest, plan_as_birrt) {
 
   Eigen::Affine3d unit(Eigen::Affine3d::Identity());
 
-  // Initial joint angle
+  // Initial joint angles
   Config start_config;
   start_config.resize(6);
   start_config << 0.5, 0.2, 0.4, 0.3, 0.6, 0.2;
 
-  // Terminal joint angle
+  // Terminal joint angles
   Config goal_config;
   goal_config.resize(6);
   goal_config << 0.5, 0.2, 0.2, 0.1, 0.5, 1.0;
@@ -284,11 +286,11 @@ TEST_F(RobotCBiRrtPlannerUrdfTest, plan_as_birrt) {
   req.start_configs.push_back(start_config);
   req.goal_configs.push_back(goal_config);
   req.initial_config = initial_config_;
-  // Joint weight
+  // Joint weights
   req.weight_config.resize(6);
   req.weight_config << 1.0, 1.0, 1.0, 1.0, 1.0, 1.0;
 
-  // Joint weight
+  // Joint weights
   req.weight_config_ik.resize(6);
   req.weight_config_ik << 1.0, 1.0, 1.0, 1.0, 1.0, 1.0;
 
@@ -309,7 +311,7 @@ TEST_F(RobotCBiRrtPlannerUrdfTest, plan_as_birrt) {
 }
 
 
-// Test as a Birrt including base movement in the x direction
+// Test as a BiRRT including base movement in the x-direction
 TEST_F(RobotCBiRrtPlannerUrdfTest, plan_with_rail_x) {
   NameSeq use_name(6);
   use_name[0] = ("joint1");
@@ -321,13 +323,13 @@ TEST_F(RobotCBiRrtPlannerUrdfTest, plan_with_rail_x) {
 
   Eigen::Affine3d unit(Eigen::Affine3d::Identity());
 
-  // Initial joint angle
+  // Initial joint angles
   Config start_config;
   start_config.resize(6);
   start_config << 0.5, 0.2, 0.4, 0.3, 0.6, 0.2;
   Eigen::Affine3d start_basejoint_to_base = unit;
 
-  // Terminal joint angle
+  // Terminal joint angles
   Config goal_config;
   goal_config.resize(6);
   goal_config << 0.5, 0.2, 0.2, 0.1, 0.5, 1.0;
@@ -343,11 +345,11 @@ TEST_F(RobotCBiRrtPlannerUrdfTest, plan_with_rail_x) {
   req.goal_configs.push_back(goal_config);
   req.goal_basejoint_to_bases.push_back(goal_basejoint_to_base);
   req.initial_config = initial_config_;
-  // Joint weight
+  // Joint weights
   req.weight_config.resize(7);
   req.weight_config << 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0;
 
-  // Joint weight
+  // Joint weights
   req.weight_config_ik.resize(7);
   req.weight_config_ik << 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0;
 
@@ -367,7 +369,7 @@ TEST_F(RobotCBiRrtPlannerUrdfTest, plan_with_rail_x) {
   }
 }
 
-// Test as a Birrt with end-effector specification including planar base movement
+// Test as an end-effector specified BiRRT including planar base movement
 TEST_F(RobotCBiRrtPlannerUrdfTest, plan_with_planar) {
   NameSeq use_name(6);
   use_name[0] = ("joint1");
@@ -384,7 +386,7 @@ TEST_F(RobotCBiRrtPlannerUrdfTest, plan_with_planar) {
   Eigen::Affine3d origin_to_hand =
       robot_collision_detector_->GetObjectTransform(hand);
 
-  // Completely fixed TSR
+  // Fully fixed TSR
   RegionValues goal_min;
   RegionValues goal_max;
   goal_min << 0.0, 0.0, 0.0, 0.0, 0.0, 0.0;
@@ -400,7 +402,7 @@ TEST_F(RobotCBiRrtPlannerUrdfTest, plan_with_planar) {
       "origin",
       "link7");
 
-  // Initial joint angle
+  // Initial joint angles
   Config start_config;
   start_config.resize(6);
   start_config << 0.5, 0.2, 0.4, 0.3, 0.6, 0.2;
@@ -412,13 +414,13 @@ TEST_F(RobotCBiRrtPlannerUrdfTest, plan_with_planar) {
   req.origin_to_basejoint = unit;
   req.start_configs.push_back(start_config);
   req.start_basejoint_to_bases.push_back(start_basejoint_to_base);
-  req.goal_tsrs.push_back(goal_tsr);
+  req.goal_tsrs_seq.push_back({goal_tsr});
   req.initial_config = initial_config_;
-  // Joint weight
+  // Joint weights
   req.weight_config.resize(9);
   req.weight_config << 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0;
 
-  // Joint weight
+  // Joint weights
   req.weight_config_ik.resize(9);
   req.weight_config_ik << 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0;
 

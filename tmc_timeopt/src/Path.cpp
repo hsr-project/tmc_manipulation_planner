@@ -53,7 +53,7 @@ class LinearPathSegment : public PathSegment {
  public:
   LinearPathSegment(const Eigen::VectorXd &start, const Eigen::VectorXd &end)
       : start(start), end(end), PathSegment((end - start).norm()) {
-    // Precompute for speed optimization
+    // Precompute for faster processing
     tangent = (end - start) / length;
   }
 
@@ -125,10 +125,10 @@ class CircularPathSegment : public PathSegment {
       center = intersection + (endDirection - startDirection).normalized() * radius / cos(0.5 * angle);
       x = (intersection - distance * startDirection - center).normalized();
     } else {
-      // The original implementation cannot handle trajectories that are completely opposite
-      // In cases of complete opposition, draw a semicircle with a radius of maxDeviation
-      // This way, it passes slightly off from the point where the direction is completely opposite
-      // Optimization is possible with the concept of Circular blend
+      // The original implementation cannot handle trajectories that are completely reversed
+      // In case of complete reversal, make it draw a semicircle with a radius of maxDeviation
+      // This way, it passes slightly off from the point where the direction is completely reversed
+      // Optimization becomes possible using the concept of Circular blend
       radius = distance;
       center = intersection + (endDirection - startDirection).normalized() * distance * 2.0;
       x = Eigen::VectorXd::Zero(y.size());

@@ -1,5 +1,5 @@
 /*
-Copyright (c) 2024 TOYOTA MOTOR CORPORATION
+Copyright (c) 2026 TOYOTA MOTOR CORPORATION
 All rights reserved.
 Redistribution and use in source and binary forms, with or without
 modification, are permitted (subject to the limitations in the disclaimer
@@ -49,10 +49,10 @@ using StartGoalPairSet = std::vector<StartGoalPair>;
 namespace tmc_rplanner {
 
 /// @brief Advance tree a one step towards a random configuration,
-///        and attempt to connect from tree b to tree a
+///        and attempt to connect tree b to tree a
 /// @param space Configuration space
-/// @param tree_a Exploration side tree
-/// @param tree_b Connection side tree
+/// @param tree_a Exploration tree
+/// @param tree_b Connection tree
 /// @return true: Connection successful false: Connection failed
 static bool BuildOneStepM(ConfigurationSpace::Ptr space,
                           ConfigurationTree& tree_a,
@@ -121,10 +121,10 @@ PlanRet MultiBirrtPlanner::PlanPaths(const std::vector<Config>& start_configs,
   for (std::vector<Config>::const_iterator config = start_configs.begin();
        config != start_configs.end(); ++config) {
     Config constrained_config;
-    if (space_->ConstrainStartConfig(
-            *config, constrained_config)) {
-      if (space_->CheckFeasibility(constrained_config)) {
-        tree_s->SetRootConfig(constrained_config);
+    std::vector<Collisions> collisions;
+    if (space_->ConstrainStartConfig(*config, constrained_config)) {
+      if (space_->CheckFeasibilityWithCollisions(constrained_config, collisions)) {
+        tree_s->SetRootConfig(constrained_config, collisions);
         space_->AddStartCallBack(constrained_config);
         start_config_obtained = true;
       }
@@ -148,7 +148,7 @@ PlanRet MultiBirrtPlanner::PlanPaths(const std::vector<Config>& start_configs,
   // Main loop
   for (int32_t i = 0; i < max_itr_; ++i)  {
     is_success = false;
-    // Check termination conditions (timeout, etc.)
+    // Check termination conditions (e.g., timeout)
     if (is_terminate_ && is_terminate_()) {
       if (!paths_out.empty()) {
         return kSuccess;
@@ -162,15 +162,15 @@ PlanRet MultiBirrtPlanner::PlanPaths(const std::vector<Config>& start_configs,
     }
 
     // Add initial value with probability_start_generate probability
-    // Add even if the initial value does not exist yet
+    // Add even if the initial value does not yet exist
     if (!start_config_obtained || randf(eng) < probability_start_generate_) {
       Config config;
       if (space_->GenerateStartConfig(config)) {
         Config constrained_config;
-        if (space_->ConstrainStartConfig(
-                config, constrained_config)) {
-          if (space_->CheckFeasibility(constrained_config)) {
-            tree_s->SetRootConfig(constrained_config);
+        std::vector<Collisions> collisions;
+        if (space_->ConstrainStartConfig(config, constrained_config)) {
+          if (space_->CheckFeasibilityWithCollisions(constrained_config, collisions)) {
+            tree_s->SetRootConfig(constrained_config, collisions);
             space_->AddStartCallBack(constrained_config);
             start_config_obtained = true;
           }
@@ -182,7 +182,7 @@ PlanRet MultiBirrtPlanner::PlanPaths(const std::vector<Config>& start_configs,
     }
 
     // Add terminal value with probability_start_generate probability
-    // Add even if the terminal value does not exist yet
+    // Add even if the terminal value does not yet exist
     if (!goal_config_obtained || randf(eng) < probability_goal_generate_) {
       Config config;
       if (space_->GenerateGoalConfig(config)) {

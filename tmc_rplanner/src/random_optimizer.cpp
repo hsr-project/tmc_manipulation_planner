@@ -1,5 +1,5 @@
 /*
-Copyright (c) 2024 TOYOTA MOTOR CORPORATION
+Copyright (c) 2026 TOYOTA MOTOR CORPORATION
 All rights reserved.
 Redistribution and use in source and binary forms, with or without
 modification, are permitted (subject to the limitations in the disclaimer
@@ -36,8 +36,8 @@ DAMAGE.
 
 namespace tmc_rplanner {
 
-/// @brief Generate random configurations to find the optimal solution
-/// @param config_out Configuration with the highest evaluation
+/// @brief Generate random configurations to search for the optimal solution
+/// @param config_out Configuration with the maximum evaluation
 /// @param value_out Evaluation value
 /// @return true: Success false: Failure
 bool RandomOptimizer::Optimize(Config& config_out, double& value_out) {
@@ -46,14 +46,14 @@ bool RandomOptimizer::Optimize(Config& config_out, double& value_out) {
   Config max_config;
 
   for (int32_t i = 0; i < max_itr_; ++i)  {
-    // Generate random configuration
+    // Generate random configurations
     Config new_config = space_->GenerateRandomConfig();
     /// Check if the configuration is valid
     if (space_->CheckFeasibility(new_config)) {
       /// Evaluate the configuration
       ++num_eval;
       double value = space_->EvaluateConfig(new_config);
-      // Update maximum value
+      // Update the maximum value
       if (value > max_value) {
         max_value = value;
         max_config = new_config;
@@ -63,12 +63,12 @@ bool RandomOptimizer::Optimize(Config& config_out, double& value_out) {
     if (num_eval > max_eval_) {
       break;
     }
-    // Check termination condition
+    // Check termination conditions
     if (is_terminate_ && is_terminate_()) {
       break;
     }
   }
-  // Failure if the number of evaluations is 0
+  // Fail if the number of evaluations is zero
   if (num_eval == 0) {
     return false;
   } else {

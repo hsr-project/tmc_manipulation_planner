@@ -1,5 +1,5 @@
 /*
-Copyright (c) 2024 TOYOTA MOTOR CORPORATION
+Copyright (c) 2026 TOYOTA MOTOR CORPORATION
 All rights reserved.
 Redistribution and use in source and binary forms, with or without
 modification, are permitted (subject to the limitations in the disclaimer
@@ -26,7 +26,7 @@ OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH
 DAMAGE.
 */
 /// @file     planner_common.hpp
-/// @brief Definition of basic data structures used in the planner
+/// @brief    Definition of basic data structures used in the planner
 /// @author   Koji Terada
 /// @version  1.0.0
 /// @date     2011.10.25
@@ -48,7 +48,7 @@ DAMAGE.
 
 namespace tmc_rplanner {
 
-/// Base exception class for planner
+/// Base exception class for the planner
 class PlannerException : public std::exception {
  public:
   PlannerException() {}
@@ -59,7 +59,7 @@ class PlannerException : public std::exception {
   std::string msg_;
 };
 
-/// Exception thrown when the required function is not found
+/// Exception thrown when the requested function is not found
 class LackRequiredFunc : public PlannerException {
  public:
   LackRequiredFunc() {}
@@ -70,7 +70,7 @@ class LackRequiredFunc : public PlannerException {
   std::string msg_;
 };
 
-/// Exception thrown when the configuration dimensions differ
+/// Exception thrown when the dimensions of the configuration differ
 class DimensionMismatch : public PlannerException {
  public:
   DimensionMismatch() {}
@@ -92,7 +92,7 @@ class TreeLoop : public PlannerException {
   std::string msg_;
 };
 
-/// Return value of tree extension
+/// Return values for tree extension
 enum ExtendRet {
   kReached,   /// Reached
   kAdvanced,  /// Advanced
@@ -100,10 +100,10 @@ enum ExtendRet {
   kFailed     /// Failed
 };
 
-/// Return value of planning
+/// Return values for planning
 enum PlanRet {
   kSuccess,         /// Success
-  kTerminate,       /// Forced termination
+  kTerminate,       /// Terminated
   kMaxItr,          /// Maximum iteration count reached
   kInitConfigFail,  /// Invalid initial state
   kGoalConfigFail   /// Invalid goal state
@@ -111,6 +111,18 @@ enum PlanRet {
 
 /// Configuration data
 using Config = Eigen::VectorXd;
+
+/// Collision depth information
+struct Collisions {
+  std::string name_1;
+  std::string name_2;
+  double depth;
+
+  bool IsSameObjects(const Collisions& other) const {
+    return ((name_1 == other.name_1) && (name_2 == other.name_2)) ||
+           ((name_1 == other.name_2) && (name_2 == other.name_1));
+  }
+};
 
 /// Node for exploration
 struct Node {
@@ -121,9 +133,13 @@ struct Node {
 
   Node() : data(), parent() {}
   Node(const Config& d, const Node::WeakPtr& p) : data(d), parent(p) {}
+  Node(const Config& d, const Node::WeakPtr& p, const std::vector<Collisions>& c) : data(d), collisions(c), parent(p) {}
   explicit Node(const Config& d) : data(d), parent() {}
+  Node(const Config& d, const std::vector<Collisions>& c) : data(d), collisions(c), parent() {}
   /// Configuration
   Config data;
+  /// Collision information
+  std::vector<Collisions> collisions;
   /// Pointer to parent
   Node::WeakPtr parent;
 };
@@ -139,22 +155,25 @@ using Path = std::deque<Config>;
 using RandomConfigFunc = std::function<Config ()>;
 /// Configuration check
 using CheckFeasibilityFunc = std::function<bool(const Config&)>;
+/// Configuration check
+using CheckFeasibilityWithCollisionsFunc = std::function<bool(const Config&, std::vector<Collisions>&)>;
 /// Transition check between configurations
-using CheckTransferabilityFunc = std::function<bool(const Config&, const Config&)>;
-/// Function to calculate distance between configurations
+using CheckTransferabilityFunc =
+    std::function<bool(const Config&, const Config&, const std::vector<Collisions>&, std::vector<Collisions>&)>;
+/// Function to calculate the distance between configurations
 using DistanceFunc = std::function<double(const Config&, const Config&)>;
-/// Evaluation function of configuration
+/// Evaluation function for configurations
 using EvaluateConfigFunc = std::function<double(const Config&)>;
-/// Constraint condition function of configuration (subject to constraints
+/// Constraint condition function for configurations (subject to constraints
 /// Takes a configuration and returns the constrained configuration)
 using ConstraintFunc = std::function<bool(const Config&, Config&)>;
-/// Check if the configuration meets the termination condition
+/// Check if the configuration meets the goal condition
 using CheckConfigInGoalFunc = std::function<bool(const Config&)>;
 /// Temporary goal creation function
 using GenerateGoalConfigFunc = std::function<bool(Config&)>;
 /// Temporary start creation function
 using GenerateStartConfigFunc = std::function<bool(Config&)>;
-/// Termination condition
+/// Goal condition
 using TerminateConditionFunc = std::function<bool()>;
 
 /// Function called during configuration check, mainly for debugging
@@ -173,32 +192,32 @@ using PathCallBackFunc = std::function<void(const Path&)>;
 
 /// @func TreeToPath
 /// @brief Extract trajectory from the state tree
-///        Assume the end of the state tree is the goal
+///        Assume the last state of the tree is the goal
 ///        If the path becomes larger than the size of the tree
 ///        Throw an exception as it is looping
 /// @param tree State tree
 /// @param path_out Output trajectory
-/// @note If there is a loop in the tree, it will result in an infinite loop.
-/// @exception tmc_rplanner::TreeLoop Detection of loop in the tree
+/// @note If the tree has a loop, it will result in an infinite loop.
+/// @exception tmc_rplanner::TreeLoop Detection of tree loop
 void TreeToPath(const Tree& tree, Path& path_out);
 
 /// @func TreeToPath
 /// @brief Extract trajectory from the state tree
-///        Assume the end of the state tree is the goal
+///        Assume the last state of the tree is the goal
 ///        If the path becomes larger than the size of the tree
 ///        Throw an exception as it is looping
 /// @param tree State tree
 /// @param path_out Output trajectory
 /// @param goal_index Index of the final state in the state tree
-/// @note If there is a loop in the tree, it will result in an infinite loop.
-/// @exception tmc_rplanner::TreeLoop Detection of loop in the tree
+/// @note If the tree has a loop, it will result in an infinite loop.
+/// @exception tmc_rplanner::TreeLoop Detection of tree loop
 /// @exception std::invalid_argument goal_index is larger than the size of the tree
 void TreeToPath(const Tree& tree, uint32_t goal_index, Path& path_out);
 
 
 /// @brief Change the root of the state tree to the specified one
 /// @param tree State tree
-/// @param root Node to be newly set as root
+/// @param root Node to be set as the new root
 void ChangeTreeRoot(Tree& tree, const Node::WeakPtr& root);
 
 }  // namespace tmc_rplanner

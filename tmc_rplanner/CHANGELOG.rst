@@ -2,6 +2,15 @@
 Changelog for package tmc_rplanner
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+3.0.0 (2026-06-29)
+-------------------
+* Migration to ROS2 jazzy
+* Contributors: Ryu Nishimori, Shigeo Tsuduki
+
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+Changelog for package tmc_rplanner
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
 2.0.2 (2025-12-04)
 -------------------
 * Fix issue where IK initial state sampling range was not expanding as expected.

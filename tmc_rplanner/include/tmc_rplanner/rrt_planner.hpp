@@ -1,5 +1,5 @@
 /*
-Copyright (c) 2024 TOYOTA MOTOR CORPORATION
+Copyright (c) 2026 TOYOTA MOTOR CORPORATION
 All rights reserved.
 Redistribution and use in source and binary forms, with or without
 modification, are permitted (subject to the limitations in the disclaimer
@@ -35,6 +35,9 @@ DAMAGE.
 #ifndef TMC_MANIPULATION_TMC_RPLANNER_RRT_PLANNER_HPP_
 #define TMC_MANIPULATION_TMC_RPLANNER_RRT_PLANNER_HPP_
 
+#include <ctime>
+#include <random>
+
 #include <tmc_rplanner/configuration_space.hpp>
 #include <tmc_rplanner/point_to_condition_planner.hpp>
 
@@ -52,11 +55,11 @@ class ConfigurationTree;
 ///       pages 995-1001, San Francisco, CA, April 2000.
 class RrtPlanner : public IPointToConditionPlanner {
  public:
-  /// @brief Pass the planner space and termination condition
+  /// @brief Pass the planner space and termination conditions
   /// @param space Pointer to the planner space
-  /// @param delta Search increment width
+  /// @param delta Exploration step size
   /// @param max_itr Maximum number of iterations
-  /// @param goal_bias Ratio aiming for the goal [0.0-1.0]
+  /// @param goal_bias Ratio of aiming for the goal [0.0-1.0]
   /// @param greedy Flag indicating whether to continue extending feasibly when aiming for the goal
   /// @param is_terminate Forced termination condition
   RrtPlanner(ConfigurationSpace::Ptr space,
@@ -66,12 +69,13 @@ class RrtPlanner : public IPointToConditionPlanner {
              bool greedy,
              TerminateConditionFunc is_terminate) :
       space_(space), delta_(delta), max_itr_(max_itr),
-      goal_bias_(goal_bias), greedy_(greedy), is_terminate_(is_terminate) {}
-  /// @brief Pass the planner space and termination condition
+      goal_bias_(goal_bias), greedy_(greedy), is_terminate_(is_terminate),
+      eng_(static_cast<uint32_t>(std::time(0))) {}
+  /// @brief Pass the planner space and termination conditions
   /// @param space Pointer to the planner space
-  /// @param delta Search increment width
+  /// @param delta Exploration step size
   /// @param max_itr Maximum number of iterations
-  /// @param goal_bias Ratio aiming for the goal [0.0-1.0]
+  /// @param goal_bias Ratio of aiming for the goal [0.0-1.0]
   /// @param greedy Flag indicating whether to continue extending feasibly when aiming for the goal
   RrtPlanner(ConfigurationSpace::Ptr space,
              double delta,
@@ -79,7 +83,8 @@ class RrtPlanner : public IPointToConditionPlanner {
              double goal_bias,
              bool greedy) :
       space_(space), delta_(delta), max_itr_(max_itr),
-      goal_bias_(goal_bias), greedy_(greedy) {}
+      goal_bias_(goal_bias), greedy_(greedy),
+      eng_(static_cast<uint32_t>(std::time(0))) {}
 
   virtual ~RrtPlanner() {}
   /// Path creation
@@ -87,7 +92,7 @@ class RrtPlanner : public IPointToConditionPlanner {
                            Path& path_out);
 
  private:
-  // Prohibition of copying
+  // Prohibit copying
   RrtPlanner(const RrtPlanner&);
   RrtPlanner& operator=(const RrtPlanner&);
   bool BuildOneStep_(ConfigurationTree& tree);
@@ -97,6 +102,7 @@ class RrtPlanner : public IPointToConditionPlanner {
   const double goal_bias_;
   const bool greedy_;
   TerminateConditionFunc is_terminate_;
+  std::mt19937 eng_;
 };
 }  // namespace tmc_rplanner
 

@@ -1,5 +1,5 @@
 #!/usr/bin/env python
-# Copyright (c) 2024 TOYOTA MOTOR CORPORATION
+# Copyright (c) 2026 TOYOTA MOTOR CORPORATION
 # All rights reserved.
 # Redistribution and use in source and binary forms, with or without
 # modification, are permitted (subject to the limitations in the disclaimer
@@ -32,7 +32,6 @@ from math import sin
 
 import unittest
 
-from nose.tools import assert_almost_equal, assert_almost_equals, assert_greater, eq_, raises
 from tmc_timeopt.kinematics import Kinematics
 from tmc_timeopt.target import Target
 from tmc_timeopt.trajectory import NaturalCubicSplineTrajectory
@@ -53,7 +52,7 @@ class DummyTarget(Target):
 class KinematicsTestCase(unittest.TestCase):
 
     def setUp(self):
-        # Test only the logic with a dummy target
+        # Test logic only with a dummy target.
         self.target = DummyTarget()
         self.kinematics = Kinematics(self.target)
 
@@ -84,34 +83,34 @@ class KinematicsTestCase(unittest.TestCase):
                ('JOINT1', 'acceleration'): (-2, 2),
                ('JOINT2', 'acceleration'): (-2, 2),
                ('JOINT3', 'acceleration'): (-2, 2)}
-        eq_(self.kinematics.limits, ans)
+        self.assertEqual(self.kinematics.limits, ans)
 
     def test_get_current_point(self):
         self.kinematics.update(0.0)
         current = self.kinematics.get_current_point()
-        assert_almost_equal(0.0, current['JOINT1'][0])
-        assert_almost_equal(1.0, current['JOINT2'][0])
-        assert_almost_equal(sin(1.0), current['JOINT3'][0])
+        self.assertAlmostEqual(0.0, current['JOINT1'][0])
+        self.assertAlmostEqual(1.0, current['JOINT2'][0])
+        self.assertAlmostEqual(sin(1.0), current['JOINT3'][0])
 
         self.kinematics.update(10.0)
         current = self.kinematics.get_current_point()
-        assert_almost_equal(sin(1.0), current['JOINT1'][0])
-        assert_almost_equal(cos(1.0), current['JOINT2'][0])
-        assert_almost_equal(sin(5.0), current['JOINT3'][0])
+        self.assertAlmostEqual(sin(1.0), current['JOINT1'][0])
+        self.assertAlmostEqual(cos(1.0), current['JOINT2'][0])
+        self.assertAlmostEqual(sin(5.0), current['JOINT3'][0])
 
     def test_get_vlc(self):
         self.kinematics.update(0.0)
-        # Obtain the first derivative with respect to s of the trajectory as prediction is difficult
+        # Obtain the first derivative with respect to s of the trajectory as it is difficult to predict.
         current = self.kinematics.get_current_point()
         fds = (current['JOINT1'][1], current['JOINT2'][1],
                current['JOINT3'][1])
         vlc = self.kinematics.get_vlc()
-        # JOINT3 is the toughest, so vlc should be for that
-        assert_almost_equal(2.0 / fds[2], vlc)
+        # JOINT3 is the most constrained, so vlc should correspond to it.
+        self.assertAlmostEqual(2.0 / fds[2], vlc)
 
-    # Almost a reversal of reality, so not a very meaningful test
+    # Almost a reversal of reality, making it a test with little meaning.
     def test_get_state(self):
-        # Normally, there is no need to call this, but call it once for testing
+        # This is not originally necessary to call, but it is called once for testing purposes.
         self.kinematics.update(5.0)
         current = self.kinematics.get_current_point()
         f = (current['JOINT1'][0], current['JOINT2'][0],
@@ -121,31 +120,31 @@ class KinematicsTestCase(unittest.TestCase):
         fdds = (current['JOINT1'][2], current['JOINT2'][2],
                 current['JOINT3'][2])
         state = self.kinematics.get_state(5.0, 1.0, 1.0)
-        assert_almost_equals(state['JOINT1'][0], f[0])
-        assert_almost_equals(state['JOINT1'][1], fds[0] * 1.0)
-        assert_almost_equals(state['JOINT1'][2], fds[0] * 1.0 + fdds[0] * 1.0)
+        self.assertAlmostEqual(state['JOINT1'][0], f[0])
+        self.assertAlmostEqual(state['JOINT1'][1], fds[0] * 1.0)
+        self.assertAlmostEqual(state['JOINT1'][2], fds[0] * 1.0 + fdds[0] * 1.0)
 
-        assert_almost_equals(state['JOINT2'][0], f[1])
-        assert_almost_equals(state['JOINT2'][1], fds[1] * 1.0)
-        assert_almost_equals(state['JOINT2'][2], fds[1] * 1.0 + fdds[1] * 1.0)
+        self.assertAlmostEqual(state['JOINT2'][0], f[1])
+        self.assertAlmostEqual(state['JOINT2'][1], fds[1] * 1.0)
+        self.assertAlmostEqual(state['JOINT2'][2], fds[1] * 1.0 + fdds[1] * 1.0)
 
-        assert_almost_equals(state['JOINT3'][0], f[2])
-        assert_almost_equals(state['JOINT3'][1], fds[2] * 1.0)
-        assert_almost_equals(state['JOINT3'][2], fds[2] * 1.0 + fdds[2] * 1.0)
+        self.assertAlmostEqual(state['JOINT3'][0], f[2])
+        self.assertAlmostEqual(state['JOINT3'][1], fds[2] * 1.0)
+        self.assertAlmostEqual(state['JOINT3'][2], fds[2] * 1.0 + fdds[2] * 1.0)
 
-    # Prediction is difficult, so a tentative test
+    # A test just in case, as prediction is difficult.
     def test_calc_accel_limit(self):
         self.kinematics.update(5.0)
         (sa_min, sa_max) = self.kinematics.calc_accel_limit(1.0)
-        assert_greater(sa_max, sa_min)
+        self.assertGreater(sa_max, sa_min)
 
-    @raises(ValueError)
     def test_set_limit_invalid_name(self):
-        self.kinematics.set_limit('JOINT_NONE', 'velocity', (-1, 1))
+        with self.assertRaises(ValueError):
+            self.kinematics.set_limit('JOINT_NONE', 'velocity', (-1, 1))
 
-    @raises(TypeError)
     def test_set_limit_invalid(self):
-        self.kinematics.set_limit('JOINT1', 'none', 1)
+        with self.assertRaises(TypeError):
+            self.kinematics.set_limit('JOINT1', 'none', 1)
 
 
 if __name__ == '__main__':

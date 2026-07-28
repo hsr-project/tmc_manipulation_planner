@@ -1,5 +1,5 @@
 #!/usr/bin/env python
-# Copyright (c) 2024 TOYOTA MOTOR CORPORATION
+# Copyright (c) 2026 TOYOTA MOTOR CORPORATION
 # All rights reserved.
 # Redistribution and use in source and binary forms, with or without
 # modification, are permitted (subject to the limitations in the disclaimer
@@ -73,7 +73,7 @@ class TrajectoryTestCase(unittest.TestCase):
             traj[0] = 1.0
         with self.assertRaises(ValueError):
             traj[0] = 'hello'
-        # Confirm that the interpolation point returns the left point
+        # Confirm that the interpolation point returns the left-side point
         for i in range(10):
             s = 0.1 * i
             self.assertPointEqual(traj(s + 0.05), (s, s * 0.1, s * 0.01))
@@ -81,7 +81,7 @@ class TrajectoryTestCase(unittest.TestCase):
         # Exception when trying to interpolate out-of-range points
         with self.assertRaises(ValueError):
             traj(2)
-        # Round negative values to 0
+        # Negative values are rounded to 0
         self.assertPointEqual(traj(-1), [0.0, 0.0, 0.0])
 
     def test_linear_trajectory(self):
@@ -110,7 +110,7 @@ class TrajectoryTestCase(unittest.TestCase):
         # Exception when trying to interpolate out-of-range points
         with self.assertRaises(ValueError):
             traj(2)
-        # Round negative values to 0
+        # Negative values are rounded to 0
         self.assertPointEqual(traj(-1), [0.0, 1.0])
 
     def test_poly3_trajectory(self):

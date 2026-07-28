@@ -1,5 +1,5 @@
 /*
-Copyright (c) 2025 TOYOTA MOTOR CORPORATION
+Copyright (c) 2026 TOYOTA MOTOR CORPORATION
 All rights reserved.
 Redistribution and use in source and binary forms, with or without
 modification, are permitted (subject to the limitations in the disclaimer
@@ -110,9 +110,9 @@ geometry_msgs::Pose InvertPoseMsg(
   return pose_ret;
 }
 
-/// Temporarily erase the marker
+/// Temporarily delete markers
 /// @param [in] delete_num
-/// @param [in] marker_namespace Namespace of the marker to erase
+/// @param [in] marker_namespace Namespace of the marker to delete
 /// @param [in/out] marker_pub Publisher of the marker
 void DeleteMarkers(uint32_t delete_num,
                    const string& marker_namespace,
@@ -189,7 +189,7 @@ visualization_msgs::MarkerArray ObjectToMarker(
           break;
         }
         case tmc_geometric_shapes_msgs::Shape::CAPSULE: {
-          // Create capsule marker (faked with a cylinder)
+          // Create capsule marker (simulated with a cylinder)
           marker.type = visualization_msgs::Marker::CYLINDER;
           marker.scale.x = shape->dimensions[0] * 2.0;
           marker.scale.y = shape->dimensions[0] * 2.0;
@@ -198,7 +198,7 @@ visualization_msgs::MarkerArray ObjectToMarker(
         }
         case tmc_geometric_shapes_msgs::Shape::MESH: {
           // Create mesh marker
-          // Only supports loading mesh files
+          // Only supports formats for loading mesh files
           marker.type = visualization_msgs::Marker::MESH_RESOURCE;
           marker.scale.x = 1.0;
           marker.scale.y = 1.0;
@@ -236,8 +236,8 @@ visualization_msgs::MarkerArray ObjectToMarker(
 
 /// Convert CollisionMap to visualization markers
 /// @param [in] collision_map Object of type CollisionMap
-/// @param [in] origin_to_robot Position and orientation of the robot from the reference coordinates
-/// @param [in] origin_to_map Position and orientation of the CollisionMap from the reference coordinates
+/// @param [in] origin_to_robot Position and orientation of the robot relative to the reference coordinate
+/// @param [in] origin_to_map Position and orientation of the CollisionMap relative to the reference coordinate
 visualization_msgs::MarkerArray MapToMarker(
     const tmc_mapping_msgs::CollisionMap& collision_map,
     const geometry_msgs::Pose& origin_to_map) {
@@ -282,9 +282,9 @@ visualization_msgs::MarkerArray MapToMarker(
   return map_markers;
 }
 
-/// Publish collision_environment for debugging
+/// Publish debug collision_environment
 /// @param [in] collision_environment Planning environment
-/// @param [in] delete_before_publish Whether to erase the marker before publishing
+/// @param [in] delete_before_publish Whether to delete markers before publishing
 /// @param [in/out] marker_pub publisher
 void PublishEnvironmentDebug(
     const tmc_manipulation_msgs::CollisionEnvironment& environment,
@@ -321,7 +321,7 @@ void PublishEnvironmentDebug(
       marker_pub);
 }
 
-/// @brief Extract CollisionEnvironment in the state of joint_state
+/// @brief Extract CollisionEnvironment based on joint_state
 ///        Modify attached_objects from before_collision_environment
 /// @param [in] joint_state Joint angles
 /// @param [in] origin_to_base Location of the base

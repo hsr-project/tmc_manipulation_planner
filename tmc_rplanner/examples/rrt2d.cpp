@@ -1,5 +1,5 @@
 /*
-Copyright (c) 2024 TOYOTA MOTOR CORPORATION
+Copyright (c) 2026 TOYOTA MOTOR CORPORATION
 All rights reserved.
 Redistribution and use in source and binary forms, with or without
 modification, are permitted (subject to the limitations in the disclaimer
@@ -58,18 +58,18 @@ Eigen::VectorXd RandomConfig() {
 }
 
 bool FeasibilityCheck(const Config& config) {
-  // Cuboid [0.5 3.5] , [0.5 1.0]
+  // Rectangular prism of [0.5 3.5] , [0.5 1.0]
   if (((config(0) > 0.5) && (config(0) < 3.5)) && ((config(1) > 0.5) && (config(1) < 1.0))) {
     return false;
   }
-  // Cuboid [1.5 2.5] , [1.0 4.0]
+  // Rectangular prism of [1.5 2.5] , [1.0 4.0]
   if (((config(0) > 1.5) && (config(0) < 2.5)) && ((config(1) > 1.0) && (config(1) < 4.0))) {
     return false;
   }
     return true;
 }
 
-// Right and left appropriately
+// Adjust the right and left appropriately
 bool GenerateGoal(Config v) {
   v.resize(2);
   if (Randd() < 0.5) {
@@ -83,11 +83,11 @@ bool GenerateGoal(Config v) {
 }
 
 bool IsGoal(const Config& config) {
-  // Cuboid (0.9 1.1) , (3.4 3.6)
+  // Rectangular prism of (0.9 1.1) , (3.4 3.6)
   if (((config(0) > 0.9) && (config(0) < 1.1)) && ((config(1) > 3.4) && (config(1) < 3.6))) {
     return true;
   }
-  // Cuboid (2.9 3.1) , (3.4 3.6)
+  // Rectangular prism of (2.9 3.1) , (3.4 3.6)
   if (((config(0) > 2.9) && (config(0) < 3.1)) && ((config(1) > 3.4) && (config(1) < 3.6))) {
     return true;
   }

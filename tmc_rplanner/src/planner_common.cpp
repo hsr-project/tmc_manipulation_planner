@@ -1,5 +1,5 @@
 /*
-Copyright (c) 2024 TOYOTA MOTOR CORPORATION
+Copyright (c) 2026 TOYOTA MOTOR CORPORATION
 All rights reserved.
 Redistribution and use in source and binary forms, with or without
 modification, are permitted (subject to the limitations in the disclaimer
@@ -39,12 +39,12 @@ namespace tmc_rplanner {
 
 /// @func TreeToPath
 /// @brief Extract trajectory from the state tree
-///        Assume the end of the state tree is the goal
-///        If the path becomes larger than the size of the tree, loop
-//         Throw an exception because it is looping
+///        Assume the last node of the state tree is the goal
+///        If the path becomes larger than the size of the tree, it loops
+//         and throws an exception
 /// @param tree State tree
 /// @param path_out Output trajectory
-/// @note If there is a loop in the tree, it will become an infinite loop.
+/// @note If there is a loop in the tree, it will result in an infinite loop.
 /// @exception tmc_rplanner::TreeLoop Detection of loop in the tree
 void TreeToPath(const Tree& tree, Path& path_out) {
   TreeToPath(tree, tree.size() - 1, path_out);
@@ -52,13 +52,13 @@ void TreeToPath(const Tree& tree, Path& path_out) {
 
 /// @func TreeToPath
 /// @brief Extract trajectory from the state tree
-///        Assume the end of the state tree is the goal
-///        If the path becomes larger than the size of the tree, loop
-///        Throw an exception because it is looping
+///        Assume the last node of the state tree is the goal
+///        If the path becomes larger than the size of the tree, it loops
+///        and throws an exception
 /// @param tree State tree
 /// @param path_out Output trajectory
 /// @param goal_index Index of the final state in the state tree
-/// @note If there is a loop in the tree, it will become an infinite loop.
+/// @note If there is a loop in the tree, it will result in an infinite loop.
 /// @exception tmc_rplanner::TreeLoop Detection of loop in the tree
 /// @exception std::invalid_argument goal_index is larger than the size of the tree
 void TreeToPath(const Tree& tree, uint32_t goal_index, Path& path_out) {
@@ -90,7 +90,7 @@ void SwapRoot(Tree& tree, const Node::WeakPtr& root) {
 
 /// @brief Change the root of the state tree to the specified one
 /// @param tree State tree
-/// @param root Node to be newly set as root
+/// @param root Node to be set as the new root
 void ChangeTreeRoot(Tree& tree, const Node::WeakPtr& root) {
   if (!root.lock()->parent.expired()) {
     SwapRoot(tree, root);

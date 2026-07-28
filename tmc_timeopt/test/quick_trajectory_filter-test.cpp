@@ -1,5 +1,5 @@
 /*
-Copyright (c) 2024 TOYOTA MOTOR CORPORATION
+Copyright (c) 2026 TOYOTA MOTOR CORPORATION
 All rights reserved.
 Redistribution and use in source and binary forms, with or without
 modification, are permitted (subject to the limitations in the disclaimer
@@ -37,7 +37,7 @@ namespace tmc_timeopt {
 
 INSTANTIATE_TYPED_TEST_SUITE_P(QuickTrajectoryFilterTest, TrajectoryFilterCommonTest, QuickTrajectoryFilter);
 
-// Test to check if optimization satisfies constraints even when initial and maximum velocities are changed
+// Test to verify if optimization satisfies constraints even when initial and maximum velocities are changed
 class OptimizationTest
     : public ::testing::TestWithParam<std::tuple<double, double, double> > {};
 
@@ -123,7 +123,7 @@ TEST(QuickTrajectoryFilterTest, ReverseTrajectory3Dof) {
   EXPECT_TRUE(VerifyAccelarationLimit(trajectory, input.max_accelerations));
 }
 
-// Although it is a trajectory with multiple degrees of freedom, only the optimization of a trajectory with one degree of freedom is functioning
+// A trajectory with multiple degrees of freedom, but only the optimization of a single degree of freedom operates
 TEST(QuickTrajectoryFilterTest, Hoge) {
   auto input = TestInput();
   input.way_points[0][0] = 0.5;

@@ -1,5 +1,5 @@
 #!/usr/bin/env python
-# Copyright (c) 2024 TOYOTA MOTOR CORPORATION
+# Copyright (c) 2026 TOYOTA MOTOR CORPORATION
 # All rights reserved.
 # Redistribution and use in source and binary forms, with or without
 # modification, are permitted (subject to the limitations in the disclaimer
@@ -29,7 +29,6 @@ u"""Unit test for solve_inequlisty."""
 
 import unittest
 
-from nose.tools import eq_
 from tmc_timeopt.poly2 import solve_inequality
 
 
@@ -37,35 +36,35 @@ class SolvePoly2TestCase(unittest.TestCase):
     def test_inequality_normal(self):
         a = (2.0, -3.0, 1.0)
         solution1 = solve_inequality(a, '>')
-        eq_([[-float('inf'), 1.0], [2.0, float('inf')]], solution1)
+        self.assertEqual([[-float('inf'), 1.0], [2.0, float('inf')]], solution1)
         solution2 = solve_inequality(a, '<')
-        eq_([1.0, 2.0], solution2)
+        self.assertEqual([1.0, 2.0], solution2)
 
         b = (-2.0, 3.0, -1.0)
         solution3 = solve_inequality(b, '>')
-        eq_([1.0, 2.0], solution3)
+        self.assertEqual([1.0, 2.0], solution3)
         solution4 = solve_inequality(b, '<')
-        eq_([[-float('inf'), 1.0], [2.0, float('inf')]], solution4)
+        self.assertEqual([[-float('inf'), 1.0], [2.0, float('inf')]], solution4)
 
         c = (2.0, 0.1, 1.0)
         solution5 = solve_inequality(c, '>')
-        eq_([-float('inf'), float('inf')], solution5)
+        self.assertEqual([-float('inf'), float('inf')], solution5)
 
     def test_nipequelity_no_var(self):
         a = (1.0, 0.0, 0.0)
         solution1 = solve_inequality(a, '>')
-        eq_([-float('inf'), float('inf')], solution1)
+        self.assertEqual([-float('inf'), float('inf')], solution1)
 
         solution2 = solve_inequality(a, '<')
-        eq_([], solution2)
+        self.assertEqual([], solution2)
 
     def test_inequelity_1(self):
         a = (1.0, 1.0, 0.0)
         solution1 = solve_inequality(a, '>')
-        eq_([-1.0, float('inf')], solution1)
+        self.assertEqual([-1.0, float('inf')], solution1)
 
         solution2 = solve_inequality(a, '<')
-        eq_([-float('inf'), -1.0], solution2)
+        self.assertEqual([-float('inf'), -1.0], solution2)
 
 
 if __name__ == '__main__':

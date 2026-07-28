@@ -1,5 +1,5 @@
 #!/usr/bin/env python
-# Copyright (c) 2024 TOYOTA MOTOR CORPORATION
+# Copyright (c) 2026 TOYOTA MOTOR CORPORATION
 # All rights reserved.
 # Redistribution and use in source and binary forms, with or without
 # modification, are permitted (subject to the limitations in the disclaimer
@@ -27,12 +27,10 @@
 # -*- coding: utf-8 -*-
 u"""Overall operation test.
 
-Increase randomness for reuse in development testing.
+Increase randomness to enable reuse during development testing.
 """
 
 import unittest
-
-from nose.tools import assert_greater_equal
 
 import numpy as np
 
@@ -41,7 +39,7 @@ from tmc_timeopt.timeopt import Timeopt
 from tmc_timeopt.trajectory import NaturalCubicSplineTrajectory
 from tmc_timeopt.trajectory import TrajectoryDict
 
-# Fix seed in automated tests
+# Seed is fixed for automated testing.
 np.random.seed(10)
 
 
@@ -58,18 +56,18 @@ class MyTarget(Target):
         u"""Update the kinematics of the target.
 
         Args:
-            point: Dictionary of state quantities
+            point: A dictionary of state quantities.
         """
         self.point = point
 
     def update_dynamics(self):
-        u"""Do nothing as it is an acceleration level constraint."""
+        u"""No action is taken due to acceleration-level constraints."""
         pass
 
     def get_dynamics(self):
         u"""Return the dynamic parameters (a, b, c, d).
 
-        (a, b, c, d) each become a dictionary with ('variable name', 'constraint type') as the key and value as the value.
+        (a, b, c, d) are dictionaries where each key is ('variable name', 'constraint type') and the value is the corresponding value.
         """
         (a, b, c, d) = ({}, {}, {}, {})
         for name in self.names:
@@ -102,12 +100,12 @@ class TotalTestCase(unittest.TestCase):
                                   self.VEL_LIMIT[joint]))
 
     def count_score(self, opt_traj):
-        u"""Determine the extent to which the optimization score is produced for testing.
+        u"""Determine the optimization score for testing purposes.
 
-        Condition is at the limit of speed or acceleration
-        The proportion of time when there is a joint reaching 90% of the limit to the total time
+        Conditions are either velocity or acceleration limits.
+        The proportion of time when joints reach 90% of their limit relative to the total time.
         Args:
-           opt_traj: Optimized trajectory
+           opt_traj: Optimized trajectory.
         Returns:
            Score(double)
         """
@@ -115,15 +113,15 @@ class TotalTestCase(unittest.TestCase):
         joint_names = self.target.names
         MERGIN = 0.9
         for point in opt_traj:
-            satification.append(any([abs(point[1][joint][1]) > MERGIN * self.VEL_LIMIT[joint]
-                                     or abs(point[1][joint][2]) > MERGIN * self.ACC_LIMIT[joint]
-                                     for joint in joint_names]))
+            satification.append(any(abs(point[1][joint][1]) > MERGIN * self.VEL_LIMIT[joint]
+                                    or abs(point[1][joint][2]) > MERGIN * self.ACC_LIMIT[joint]
+                                    for joint in joint_names))
         return float(satification.count(True)) / float(len(satification))
 
     def test_normal_case1(self):
         u"""Test using a simple trajectory.
 
-        Pass if the score exceeds 0.9
+        Pass if the score exceeds 0.9.
         """
         _POINTS = 30
 
@@ -141,12 +139,12 @@ class TotalTestCase(unittest.TestCase):
         self.timeopt.update()
         opt_traj = self.timeopt.get_optimal_trajectory()
         score = self.count_score(opt_traj)
-        assert_greater_equal(score, 0.9)
+        self.assertGreaterEqual(score, 0.9)
 
     def test_normal_case2(self):
         u"""Test using a short trajectory.
 
-        Pass if the score exceeds 0.9
+        Pass if the score exceeds 0.9.
         """
         _POINTS = 2
 
@@ -164,12 +162,12 @@ class TotalTestCase(unittest.TestCase):
         self.timeopt.update()
         opt_traj = self.timeopt.get_optimal_trajectory()
         score = self.count_score(opt_traj)
-        assert_greater_equal(score, 0.9)
+        self.assertGreaterEqual(score, 0.9)
 
     def test_normal_case3(self):
         u"""Test using a long trajectory.
 
-        Pass if the score exceeds 0.9
+        Pass if the score exceeds 0.9.
         """
         _POINTS = 500
 
@@ -187,7 +185,7 @@ class TotalTestCase(unittest.TestCase):
         self.timeopt.update()
         opt_traj = self.timeopt.get_optimal_trajectory()
         score = self.count_score(opt_traj)
-        assert_greater_equal(score, 0.9)
+        self.assertGreaterEqual(score, 0.9)
 
 
 if __name__ == '__main__':
