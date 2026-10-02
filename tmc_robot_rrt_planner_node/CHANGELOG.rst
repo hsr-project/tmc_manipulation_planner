@@ -7,10 +7,6 @@ Changelog for package tmc_robot_rrt_planner_node
 * Migration to ROS2 jazzy
 * Contributors: Ryu Nishimori, Shigeo Tsuduki
 
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-Changelog for package tmc_robot_rrt_planner_node
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-
 2.0.2 (2025-12-04)
 -------------------
 * Fix issue where IK initial state sampling range was not expanding as expected.
@@ -28,4 +24,3 @@ Changelog for package tmc_robot_rrt_planner_node
 -------------------
 * Initial release
 * Contributors: Keisuke Takeshita, Koji Terada
-

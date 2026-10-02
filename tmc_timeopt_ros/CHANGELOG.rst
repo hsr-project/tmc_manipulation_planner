@@ -7,10 +7,6 @@ Changelog for package tmc_timeopt_ros
 * Migration to ROS2 jazzy
 * Contributors: Ryu Nishimori, Shigeo Tsuduki
 
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-Changelog for package tmc_timeopt_ros
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-
 2.0.2 (2025-12-04)
 -------------------
 * Fix issue where IK initial state sampling range was not expanding as expected.
@@ -28,4 +24,3 @@ Changelog for package tmc_timeopt_ros
 -------------------
 * Initial release
 * Contributors: Keisuke Takeshita, Koji Terada
-
